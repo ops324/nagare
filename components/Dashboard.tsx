@@ -6,6 +6,9 @@ import { buildProfile } from '@/lib/profile';
 import { computeTodayFlow, computeMacroFlow } from '@/lib/flow';
 import { meishiki } from '@/lib/shichu';
 import { houi } from '@/lib/houi';
+import { honmeishuku, todayShuku } from '@/lib/sukuyo';
+import { unmeisei } from '@/lib/rokusei';
+import { daiun, type Daiun } from '@/lib/daiun';
 import { honmeiNumberForYear, risshunYear } from '@/lib/kyusei';
 import { pct, jstMonthDay, jstYmd } from '@/lib/format';
 import { toJstParts } from '@/lib/time';
@@ -44,6 +47,11 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
     () => houi(honmeiNumberForYear(profile.risshunYear), risshunYear(now)),
     [profile, now],
   );
+  const shuku = useMemo(() => honmeishuku(profile.birthInstant), [profile]);
+  const todayShukuData = useMemo(() => todayShuku(now, shuku), [now, shuku]);
+  const rokusei = useMemo(() => unmeisei(profile.birthInstant), [profile]);
+  const daiunData = useMemo(() => daiun(profile.birthInstant, profile.gender, profile.hasTime), [profile]);
+  const currentAge = toJstParts(now).year - toJstParts(profile.birthInstant).year;
 
   const m = today.data.moon;
   const sub = `${today.data.term.current?.name ?? ''}・${today.data.rokuyo.name}`;
@@ -223,6 +231,35 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
               <p className="soft-note">※ 出生時刻を入れると時柱まで出ます（「生年月日を変更」から追加できます）。</p>
             )}
 
+            <SectionHead label="宿曜占星術" />
+            <div className="card twin-card">
+              <div className="twin">
+                <div className="twin-label">本命宿</div>
+                <div className="twin-value font-display">{shuku.full}</div>
+                <div className="twin-sub">{shuku.yomi}しゅく</div>
+              </div>
+              <div className="twin-div" />
+              <div className="twin">
+                <div className="twin-label">今日の宿</div>
+                <div className="twin-value font-display">{todayShukuData.shuku.full}</div>
+                <div className="twin-sub">{todayShukuData.isMeinichi ? '命の日（本命宿と同じ）' : `${todayShukuData.shuku.yomi}しゅく`}</div>
+              </div>
+            </div>
+
+            <SectionHead label="六星占術" />
+            <div className="card rokusei-card">
+              <div>
+                <div className="chip-label">運命星</div>
+                <div className="rokusei-name font-display">{rokusei.label}</div>
+              </div>
+              <div className="rokusei-num">
+                星数 <b className="font-display">{rokusei.seisu}</b>
+              </div>
+            </div>
+
+            <SectionHead label="大運（四柱推命・10年区切り）" />
+            <DaiunList data={daiunData} currentAge={currentAge} genderKnown={daiunData.genderKnown} />
+
             <SectionHead label={`九星の吉方位（${houiData.year}年）`} />
             <KyuseiBan houi={houiData} />
           </section>
@@ -289,6 +326,39 @@ function SectionHead({ label }: { label: string }) {
       <span className="eyebrow">{label}</span>
       <hr className="hair" />
     </div>
+  );
+}
+
+function DaiunList({
+  data,
+  currentAge,
+  genderKnown,
+}: {
+  data: Daiun;
+  currentAge: number;
+  genderKnown: boolean;
+}) {
+  const curIdx = data.periods.findIndex((p, i) => {
+    const next = data.periods[i + 1];
+    return currentAge >= p.ageStart && (!next || currentAge < next.ageStart);
+  });
+  return (
+    <>
+      <div className="daiun-scroll">
+        {data.periods.map((p, i) => (
+          <div key={i} className="daiun-cell" data-cur={i === curIdx}>
+            <div className="daiun-age">{p.ageStart}歳〜</div>
+            <div className="daiun-kanshi font-display">{p.kanshi.name}</div>
+            <div className="daiun-yomi">{p.kanshi.yomi}</div>
+          </div>
+        ))}
+      </div>
+      <p className="soft-note">
+        立運 {data.startYears}歳{data.startMonths > 0 ? `${data.startMonths}ヶ月` : ''}から・
+        {data.forward ? '順行' : '逆行'}。
+        {!genderKnown && '（性別を入れると運の向きが定まります）'}
+      </p>
+    </>
   );
 }
 
