@@ -122,17 +122,7 @@ export function computeTodayFlow(profile: Profile, now: Date): TodayFlow {
     });
   }
 
-  // ── 天体：月相 ──
-  highlights.push({
-    system: '天体',
-    title: `${moon.phaseSymbol} ${moon.phaseName}・${moon.sign.name}`,
-    description: `月は${moon.sign.name}にあり、輝面は約${Math.round(moon.illumination * 100)}％（月齢${moon.age.toFixed(1)}）。${
-      moon.waxing ? '満ちていく時期で、始動・増やすことに向きます。' : '欠けていく時期で、手放し・整理に向きます。'
-    }　潮は${td.name}。`,
-    tone: 'neutral',
-    severity: 'low',
-    emoji: moon.phaseSymbol,
-  });
+  // ── 天体：月相（表示は専用のヒーロー行。ここではスコアのみ） ──
   score += moon.waxing ? 4 : 0;
   if (moon.phaseIndex === 0) score += 3; // 新月：始まり
 
