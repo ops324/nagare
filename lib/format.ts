@@ -1,6 +1,23 @@
 /** 表示用フォーマット（和暦・曜日・度数など） */
+import { toJstParts } from './time';
 
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
+
+/** インスタント → JSTの「M月D日」 */
+export function jstMonthDay(instant: Date): string {
+  const p = toJstParts(instant);
+  return `${p.month}月${p.day}日`;
+}
+/** インスタント → JSTの「YYYY年M月D日」 */
+export function jstYmd(instant: Date): string {
+  const p = toJstParts(instant);
+  return `${p.year}年${p.month}月${p.day}日`;
+}
+/** インスタント → JSTの「HH:MM」 */
+export function jstHm(instant: Date): string {
+  const p = toJstParts(instant);
+  return `${String(p.hour).padStart(2, '0')}:${String(p.minute).padStart(2, '0')}`;
+}
 
 export function weekdayJa(weekday: number): string {
   return WEEKDAYS[weekday];

@@ -78,6 +78,12 @@ export function LifeTimeline({ timeline }: { timeline: TimelineYear[] }) {
                   ⚠
                 </text>
               )}
+              {/* 天中殺マーク */}
+              {t.isTenchusatsu && (
+                <text x={x - 15} y={y - 7} fontSize="9" fill="var(--caution)" opacity="0.85">
+                  殺
+                </text>
+              )}
               {/* 年 */}
               <text
                 x={x}

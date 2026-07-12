@@ -4,7 +4,11 @@ import { useMemo, useState } from 'react';
 import type { BirthProfile } from '@/lib/types';
 import { buildProfile } from '@/lib/profile';
 import { computeTodayFlow, computeMacroFlow } from '@/lib/flow';
-import { pct } from '@/lib/format';
+import { meishiki } from '@/lib/shichu';
+import { houi } from '@/lib/houi';
+import { honmeiNumberForYear, risshunYear } from '@/lib/kyusei';
+import { pct, jstMonthDay, jstYmd } from '@/lib/format';
+import { toJstParts } from '@/lib/time';
 import { AppHeader } from './AppHeader';
 import { Starfield } from './Starfield';
 import { FlowMeter } from './FlowMeter';
@@ -12,8 +16,21 @@ import { MoonGlyph } from './MoonGlyph';
 import { FlowCard } from './FlowCard';
 import { LifeTimeline } from './LifeTimeline';
 import { Biorhythm } from './Biorhythm';
+import { Meishiki } from './Meishiki';
+import { KyuseiBan } from './KyuseiBan';
+import { CalendarMonth } from './CalendarMonth';
 
-type Tab = 'today' | 'macro';
+type Tab = 'today' | 'macro' | 'birth' | 'calendar';
+const TABS: { key: Tab; label: string }[] = [
+  { key: 'today', label: '今日' },
+  { key: 'macro', label: '大きな流れ' },
+  { key: 'birth', label: '生まれ' },
+  { key: 'calendar', label: '暦' },
+];
+
+function eclipseWhen(instant: Date, now: Date): string {
+  return toJstParts(instant).year === toJstParts(now).year ? jstMonthDay(instant) : jstYmd(instant);
+}
 
 export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: () => void }) {
   const [tab, setTab] = useState<Tab>('today');
@@ -22,29 +39,33 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
   const profile = useMemo(() => buildProfile(birth), [birth]);
   const today = useMemo(() => computeTodayFlow(profile, now), [profile, now]);
   const macro = useMemo(() => computeMacroFlow(profile, now), [profile, now]);
+  const meishikiData = useMemo(() => meishiki(profile.birthInstant, profile.hasTime), [profile]);
+  const houiData = useMemo(
+    () => houi(honmeiNumberForYear(profile.risshunYear), risshunYear(now)),
+    [profile, now],
+  );
 
   const m = today.data.moon;
   const sub = `${today.data.term.current?.name ?? ''}・${today.data.rokuyo.name}`;
+  const retroNow = today.data.retrogrades.filter((r) => r.retrograde);
 
   return (
     <>
       <Starfield />
       <AppHeader now={now} sub={sub} />
       <main className="shell">
-        <div className="tabs" role="tablist">
-          <button className="tab" role="tab" data-active={tab === 'today'} onClick={() => setTab('today')}>
-            今日の流れ
-          </button>
-          <button className="tab" role="tab" data-active={tab === 'macro'} onClick={() => setTab('macro')}>
-            大きな流れ
-          </button>
+        <div className="tabs tabs-4" role="tablist">
+          {TABS.map((t) => (
+            <button key={t.key} className="tab" role="tab" data-active={tab === t.key} onClick={() => setTab(t.key)}>
+              {t.label}
+            </button>
+          ))}
         </div>
 
-        {tab === 'today' ? (
+        {tab === 'today' && (
           <section aria-label="今日の流れ">
             <FlowMeter score={today.score} label={today.label} summary={today.summary} />
 
-            {/* 月 */}
             <div className="card moonrow rise" style={{ marginTop: 18 }}>
               <div className="moon-float">
                 <MoonGlyph phaseAngle={m.phaseAngle} size={88} />
@@ -62,29 +83,9 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
               </div>
             </div>
 
-            {/* あなたの生まれ */}
             <SectionHead label="あなたの生まれ" />
-            <div className="chips">
-              <div className="card chip">
-                <div className="chip-label">星座</div>
-                <div className="chip-value">
-                  {profile.sun.sign.symbol} {profile.sun.sign.name}
-                </div>
-                <div className="chip-sub">{profile.sun.sign.element}のエレメント{profile.sun.cusp ? '・境目' : ''}</div>
-              </div>
-              <div className="card chip">
-                <div className="chip-label">本命星</div>
-                <div className="chip-value">{profile.honmei.name}</div>
-                <div className="chip-sub">九星気学</div>
-              </div>
-              <div className="card chip">
-                <div className="chip-label">干支</div>
-                <div className="chip-value">{profile.yearKanshi.name}</div>
-                <div className="chip-sub">{profile.yearKanshi.animal}年</div>
-              </div>
-            </div>
+            <BirthChips profile={profile} tenchusatsu={meishikiData.tenchusatsu.name} />
 
-            {/* 今日の兆し */}
             <SectionHead label="今日の兆し" />
             <div className="cards">
               {today.highlights.map((it, i) => (
@@ -92,13 +93,47 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
               ))}
             </div>
 
-            {/* バイオリズム */}
             <SectionHead label="バイオリズム" />
             <div className="card" style={{ padding: '14px 12px 10px' }}>
               <Biorhythm series={today.data.biorhythmSeries} />
             </div>
 
-            {/* 気をつけたいこと */}
+            <SectionHead label="天体の便り" />
+            <div className="cards">
+              <FlowCard
+                item={{
+                  system: '天体',
+                  title: `次の日食：${today.data.nextSolarEclipse.label}`,
+                  description: `${eclipseWhen(today.data.nextSolarEclipse.instant, now)}ごろ。空の節目は、心の区切りにも。`,
+                  tone: 'neutral',
+                  severity: 'low',
+                  emoji: '🌑',
+                }}
+              />
+              <FlowCard
+                item={{
+                  system: '天体',
+                  title: `次の月食：${today.data.nextLunarEclipse.label}`,
+                  description: `${eclipseWhen(today.data.nextLunarEclipse.instant, now)}ごろ。満ちた月が翳る、手放しの時。`,
+                  tone: 'neutral',
+                  severity: 'low',
+                  emoji: '🌕',
+                }}
+              />
+              <FlowCard
+                item={{
+                  system: '天体',
+                  title: retroNow.length ? `逆行中：${retroNow.map((r) => r.name).join('・')}` : 'すべての惑星が順行中',
+                  description: retroNow.length
+                    ? '見直し・再開・立ち止まりのテーマ。急がず確かめながら。'
+                    : '天体は素直に前へ。動き出しに向く流れです。',
+                  tone: retroNow.length ? 'caution' : 'good',
+                  severity: 'low',
+                  emoji: '☿',
+                }}
+              />
+            </div>
+
             {today.cautions.length > 0 && (
               <>
                 <SectionHead label="気をつけたいこと" />
@@ -110,7 +145,9 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
               </>
             )}
           </section>
-        ) : (
+        )}
+
+        {tab === 'macro' && (
           <section aria-label="大きな流れ">
             <div className="card theme-card rise">
               <div className="eyebrow">今の数年テーマ</div>
@@ -131,25 +168,34 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
             <SectionHead label="人生周期のタイムライン" />
             <LifeTimeline timeline={macro.timeline} />
             <div className="tl-legend">
-              <span>
-                <i style={{ background: 'var(--good)' }} />上り調子
-              </span>
-              <span>
-                <i style={{ background: 'var(--silver)' }} />準備・転換
-              </span>
-              <span>
-                <i style={{ background: 'var(--caution)' }} />慎重に
-              </span>
-              <span>
-                <i className="ring" />八方塞がり
-              </span>
+              <span><i style={{ background: 'var(--good)' }} />上り調子</span>
+              <span><i style={{ background: 'var(--silver)' }} />準備・転換</span>
+              <span><i style={{ background: 'var(--caution)' }} />慎重に</span>
+              <span><i className="ring" />八方塞がり</span>
               <span>⚠ 厄年</span>
+              <span style={{ color: 'var(--caution)' }}>殺 天中殺</span>
             </div>
 
             <SectionHead label="次の転機" />
             <div className="cards">
+              {macro.nextTransit && (
+                <TurningPoint
+                  year={macro.nextTransit.year}
+                  tone="good"
+                  title={`${macro.nextTransit.label}（${macro.nextTransit.age}歳ごろ）`}
+                  note="人生の大きな節目。これまでを見直し、次のステージへ舵を切る時期。"
+                />
+              )}
               {macro.nextHappou && (
                 <TurningPoint year={macro.nextHappou} tone="caution" title="八方塞がり" note="足元を固め、力を蓄える一年。大きな移動や新規は控えめに。" />
+              )}
+              {macro.tenchusatsuYears[0] && (
+                <TurningPoint
+                  year={macro.tenchusatsuYears[0].year}
+                  tone="caution"
+                  title={`天中殺（${macro.tenchusatsuYears[0].branchName}年）`}
+                  note="運気が休息に入る時。新規の勝負より、種まきと充電を。"
+                />
               )}
               {macro.nextYakudoshi && (
                 <TurningPoint
@@ -166,6 +212,30 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
           </section>
         )}
 
+        {tab === 'birth' && (
+          <section aria-label="あなたの生まれ">
+            <SectionHead label="生まれのしるし" />
+            <BirthChips profile={profile} tenchusatsu={meishikiData.tenchusatsu.name} />
+
+            <SectionHead label="四柱推命の命式" />
+            <Meishiki meishiki={meishikiData} />
+            {!profile.hasTime && (
+              <p className="soft-note">※ 出生時刻を入れると時柱まで出ます（「生年月日を変更」から追加できます）。</p>
+            )}
+
+            <SectionHead label={`九星の吉方位（${houiData.year}年）`} />
+            <KyuseiBan houi={houiData} />
+          </section>
+        )}
+
+        {tab === 'calendar' && (
+          <section aria-label="暦">
+            <SectionHead label="暦カレンダー" />
+            <CalendarMonth now={now} />
+            <p className="soft-note">六曜・二十四節気・開運日（天赦日／一粒万倍日／甲子）を月ごとに。</p>
+          </section>
+        )}
+
         <div className="hair" style={{ margin: '40px 0 18px' }} />
         <div className="footer">
           <button className="reset" onClick={onReset}>
@@ -175,6 +245,41 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
         </div>
       </main>
     </>
+  );
+}
+
+function BirthChips({
+  profile,
+  tenchusatsu,
+}: {
+  profile: ReturnType<typeof buildProfile>;
+  tenchusatsu: string;
+}) {
+  return (
+    <div className="chips">
+      <div className="card chip">
+        <div className="chip-label">星座</div>
+        <div className="chip-value">
+          {profile.sun.sign.symbol} {profile.sun.sign.name}
+        </div>
+        <div className="chip-sub">{profile.sun.sign.element}のエレメント{profile.sun.cusp ? '・境目' : ''}</div>
+      </div>
+      <div className="card chip">
+        <div className="chip-label">本命星</div>
+        <div className="chip-value">{profile.honmei.name}</div>
+        <div className="chip-sub">九星気学</div>
+      </div>
+      <div className="card chip">
+        <div className="chip-label">干支</div>
+        <div className="chip-value">{profile.yearKanshi.name}</div>
+        <div className="chip-sub">{profile.yearKanshi.animal}年</div>
+      </div>
+      <div className="card chip">
+        <div className="chip-label">天中殺</div>
+        <div className="chip-value">{tenchusatsu.replace('天中殺', '')}</div>
+        <div className="chip-sub">天中殺</div>
+      </div>
+    </div>
   );
 }
 
