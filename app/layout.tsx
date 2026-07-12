@@ -1,15 +1,21 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Shippori_Mincho, Zen_Kaku_Gothic_New } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const mincho = Shippori_Mincho({
+  weight: ["500", "700", "800"],
   subsets: ["latin"],
+  display: "swap",
+  variable: "--font-mincho",
+  preload: false,
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const gothic = Zen_Kaku_Gothic_New({
+  weight: ["400", "500", "700"],
   subsets: ["latin"],
+  display: "swap",
+  variable: "--font-gothic",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -18,17 +24,21 @@ export const metadata: Metadata = {
     "生年月日から、天体の動き・星座・暦・生まれの傾向をひとつに束ね、『今日の流れ』と『大きな流れ』を読み解くアプリ。",
 };
 
+export const viewport: Viewport = {
+  themeColor: "#0a0e1c",
+  width: "device-width",
+  initialScale: 1,
+};
+
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="ja"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="ja" className={`${mincho.variable} ${gothic.variable}`}>
+      <body>
+        <div className="sky" aria-hidden />
+        {children}
+      </body>
     </html>
   );
 }
