@@ -777,3 +777,49 @@ body {
 }
 .cal-legend b { margin-right: 3px; }
 
+/* ─────────────── 宿曜（本命宿／今日の宿） ─────────────── */
+.twin-card { display: flex; align-items: stretch; padding: 16px; }
+.twin { flex: 1; text-align: center; }
+.twin-div { width: 1px; background: var(--border-strong); margin: 0 14px; }
+.twin-label { font-size: 0.64rem; letter-spacing: 0.14em; color: var(--accent); }
+.twin-value { font-size: 1.9rem; color: var(--text); margin-top: 6px; line-height: 1.1; }
+.twin-sub { font-size: 0.66rem; color: var(--text-dim); margin-top: 4px; }
+
+/* ─────────────── 六星占術 ─────────────── */
+.rokusei-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+}
+.rokusei-name { font-size: 1.7rem; color: var(--text); margin-top: 2px; }
+.rokusei-num { font-size: 0.8rem; color: var(--text-dim); }
+.rokusei-num b { color: var(--accent-soft); font-size: 1.15rem; margin-left: 4px; }
+
+/* ─────────────── 大運 ─────────────── */
+.daiun-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+  -webkit-overflow-scrolling: touch;
+}
+.daiun-cell {
+  flex: 0 0 auto;
+  min-width: 72px;
+  text-align: center;
+  padding: 12px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(10, 14, 28, 0.35);
+}
+.daiun-cell[data-cur='true'] {
+  border-color: var(--accent);
+  background: linear-gradient(150deg, rgba(212, 178, 106, 0.16), rgba(10, 14, 28, 0.4));
+  box-shadow: 0 6px 20px -12px var(--gold-500);
+}
+.daiun-age { font-size: 0.62rem; color: var(--text-faint); letter-spacing: 0.02em; }
+.daiun-kanshi { font-size: 1.5rem; color: var(--text); margin-top: 4px; line-height: 1.1; }
+.daiun-cell[data-cur='true'] .daiun-kanshi { color: var(--accent-soft); }
+.daiun-yomi { font-size: 0.56rem; color: var(--text-faint); margin-top: 3px; }
+
