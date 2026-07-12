@@ -1,0 +1,312 @@
+/**
+ * 流れ統合エンジン
+ *  - computeTodayFlow: 今日の天体・暦・個人周期を束ねた「今日の流れ」
+ *  - computeMacroFlow: 九星9年サイクル等から「大きな流れ（人生周期）」
+ */
+import type { FlowItem } from './types';
+import type { Kyusei } from './constants';
+import { toJstParts } from './time';
+import {
+  moonState,
+  tide,
+  planetRetrogrades,
+  isMercuryRetrograde,
+  sunSign,
+  type MoonState,
+  type RetrogradeInfo,
+  type SignResult,
+} from './astro';
+import {
+  rokuyo,
+  senjitsu,
+  solarTermAround,
+  type RokuyoResult,
+  type Senjitsu,
+  type SolarTermOccurrence,
+} from './koyomi';
+import { biorhythm, biorhythmSeries, yakudoshi, type Biorhythm, type YakudoshiResult } from './cycles';
+import { honmeiNumberForYear, risshunYear, nenun, type Nenun } from './kyusei';
+import { kyusei } from './constants';
+import type { Profile } from './profile';
+
+// ─────────────────────────── 今日の流れ ───────────────────────────
+
+export interface TodayFlow {
+  now: Date;
+  score: number; // 0-100 総合フロー
+  label: string;
+  summary: string;
+  highlights: FlowItem[];
+  cautions: FlowItem[];
+  data: {
+    moon: MoonState;
+    tide: { name: string; note: string };
+    term: { current: SolarTermOccurrence | null; next: SolarTermOccurrence | null };
+    rokuyo: RokuyoResult;
+    senjitsu: Senjitsu[];
+    retrogrades: RetrogradeInfo[];
+    mercuryRetrograde: boolean;
+    todaySunSign: SignResult;
+    biorhythm: Biorhythm;
+    biorhythmSeries: ReturnType<typeof biorhythmSeries>;
+    yakudoshi: YakudoshiResult;
+  };
+}
+
+function scoreToLabel(score: number): string {
+  if (score >= 78) return 'とても良い流れ';
+  if (score >= 62) return '追い風の流れ';
+  if (score >= 46) return '穏やかな流れ';
+  if (score >= 32) return '慎重に進む流れ';
+  return '静かに整える流れ';
+}
+
+export function computeTodayFlow(profile: Profile, now: Date): TodayFlow {
+  const moon = moonState(now);
+  const td = tide(now);
+  const term = solarTermAround(now);
+  const roku = rokuyo(now);
+  const senj = senjitsu(now);
+  const retro = planetRetrogrades(now);
+  const mercuryRetro = isMercuryRetrograde(now);
+  const todaySun = sunSign(now);
+  const bio = biorhythm(profile.birthInstant, now);
+  const bioSeries = biorhythmSeries(profile.birthInstant, now);
+  const gregYear = toJstParts(now).year;
+  const yaku = yakudoshi(profile.birthInstant, profile.gender, gregYear);
+  const nen = nenun(honmeiNumberForYear(profile.risshunYear), risshunYear(now));
+
+  const highlights: FlowItem[] = [];
+  const cautions: FlowItem[] = [];
+  let score = 50;
+
+  // ── 暦：六曜 ──
+  {
+    const tone = roku.tone === 'good' ? 'good' : roku.tone === 'bad' ? 'caution' : 'neutral';
+    (tone === 'caution' ? cautions : highlights).push({
+      system: '暦',
+      title: `六曜：${roku.name}`,
+      description: roku.note,
+      tone,
+      severity: roku.tone === 'good' || roku.tone === 'bad' ? 'medium' : 'low',
+      emoji: '📖',
+    });
+    score += roku.index === 0 ? 8 : roku.index === 5 ? -8 : roku.index === 1 ? -4 : 2;
+  }
+
+  // ── 暦：選日（吉日） ──
+  for (const s of senj) {
+    highlights.push({
+      system: '暦',
+      title: s.name,
+      description: s.note,
+      tone: 'good',
+      severity: s.key === 'tensha' ? 'high' : s.key === 'ichiryu' ? 'medium' : 'low',
+      emoji: '🌱',
+    });
+    score += s.key === 'tensha' ? 10 : s.key === 'ichiryu' ? 6 : 4;
+  }
+
+  // ── 暦：二十四節気 ──
+  if (term.current) {
+    const nextStr = term.next
+      ? `　次は${term.next.jst.month}/${term.next.jst.day}「${term.next.name}」`
+      : '';
+    highlights.push({
+      system: '暦',
+      title: `${term.current.name}（${term.current.yomi}）`,
+      description: `いまは二十四節気の「${term.current.name}」の頃。${nextStr}`,
+      tone: 'neutral',
+      severity: 'low',
+      emoji: '🍃',
+    });
+  }
+
+  // ── 天体：月相 ──
+  highlights.push({
+    system: '天体',
+    title: `${moon.phaseSymbol} ${moon.phaseName}・${moon.sign.name}`,
+    description: `月は${moon.sign.name}にあり、輝面は約${Math.round(moon.illumination * 100)}％（月齢${moon.age.toFixed(1)}）。${
+      moon.waxing ? '満ちていく時期で、始動・増やすことに向きます。' : '欠けていく時期で、手放し・整理に向きます。'
+    }　潮は${td.name}。`,
+    tone: 'neutral',
+    severity: 'low',
+    emoji: moon.phaseSymbol,
+  });
+  score += moon.waxing ? 4 : 0;
+  if (moon.phaseIndex === 0) score += 3; // 新月：始まり
+
+  // ── 天体：水星逆行 ──
+  if (mercuryRetro) {
+    cautions.push({
+      system: '天体',
+      title: '水星逆行中',
+      description: '連絡・契約・移動で行き違いが起きやすい時期。確認をていねいに、新規より見直しを。',
+      tone: 'caution',
+      severity: 'medium',
+      emoji: '☿',
+    });
+    score -= 8;
+  }
+
+  // ── 個人：バイオリズム ──
+  {
+    const avg = (bio.physical + bio.emotional + bio.intellectual) / 3;
+    const parts = [
+      `からだ${bio.physical >= 0 ? '＋' : '−'}`,
+      `こころ${bio.emotional >= 0 ? '＋' : '−'}`,
+      `知性${bio.intellectual >= 0 ? '＋' : '−'}`,
+    ].join('・');
+    (avg >= 0 ? highlights : cautions).push({
+      system: '運気',
+      title: `バイオリズム：${parts}`,
+      description:
+        avg >= 0
+          ? '全体に調子の乗りやすい日。行動を起こすなら追い風です。'
+          : '低めの日は無理をせず、休息と充電を優先すると整います。',
+      tone: avg >= 0 ? 'good' : 'caution',
+      severity: 'low',
+      emoji: '📈',
+    });
+    score += avg * 15;
+  }
+
+  // ── 個人：厄年 ──
+  if (yaku.isYakudoshi) {
+    cautions.push({
+      system: '運気',
+      title: `${yaku.kind}（数え${yaku.kazoe}歳）`,
+      description: yaku.note,
+      tone: 'caution',
+      severity: yaku.kind === '本厄' || yaku.kind === '大厄' ? 'medium' : 'low',
+      emoji: '⚠️',
+    });
+    score += yaku.kind === '大厄' || yaku.kind === '本厄' ? -6 : -3;
+  }
+
+  // ── 個人：八方塞がり（年運） ──
+  if (nen.happouFusagari) {
+    cautions.push({
+      system: '九星',
+      title: '八方塞がり（今年）',
+      description: nen.note,
+      tone: 'caution',
+      severity: 'medium',
+      emoji: '🧭',
+    });
+    score -= 6;
+  }
+
+  score = Math.max(0, Math.min(100, Math.round(score)));
+
+  const summaryBits: string[] = [`六曜は${roku.name}`, `${moon.phaseName}`];
+  if (senj.length) summaryBits.push(senj.map((s) => s.name).join('・'));
+  if (mercuryRetro) summaryBits.push('水星逆行');
+  const summary = summaryBits.join(' / ');
+
+  const bySeverity = (a: FlowItem, b: FlowItem) =>
+    ({ high: 0, medium: 1, low: 2 })[a.severity] - ({ high: 0, medium: 1, low: 2 })[b.severity];
+
+  return {
+    now,
+    score,
+    label: scoreToLabel(score),
+    summary,
+    highlights: highlights.sort(bySeverity),
+    cautions: cautions.sort(bySeverity),
+    data: {
+      moon,
+      tide: td,
+      term,
+      rokuyo: roku,
+      senjitsu: senj,
+      retrogrades: retro,
+      mercuryRetrograde: mercuryRetro,
+      todaySunSign: todaySun,
+      biorhythm: bio,
+      biorhythmSeries: bioSeries,
+      yakudoshi: yaku,
+    },
+  };
+}
+
+// ─────────────────────────── 大きな流れ（人生周期） ───────────────────────────
+
+export interface TimelineYear {
+  year: number;
+  phase: string;
+  theme: string;
+  note: string;
+  tone: 'good' | 'caution' | 'neutral';
+  isNow: boolean;
+  isHappou: boolean;
+  yakudoshiKind: string | null;
+}
+
+export interface MacroFlow {
+  now: Date;
+  currentYear: number; // 九星の立春基準年
+  honmei: Kyusei;
+  current: Nenun;
+  theme: string;
+  timeline: TimelineYear[];
+  nextHappou: number | null;
+  nextPeak: number | null; // 次の「頂点」の年（離宮）
+  nextYakudoshi: { year: number; kazoe: number; kind: string } | null;
+}
+
+export function computeMacroFlow(profile: Profile, now: Date): MacroFlow {
+  const h = honmeiNumberForYear(profile.risshunYear);
+  const nineYear = risshunYear(now);
+  const current = nenun(h, nineYear);
+
+  const timeline: TimelineYear[] = [];
+  let nextHappou: number | null = null;
+  let nextPeak: number | null = null;
+  for (let y = nineYear - 1; y <= nineYear + 8; y++) {
+    const n = nenun(h, y);
+    const yaku = yakudoshi(profile.birthInstant, profile.gender, y);
+    if (n.happouFusagari && nextHappou === null && y >= nineYear) nextHappou = y;
+    if (n.base === 9 && nextPeak === null && y >= nineYear) nextPeak = y;
+    timeline.push({
+      year: y,
+      phase: n.phase,
+      theme: n.theme,
+      note: n.note,
+      tone: n.tone,
+      isNow: y === nineYear,
+      isHappou: n.happouFusagari,
+      yakudoshiKind: yaku.isYakudoshi ? yaku.kind : null,
+    });
+  }
+
+  let nextYakudoshi: { year: number; kazoe: number; kind: string } | null = null;
+  for (let y = toJstParts(now).year; y < toJstParts(now).year + 90; y++) {
+    const r = yakudoshi(profile.birthInstant, profile.gender, y);
+    if (r.isYakudoshi && r.kind) {
+      nextYakudoshi = { year: y, kazoe: r.kazoe, kind: r.kind };
+      break;
+    }
+  }
+
+  // 今の数年テーマ（一文）
+  const honmei = kyusei(h);
+  let theme = `${honmei.name}のあなたは、いま「${current.phase}」の局面。${current.note}`;
+  if (nextHappou && nextHappou !== nineYear) {
+    theme += `　${nextHappou}年ごろに一度、足元を固める時期が巡ってきます。`;
+  } else if (nextPeak && nextPeak > nineYear) {
+    theme += `　${nextPeak}年ごろに運気の頂点が巡ってきます。`;
+  }
+
+  return {
+    now,
+    currentYear: nineYear,
+    honmei,
+    current,
+    theme,
+    timeline,
+    nextHappou,
+    nextPeak,
+    nextYakudoshi,
+  };
+}
