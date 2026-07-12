@@ -6,7 +6,8 @@ import {
   Body,
   SunPosition,
   EclipticGeoMoon,
-  EclipticLongitude,
+  GeoVector,
+  Ecliptic,
   MoonPhase,
   SearchMoonPhase,
   Illumination,
@@ -118,10 +119,19 @@ const PLANETS: { body: Body; name: string; emoji: string }[] = [
   { body: Body.Saturn, name: '土星', emoji: '♄' },
 ];
 
-/** ある惑星が now 時点で逆行しているか（視黄経が減少していれば逆行） */
+/**
+ * 天体の地心・視黄経(度, of-date)。
+ * ※ astronomy-engine の EclipticLongitude は「日心」黄経のため逆行・アスペクトには使えない。
+ *   GeoVector(地心)→Ecliptic(その日の真黄道) で地心の視黄経を得る。
+ */
+export function geoEclipticLongitude(body: Body, date: Date): number {
+  return norm360(Ecliptic(GeoVector(body, date, true)).elon);
+}
+
+/** ある惑星が now 時点で逆行しているか（地心の視黄経が減少していれば逆行） */
 export function isRetrograde(body: Body, now: Date): boolean {
-  const l1 = EclipticLongitude(body, addHours(now, -12));
-  const l2 = EclipticLongitude(body, addHours(now, 12));
+  const l1 = geoEclipticLongitude(body, addHours(now, -12));
+  const l2 = geoEclipticLongitude(body, addHours(now, 12));
   return angleDelta(l1, l2) < 0;
 }
 

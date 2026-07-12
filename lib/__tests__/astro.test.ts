@@ -40,4 +40,14 @@ describe('惑星の逆行', () => {
   it('主要5惑星の状態が並ぶ', () => {
     expect(planetRetrogrades(jstNoon(2026, 7, 13))).toHaveLength(5);
   });
+  it('水星は2026年に逆行日と順行日の両方をもつ（地心計算の妥当性）', () => {
+    let retro = 0;
+    for (let doy = 0; doy < 365; doy += 1) {
+      const d = new Date(jstNoon(2026, 1, 1).getTime() + doy * 86400000);
+      if (isMercuryRetrograde(d)) retro++;
+    }
+    // 水星の逆行は年に約3回×3週間 ≒ 60日前後
+    expect(retro).toBeGreaterThan(40);
+    expect(retro).toBeLessThan(90);
+  });
 });

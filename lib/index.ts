@@ -3,6 +3,7 @@ export * from './types';
 export * from './constants';
 export * from './time';
 export * from './astro';
+export * from './seiyo';
 export * from './koyomi';
 export * from './kyusei';
 export * from './shichu';
