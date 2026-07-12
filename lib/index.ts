@@ -5,6 +5,7 @@ export * from './time';
 export * from './astro';
 export * from './koyomi';
 export * from './kyusei';
+export * from './shichu';
 export * from './cycles';
 export * from './profile';
 export * from './flow';

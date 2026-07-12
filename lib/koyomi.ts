@@ -168,6 +168,17 @@ export function dayKanshi(instant: Date): Kanshi {
   return kanshiOf(dayKanshiIndex(instant));
 }
 
+/** 干支 index(0-59) → Kanshi */
+export function kanshiFromIndex(index: number): Kanshi {
+  return kanshiOf(index);
+}
+
+/** 十干 index と 十二支 index から 干支 index(0-59) を求める（無効な組は -1） */
+export function kanshiIndexFromStemBranch(stem: number, branch: number): number {
+  for (let n = 0; n < 60; n++) if (n % 10 === stem && n % 12 === branch) return n;
+  return -1;
+}
+
 /** 年干支 index。立春基準の年 Y を渡すこと（甲子年=4 AD） */
 export function yearKanshiIndex(year: number): number {
   return mod(year - 4, 60);
