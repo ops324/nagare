@@ -24,6 +24,15 @@ import {
   type Senjitsu,
   type SolarTermOccurrence,
 } from './koyomi';
+import {
+  voidOfCourse,
+  nextSolarEclipse,
+  nextLunarEclipse,
+  nextSupermoon,
+  type VoidOfCourse,
+  type EclipseInfo,
+  type SupermoonInfo,
+} from './seiyo';
 import { biorhythm, biorhythmSeries, yakudoshi, type Biorhythm, type YakudoshiResult } from './cycles';
 import { honmeiNumberForYear, risshunYear, nenun, type Nenun } from './kyusei';
 import { majorTransits, tenchusatsuYears, type TransitEvent, type TenchusatsuYear } from './transits';
@@ -51,6 +60,10 @@ export interface TodayFlow {
     biorhythm: Biorhythm;
     biorhythmSeries: ReturnType<typeof biorhythmSeries>;
     yakudoshi: YakudoshiResult;
+    voidOfCourse: VoidOfCourse;
+    nextSolarEclipse: EclipseInfo;
+    nextLunarEclipse: EclipseInfo;
+    supermoon: SupermoonInfo;
   };
 }
 
@@ -71,6 +84,10 @@ export function computeTodayFlow(profile: Profile, now: Date): TodayFlow {
   const retro = planetRetrogrades(now);
   const mercuryRetro = isMercuryRetrograde(now);
   const todaySun = sunSign(now);
+  const voc = voidOfCourse(now);
+  const solarEclipse = nextSolarEclipse(now);
+  const lunarEclipse = nextLunarEclipse(now);
+  const supermoon = nextSupermoon(now);
   const bio = biorhythm(profile.birthInstant, now);
   const bioSeries = biorhythmSeries(profile.birthInstant, now);
   const gregYear = toJstParts(now).year;
@@ -138,6 +155,31 @@ export function computeTodayFlow(profile: Profile, now: Date): TodayFlow {
       emoji: '☿',
     });
     score -= 8;
+  }
+
+  // ── 天体：ボイドタイム ──
+  if (voc.isVoid) {
+    cautions.push({
+      system: '天体',
+      title: 'ボイドタイム',
+      description: `月が${voc.currentSign}を離れるまでは、新しい決断や契約は結果が定まりにくい時間帯。ひと息ついて過ごすと吉。`,
+      tone: 'caution',
+      severity: 'low',
+      emoji: '🌙',
+    });
+    score -= 3;
+  }
+
+  // ── 天体：スーパームーン ──
+  if (supermoon.isSupermoon) {
+    highlights.push({
+      system: '天体',
+      title: 'まもなくスーパームーン',
+      description: '次の満月は地球に近く、いつもより大きく見えます。感情やエネルギーが高まりやすい時期。',
+      tone: 'good',
+      severity: 'low',
+      emoji: '🌕',
+    });
   }
 
   // ── 個人：バイオリズム ──
@@ -217,6 +259,10 @@ export function computeTodayFlow(profile: Profile, now: Date): TodayFlow {
       biorhythm: bio,
       biorhythmSeries: bioSeries,
       yakudoshi: yaku,
+      voidOfCourse: voc,
+      nextSolarEclipse: solarEclipse,
+      nextLunarEclipse: lunarEclipse,
+      supermoon,
     },
   };
 }
