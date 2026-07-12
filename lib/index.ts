@@ -6,6 +6,7 @@ export * from './astro';
 export * from './seiyo';
 export * from './koyomi';
 export * from './kyusei';
+export * from './houi';
 export * from './shichu';
 export * from './cycles';
 export * from './profile';
