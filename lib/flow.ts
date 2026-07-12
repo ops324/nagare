@@ -26,6 +26,7 @@ import {
 } from './koyomi';
 import { biorhythm, biorhythmSeries, yakudoshi, type Biorhythm, type YakudoshiResult } from './cycles';
 import { honmeiNumberForYear, risshunYear, nenun, type Nenun } from './kyusei';
+import { majorTransits, tenchusatsuYears, type TransitEvent, type TenchusatsuYear } from './transits';
 import { kyusei } from './constants';
 import type { Profile } from './profile';
 
@@ -231,6 +232,7 @@ export interface TimelineYear {
   isNow: boolean;
   isHappou: boolean;
   yakudoshiKind: string | null;
+  isTenchusatsu: boolean;
 }
 
 export interface MacroFlow {
@@ -243,6 +245,9 @@ export interface MacroFlow {
   nextHappou: number | null;
   nextPeak: number | null; // 次の「頂点」の年（離宮）
   nextYakudoshi: { year: number; kazoe: number; kind: string } | null;
+  transits: TransitEvent[]; // 外惑星の回帰（サターン/ジュピターリターン）
+  nextTransit: TransitEvent | null;
+  tenchusatsuYears: TenchusatsuYear[]; // 年天中殺の巡り
 }
 
 export function computeMacroFlow(profile: Profile, now: Date): MacroFlow {
@@ -250,6 +255,7 @@ export function computeMacroFlow(profile: Profile, now: Date): MacroFlow {
   const nineYear = risshunYear(now);
   const current = nenun(h, nineYear);
 
+  const tcSet = new Set(tenchusatsuYears(profile.birthInstant, nineYear - 1, 8).map((t) => t.year));
   const timeline: TimelineYear[] = [];
   let nextHappou: number | null = null;
   let nextPeak: number | null = null;
@@ -267,8 +273,13 @@ export function computeMacroFlow(profile: Profile, now: Date): MacroFlow {
       isNow: y === nineYear,
       isHappou: n.happouFusagari,
       yakudoshiKind: yaku.isYakudoshi ? yaku.kind : null,
+      isTenchusatsu: tcSet.has(y),
     });
   }
+
+  const transits = majorTransits(profile.birthInstant, now, nineYear + 8);
+  const nextTransit = transits[0] ?? null;
+  const upcomingTenchusatsu = tenchusatsuYears(profile.birthInstant, nineYear, 4);
 
   let nextYakudoshi: { year: number; kazoe: number; kind: string } | null = null;
   for (let y = toJstParts(now).year; y < toJstParts(now).year + 90; y++) {
@@ -298,5 +309,8 @@ export function computeMacroFlow(profile: Profile, now: Date): MacroFlow {
     nextHappou,
     nextPeak,
     nextYakudoshi,
+    transits,
+    nextTransit,
+    tenchusatsuYears: upcomingTenchusatsu,
   };
 }
