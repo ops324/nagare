@@ -13,6 +13,11 @@ export function jstYmd(instant: Date): string {
   const p = toJstParts(instant);
   return `${p.year}年${p.month}月${p.day}日`;
 }
+/** インスタント → JSTの「YYYY年M月」 */
+export function jstYearMonth(instant: Date): string {
+  const p = toJstParts(instant);
+  return `${p.year}年${p.month}月`;
+}
 /** インスタント → JSTの「HH:MM」 */
 export function jstHm(instant: Date): string {
   const p = toJstParts(instant);
