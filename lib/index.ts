@@ -1,5 +1,6 @@
 /** ドメイン層の公開 API */
 export * from './types';
+export * from './provenance';
 export * from './constants';
 export * from './time';
 export * from './astro';
