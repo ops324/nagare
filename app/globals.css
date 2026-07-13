@@ -777,6 +777,17 @@ body {
 }
 .cal-legend b { margin-right: 3px; }
 
+/* ─────────────── 宿曜（本命宿）・二十八宿 ─────────────── */
+.sukuyo-card { padding: 18px; text-align: center; }
+.sukuyo-honmei {
+  font-size: 2rem;
+  color: var(--text);
+  line-height: 1.1;
+  margin-top: 4px;
+  text-shadow: 0 2px 20px rgba(212, 178, 106, 0.25);
+}
+.sukuyo-card .flowcard-desc { text-align: left; }
+
 /* ─────────────── 宿曜（本命宿／今日の宿） ─────────────── */
 .twin-card { display: flex; align-items: stretch; padding: 16px; }
 .twin { flex: 1; text-align: center; }

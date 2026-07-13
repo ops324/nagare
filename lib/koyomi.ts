@@ -7,6 +7,7 @@
  */
 import { SearchSunLongitude, SearchMoonPhase } from 'astronomy-engine';
 import { sunLongitude } from './astro';
+import { PROVENANCE, type Provenance } from './provenance';
 import {
   ROKUYO,
   JIKKAN,
@@ -346,6 +347,38 @@ export function senjitsu(instant: Date): Senjitsu[] {
     out.push({ key: 'mi', name: '巳の日', yomi: 'みのひ', tone: 'good', note: '弁財天に通じる日。金運・芸事に吉。' });
   }
   return out;
+}
+
+// ─────────────────────────── 二十八宿（暦注・日替わり） ───────────────────────────
+// 角起点の並び。基準 2026-07-23(JST)=角宿 で日替わり（28日周期）。koyominote 掲載日と一致。
+const NIJUHASSHUKU_NAMES = [
+  '角', '亢', '氐', '房', '心', '尾', '箕', '斗', '牛', '女', '虚', '危', '室', '壁',
+  '奎', '婁', '胃', '昴', '畢', '觜', '参', '井', '鬼', '柳', '星', '張', '翼', '軫',
+];
+const NIJUHASSHUKU_YOMI = [
+  'かく', 'こう', 'てい', 'ぼう', 'しん', 'び', 'き', 'と', 'ぎゅう', 'じょ', 'きょ', 'き', 'しつ', 'へき',
+  'けい', 'ろう', 'い', 'ぼう', 'ひつ', 'し', 'しん', 'せい', 'き', 'りゅう', 'せい', 'ちょう', 'よく', 'しん',
+];
+const NIJUHASSHUKU_REF_JDN = julianDayNumber(2026, 7, 23); // 角宿
+
+export interface Nijuhasshuku {
+  index: number; // 0=角 .. 27=軫
+  name: string; // 例: 角
+  full: string; // 例: 角宿
+  yomi: string; // 例: かく
+  provenance: Provenance;
+}
+
+/** その暦日(JST)の二十八宿 */
+export function nijuhasshuku(instant: Date): Nijuhasshuku {
+  const i = mod(jstJdn(instant) - NIJUHASSHUKU_REF_JDN, 28);
+  return {
+    index: i,
+    name: NIJUHASSHUKU_NAMES[i],
+    full: `${NIJUHASSHUKU_NAMES[i]}宿`,
+    yomi: NIJUHASSHUKU_YOMI[i],
+    provenance: PROVENANCE.nijuhasshuku,
+  };
 }
 
 export { JIKKAN, JUNISHI, JIKKAN_YOMI, JUNISHI_YOMI };

@@ -6,7 +6,8 @@ import { buildProfile } from '@/lib/profile';
 import { computeTodayFlow, computeMacroFlow } from '@/lib/flow';
 import { meishiki } from '@/lib/shichu';
 import { houi } from '@/lib/houi';
-import { honmeishuku, todayShuku } from '@/lib/sukuyo';
+import { honmeishuku } from '@/lib/sukuyo';
+import { nijuhasshuku } from '@/lib/koyomi';
 import { unmeisei } from '@/lib/rokusei';
 import { daiun, type Daiun } from '@/lib/daiun';
 import { honmeiNumberForYear, risshunYear } from '@/lib/kyusei';
@@ -48,7 +49,7 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
     [profile, now],
   );
   const shuku = useMemo(() => honmeishuku(profile.birthInstant), [profile]);
-  const todayShukuData = useMemo(() => todayShuku(now, shuku), [now, shuku]);
+  const nijuu = useMemo(() => nijuhasshuku(now), [now]);
   const rokusei = useMemo(() => unmeisei(profile.birthInstant), [profile]);
   const daiunData = useMemo(() => daiun(profile.birthInstant, profile.gender, profile.hasTime), [profile]);
   const currentAge = toJstParts(now).year - toJstParts(profile.birthInstant).year;
@@ -231,19 +232,14 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
               <p className="soft-note">※ 出生時刻を入れると時柱まで出ます（「生年月日を変更」から追加できます）。</p>
             )}
 
-            <SectionHead label="宿曜占星術" />
-            <div className="card twin-card">
-              <div className="twin">
-                <div className="twin-label">本命宿</div>
-                <div className="twin-value font-display">{shuku.full}</div>
-                <div className="twin-sub">{shuku.yomi}しゅく</div>
-              </div>
-              <div className="twin-div" />
-              <div className="twin">
-                <div className="twin-label">今日の宿</div>
-                <div className="twin-value font-display">{todayShukuData.shuku.full}</div>
-                <div className="twin-sub">{todayShukuData.isMeinichi ? '命の日（本命宿と同じ）' : `${todayShukuData.shuku.yomi}しゅく`}</div>
-              </div>
+            <SectionHead label="宿曜占星術（本命宿）" />
+            <div className="card sukuyo-card">
+              <div className="twin-label">本命宿</div>
+              <div className="sukuyo-honmei font-display">{shuku.full}</div>
+              <div className="twin-sub">{shuku.yomi}しゅく</div>
+              <p className="flowcard-desc" style={{ marginTop: 8 }}>
+                生まれた日に月が宿った宿。性格と相性（三九の秘法・27宿）の基になります。
+              </p>
             </div>
 
             <SectionHead label="六星占術" />
@@ -267,6 +263,15 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
 
         {tab === 'calendar' && (
           <section aria-label="暦">
+            <SectionHead label="今日の二十八宿" />
+            <div className="card sukuyo-card">
+              <div className="sukuyo-honmei font-display">{nijuu.full}</div>
+              <div className="twin-sub">{nijuu.yomi}しゅく</div>
+              <p className="flowcard-desc" style={{ marginTop: 6 }}>
+                暦の上で今日、月が宿る宿。日々の吉凶の目安に。
+              </p>
+            </div>
+
             <SectionHead label="暦カレンダー" />
             <CalendarMonth now={now} />
             <p className="soft-note">六曜・二十四節気・開運日（天赦日／一粒万倍日／甲子）を月ごとに。</p>
