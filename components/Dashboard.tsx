@@ -182,6 +182,7 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
               <span><i style={{ background: 'var(--silver)' }} />準備・転換</span>
               <span><i style={{ background: 'var(--caution)' }} />慎重に</span>
               <span><i className="ring" />八方塞がり</span>
+              <span><i className="ring-caution" />大殺界</span>
               <span>⚠ 厄年</span>
               <span style={{ color: 'var(--caution)' }}>殺 天中殺</span>
             </div>
@@ -198,6 +199,14 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
               )}
               {macro.nextHappou && (
                 <TurningPoint year={macro.nextHappou} tone="caution" title="八方塞がり" note="足元を固め、力を蓄える一年。大きな移動や新規は控えめに。" />
+              )}
+              {macro.nextDaisakkai && (
+                <TurningPoint
+                  year={macro.nextDaisakkai.year}
+                  tone="caution"
+                  title={`大殺界（${macro.nextDaisakkai.name}）`}
+                  note="六星占術の運気の冬。新規の勝負より、種まき・充電・現状維持を大切に。"
+                />
               )}
               {macro.tenchusatsuYears[0] && (
                 <TurningPoint
@@ -251,9 +260,19 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
               <div>
                 <div className="chip-label">運命星</div>
                 <div className="rokusei-name font-display">{rokusei.label}</div>
+                <div className="chip-sub">星数 {rokusei.seisu}</div>
               </div>
-              <div className="rokusei-num">
-                星数 <b className="font-display">{rokusei.seisu}</b>
+              <div style={{ textAlign: 'right' }}>
+                <div className="chip-label">今年の運気</div>
+                <div
+                  className="rokusei-runki font-display"
+                  data-sakkai={macro.currentRunki.daisakkai ? 'dai' : macro.currentRunki.chusakkai || macro.currentRunki.shosakkai ? 'chu' : ''}
+                >
+                  {macro.currentRunki.name}
+                </div>
+                {macro.currentRunki.daisakkai && <div className="rokusei-badge">大殺界</div>}
+                {macro.currentRunki.chusakkai && <div className="rokusei-badge chu">中殺界</div>}
+                {macro.currentRunki.shosakkai && <div className="rokusei-badge chu">小殺界</div>}
               </div>
             </div>
 

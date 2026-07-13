@@ -53,6 +53,10 @@ export function LifeTimeline({ timeline }: { timeline: TimelineYear[] }) {
               >
                 {t.phase}
               </text>
+              {/* 大殺界（六星占術）の環 */}
+              {t.isDaisakkai && (
+                <circle cx={x} cy={y} r="10" fill="none" stroke="var(--caution)" strokeWidth="1.3" opacity="0.7" />
+              )}
               {/* ノード */}
               {t.isNow ? (
                 <>
