@@ -1,5 +1,7 @@
 # 流れ（Nagare）
 
+[![CI](https://github.com/ops324/nagare/actions/workflows/ci.yml/badge.svg)](https://github.com/ops324/nagare/actions/workflows/ci.yml)
+
 天体・暦・命術で「今の流れ」を読む Web アプリ。生年月日（時刻・性別は任意）だけで、**今日の流れ**と**大きな流れ（人生周期）**の2軸を提示します。
 
 - 本番: https://nagare-qvqna749u-flowmateops-5002s-projects.vercel.app （Vercel・main→自動デプロイ）
@@ -26,6 +28,14 @@ npx tsc --noEmit     # 型チェック
 npx eslint .         # Lint
 npm run build        # 本番ビルド（静的プリレンダー）
 ```
+
+### 自動チェック（多層防御）
+
+- **pre-push フック**（`.githooks/pre-push`）: push 前に `npm test` を実行。壊れていたら push を止める。`npm install` で自動有効化（緊急時は `git push --no-verify`）。
+- **GitHub Actions CI**（`.github/workflows/ci.yml`）: push/PR ごとに test → tsc → eslint → build を実行。
+- **ブランチ保護**: CI が緑でないと `main` にマージ不可。
+
+→ ドキュメントで導き（CLAUDE.md→AGENTS.md→SPEC）、テストとCIで強制する二段構え。
 
 ## 構成
 
