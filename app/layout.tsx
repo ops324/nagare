@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Shippori_Mincho, Zen_Kaku_Gothic_New } from "next/font/google";
+import { Shippori_Mincho, Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
 
 const mincho = Shippori_Mincho({
@@ -10,7 +10,7 @@ const mincho = Shippori_Mincho({
   preload: false,
 });
 
-const gothic = Zen_Kaku_Gothic_New({
+const gothic = Noto_Sans_JP({
   weight: ["400", "500", "700"],
   subsets: ["latin"],
   display: "swap",
@@ -25,7 +25,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0e1c",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#faf9fd" },
+    { media: "(prefers-color-scheme: dark)", color: "#121318" },
+  ],
   width: "device-width",
   initialScale: 1,
 };
@@ -36,7 +39,6 @@ export default function RootLayout({
   return (
     <html lang="ja" className={`${mincho.variable} ${gothic.variable}`}>
       <body>
-        <div className="sky" aria-hidden />
         {children}
       </body>
     </html>

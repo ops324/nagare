@@ -14,7 +14,7 @@ import { honmeiNumberForYear, risshunYear } from '@/lib/kyusei';
 import { pct, jstMonthDay, jstYmd, jstYearMonth } from '@/lib/format';
 import { toJstParts } from '@/lib/time';
 import { AppHeader } from './AppHeader';
-import { Starfield } from './Starfield';
+import { NavBar, type NavKey } from './NavBar';
 import { FlowMeter } from './FlowMeter';
 import { MoonGlyph } from './MoonGlyph';
 import { FlowCard } from './FlowCard';
@@ -27,14 +27,7 @@ import { Aisho } from './Aisho';
 import { Jiten } from './Jiten';
 import { SHUKU_TRAIT, RUNKI_DESC, CAUTION_COPY } from '@/lib/copy';
 
-type Tab = 'today' | 'macro' | 'birth' | 'calendar' | 'jiten';
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'today', label: '今日' },
-  { key: 'macro', label: '大きな流れ' },
-  { key: 'birth', label: '生まれ' },
-  { key: 'calendar', label: '暦' },
-  { key: 'jiten', label: '事典' },
-];
+type Tab = NavKey;
 
 function eclipseWhen(instant: Date, now: Date): string {
   return toJstParts(instant).year === toJstParts(now).year ? jstMonthDay(instant) : jstYmd(instant);
@@ -62,28 +55,15 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
   const sub = `${today.data.term.current?.name ?? ''}・${today.data.rokuyo.name}`;
   const retroNow = today.data.retrogrades.filter((r) => r.retrograde);
 
+  const switchTab = (key: Tab) => {
+    setTab(key);
+    window.scrollTo({ top: 0 });
+  };
+
   return (
     <>
-      <Starfield />
       <AppHeader now={now} sub={sub} />
       <main className="shell">
-        <div className="tabs tabs-scroll" role="tablist">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              className="tab"
-              role="tab"
-              data-active={tab === t.key}
-              onClick={(e) => {
-                setTab(t.key);
-                e.currentTarget.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
-              }}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
         {tab === 'today' && (
           <section aria-label="今日の流れ">
             <FlowMeter score={today.score} label={today.label} summary={today.summary} />
@@ -303,6 +283,7 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
           <p>娯楽・参考としてお楽しみください。</p>
         </div>
       </main>
+      <NavBar active={tab} onChange={switchTab} />
     </>
   );
 }

@@ -32,17 +32,10 @@ export function FlowMeter({
       <svg viewBox="0 0 200 200" className="flowmeter-svg" role="img" aria-label={`今日の流れ ${score}点 ${label}`}>
         <defs>
           <linearGradient id="fm-grad" x1="0" y1="1" x2="1" y2="0">
-            <stop offset="0%" stopColor="#a97f38" />
-            <stop offset="45%" stopColor="#d4b26a" />
-            <stop offset="100%" stopColor="#f3e7c6" />
+            <stop offset="0%" stopColor="var(--gold-600)" />
+            <stop offset="45%" stopColor="var(--gold-400)" />
+            <stop offset="100%" stopColor="var(--gold-100)" />
           </linearGradient>
-          <filter id="fm-glow" x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation="3.2" result="b" />
-            <feMerge>
-              <feMergeNode in="b" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
         </defs>
         {/* 目盛り */}
         {Array.from({ length: 28 }).map((_, i) => {
@@ -62,18 +55,17 @@ export function FlowMeter({
             />
           );
         })}
-        <path d={track} fill="none" stroke="var(--surface-solid)" strokeWidth="9" strokeLinecap="round" opacity="0.9" />
+        <path d={track} fill="none" stroke="var(--surface-container-highest)" strokeWidth="9" strokeLinecap="round" opacity="0.9" />
         <path
           d={value}
           fill="none"
           stroke="url(#fm-grad)"
           strokeWidth="9"
           strokeLinecap="round"
-          filter="url(#fm-glow)"
           pathLength={100}
           className="flowmeter-value"
         />
-        <circle cx={cap.x} cy={cap.y} r="5.5" fill="#fffaf0" filter="url(#fm-glow)" />
+        <circle cx={cap.x} cy={cap.y} r="5.5" fill="var(--gold-100)" />
       </svg>
       <div className="flowmeter-center">
         <div className="numeral flowmeter-score">{score}</div>

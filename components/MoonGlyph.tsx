@@ -21,22 +21,11 @@ export function MoonGlyph({ phaseAngle, size = 96 }: { phaseAngle: number; size?
           <stop offset="62%" stopColor="#f0e6cf" />
           <stop offset="100%" stopColor="#cdb894" />
         </radialGradient>
-        <filter id={`${uid}-glow`} x="-40%" y="-40%" width="180%" height="180%">
-          <feGaussianBlur stdDeviation="5" result="b" />
-          <feMerge>
-            <feMergeNode in="b" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
       </defs>
-      {/* かすかな暈（ハロ） */}
-      <circle r={r + 5} fill="var(--gold-500)" opacity="0.08" />
       {/* 影の側 */}
       <circle r={r} fill="#111737" stroke="var(--border-hair)" strokeWidth="1" />
       {/* 明るい側 */}
-      {phaseAngle > 1 && phaseAngle < 359 && (
-        <path d={lit} fill={`url(#${uid}-lit)`} filter={`url(#${uid}-glow)`} />
-      )}
+      {phaseAngle > 1 && phaseAngle < 359 && <path d={lit} fill={`url(#${uid}-lit)`} />}
       {/* 縁の細い線 */}
       <circle r={r} fill="none" stroke="var(--gold-400)" strokeOpacity="0.35" strokeWidth="1" />
     </svg>

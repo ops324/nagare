@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import type { BirthProfile, Gender } from '@/lib/types';
-import { Starfield } from './Starfield';
 
 const GENDERS: Gender[] = ['女', '男', '未回答'];
 
@@ -24,7 +23,6 @@ export function Onboarding({ onSubmit }: { onSubmit: (p: BirthProfile) => void }
 
   return (
     <>
-      <Starfield />
       <main className="onboard">
         <div className="onboard-inner rise">
           <div className="onboard-mark font-display">流れ</div>
