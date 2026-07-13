@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { jstNoon } from '../time';
-import { sunSign, moonState, isMercuryRetrograde, planetRetrogrades } from '../astro';
+import { jstNoon, toJstParts, addDays } from '../time';
+import { sunSign, moonState, isMercuryRetrograde, planetRetrogrades, mercuryRetrogradeEnd } from '../astro';
 
 describe('太陽星座（トロピカル）', () => {
   it.each([
@@ -49,5 +49,38 @@ describe('惑星の逆行', () => {
     // 水星の逆行は年に約3回×3週間 ≒ 60日前後
     expect(retro).toBeGreaterThan(40);
     expect(retro).toBeLessThan(90);
+  });
+});
+
+describe('逆行の終了日（留）', () => {
+  it('2026 夏の水星逆行は 2026-07-24 ごろ順行に戻る', () => {
+    const now = jstNoon(2026, 7, 12); // 逆行のさなか
+    expect(isMercuryRetrograde(now)).toBe(true);
+    const end = mercuryRetrogradeEnd(now);
+    const p = toJstParts(end);
+    expect(p.year).toBe(2026);
+    expect(p.month).toBe(7);
+    expect(p.day).toBe(24); // 天体暦の順行転換（2026-07-23〜24）と一致
+    expect(end.getTime()).toBeGreaterThan(now.getTime());
+  });
+
+  it('留の前日は逆行・翌日は順行（境界の自己整合）', () => {
+    const end = mercuryRetrogradeEnd(jstNoon(2026, 7, 12));
+    expect(isMercuryRetrograde(addDays(end, -1))).toBe(true);
+    expect(isMercuryRetrograde(addDays(end, 1))).toBe(false);
+  });
+
+  it('planetRetrogrades は逆行中に endsAt(Date)、順行は null', () => {
+    const now = jstNoon(2026, 7, 12);
+    const list = planetRetrogrades(now);
+    for (const r of list) {
+      if (r.retrograde) {
+        expect(r.endsAt).toBeInstanceOf(Date);
+        expect(r.endsAt!.getTime()).toBeGreaterThan(now.getTime());
+      } else {
+        expect(r.endsAt).toBeNull();
+      }
+    }
+    expect(list.find((r) => r.name === '水星')?.retrograde).toBe(true);
   });
 });

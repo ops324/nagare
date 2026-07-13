@@ -88,6 +88,17 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
           <section aria-label="今日の流れ">
             <FlowMeter score={today.score} label={today.label} summary={today.summary} />
 
+            {today.data.term.current && (
+              <div className="card" style={{ marginTop: 14, padding: '12px 14px' }}>
+                <div className="eyebrow">いまの二十四節気</div>
+                <div className="nenun-meta" style={{ marginTop: 4 }}>
+                  {today.data.term.current.name}（{today.data.term.current.yomi}）
+                  {jstMonthDay(today.data.term.current.instant)}
+                  {today.data.term.next && <> 〜 {jstMonthDay(today.data.term.next.instant)}</>}ごろ
+                </div>
+              </div>
+            )}
+
             <div className="card moonrow rise" style={{ marginTop: 18 }}>
               <div className="moon-float">
                 <MoonGlyph phaseAngle={m.phaseAngle} size={88} />
@@ -147,7 +158,7 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
                   system: '天体',
                   title: retroNow.length ? `逆行中：${retroNow.map((r) => r.name).join('・')}` : 'すべての惑星が順行中',
                   description: retroNow.length
-                    ? '見直し・再開・立ち止まりのテーマ。急がず確かめながら。'
+                    ? `${retroNow.map((r) => `${r.name}は${jstMonthDay(r.endsAt!)}ごろまで`).join('、')}。見直し・再開・立ち止まりのテーマ。急がず確かめながら。`
                     : '天体は素直に前へ。動き出しに向く流れです。',
                   tone: retroNow.length ? 'caution' : 'good',
                   severity: 'low',
