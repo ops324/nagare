@@ -11,11 +11,13 @@ import {
   tide,
   planetRetrogrades,
   isMercuryRetrograde,
+  mercuryRetrogradeEnd,
   sunSign,
   type MoonState,
   type RetrogradeInfo,
   type SignResult,
 } from './astro';
+import { jstMonthDay, jstHm } from './format';
 import {
   rokuyo,
   senjitsu,
@@ -150,7 +152,7 @@ export function computeTodayFlow(profile: Profile, now: Date): TodayFlow {
     cautions.push({
       system: '天体',
       title: '水星逆行中',
-      description: '連絡・契約・移動で行き違いが起きやすい時期。確認をていねいに、新規より見直しを。',
+      description: `連絡・契約・移動で行き違いが起きやすい時期。${jstMonthDay(mercuryRetrogradeEnd(now))}ごろまで。確認をていねいに、新規より見直しを。`,
       tone: 'caution',
       severity: 'medium',
       emoji: '☿',
@@ -163,7 +165,7 @@ export function computeTodayFlow(profile: Profile, now: Date): TodayFlow {
     cautions.push({
       system: '天体',
       title: 'ボイドタイム',
-      description: `月が${voc.currentSign}を離れるまでは、新しい決断や契約は結果が定まりにくい時間帯。ひと息ついて過ごすと吉。`,
+      description: `月が${voc.currentSign}を離れる${jstMonthDay(voc.signChange)} ${jstHm(voc.signChange)}ごろまでは、新しい決断や契約は結果が定まりにくい時間帯。ひと息ついて過ごすと吉。`,
       tone: 'caution',
       severity: 'low',
       emoji: '🌙',
@@ -176,7 +178,7 @@ export function computeTodayFlow(profile: Profile, now: Date): TodayFlow {
     highlights.push({
       system: '天体',
       title: 'まもなくスーパームーン',
-      description: '次の満月は地球に近く、いつもより大きく見えます。感情やエネルギーが高まりやすい時期。',
+      description: `${jstMonthDay(supermoon.fullMoon)}ごろの満月は地球に近く、いつもより大きく見えます。感情やエネルギーが高まりやすい時期。`,
       tone: 'good',
       severity: 'low',
       emoji: '🌕',

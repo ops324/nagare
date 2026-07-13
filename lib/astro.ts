@@ -139,18 +139,52 @@ export interface RetrogradeInfo {
   name: string;
   emoji: string;
   retrograde: boolean;
+  /** 逆行中のとき順行に戻る（留の）時刻。順行中は null */
+  endsAt: Date | null;
 }
 
 /** 主要5惑星の順行/逆行状態 */
 export function planetRetrogrades(now: Date): RetrogradeInfo[] {
-  return PLANETS.map((p) => ({
-    name: p.name,
-    emoji: p.emoji,
-    retrograde: isRetrograde(p.body, now),
-  }));
+  return PLANETS.map((p) => {
+    const retrograde = isRetrograde(p.body, now);
+    return {
+      name: p.name,
+      emoji: p.emoji,
+      retrograde,
+      endsAt: retrograde ? retrogradeEnd(p.body, now) : null,
+    };
+  });
 }
 
 /** 水星逆行中か（ヘッドライン用） */
 export function isMercuryRetrograde(now: Date): boolean {
   return isRetrograde(Body.Mercury, now);
+}
+
+/**
+ * body が now 時点で逆行中のとき、順行に戻る（留）の時刻を前方探索して返す。
+ * ※ 逆行中であることを前提に呼ぶこと（planetRetrogrades / mercuryRetrogradeEnd 経由）。
+ */
+export function retrogradeEnd(body: Body, now: Date): Date {
+  const stepMs = 12 * 3600 * 1000; // 12h 刻み
+  let lo = now.getTime();
+  let hi = lo;
+  for (let i = 0; i < 900; i++) {
+    // 最大 ~450 日（外惑星の長期逆行に対応）。lo は常に逆行・hi は初の順行点。
+    hi = lo + stepMs;
+    if (!isRetrograde(body, new Date(hi))) break;
+    lo = hi;
+  }
+  for (let i = 0; i < 40; i++) {
+    // 二分探索で留の瞬間へ
+    const mid = (lo + hi) / 2;
+    if (isRetrograde(body, new Date(mid))) lo = mid;
+    else hi = mid;
+  }
+  return new Date(hi);
+}
+
+/** 水星が順行に戻る時刻（逆行中前提） */
+export function mercuryRetrogradeEnd(now: Date): Date {
+  return retrogradeEnd(Body.Mercury, now);
 }
