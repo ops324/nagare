@@ -788,6 +788,31 @@ body {
 }
 .sukuyo-card .flowcard-desc { text-align: left; }
 
+/* ─────────────── 相性（三九の秘法） ─────────────── */
+.aisho { padding: 16px; }
+.aisho-result {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+  text-align: center;
+}
+.aisho-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+.aisho-row b { font-size: 1.15rem; color: var(--text); }
+.aisho-rel {
+  font-size: 1.7rem;
+  margin-top: 8px;
+  color: var(--accent-soft);
+}
+.aisho-result[data-tone='good'] .aisho-rel { color: var(--good); }
+.aisho-result[data-tone='caution'] .aisho-rel { color: var(--caution); }
+.aisho .flowcard-desc { text-align: left; }
+
 /* ─────────────── 宿曜（本命宿／今日の宿） ─────────────── */
 .twin-card { display: flex; align-items: stretch; padding: 16px; }
 .twin { flex: 1; text-align: center; }
