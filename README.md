@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 流れ（Nagare）
 
-## Getting Started
+天体・暦・命術で「今の流れ」を読む Web アプリ。生年月日（時刻・性別は任意）だけで、**今日の流れ**と**大きな流れ（人生周期）**の2軸を提示します。
 
-First, run the development server:
+- 本番: https://nagare-qvqna749u-flowmateops-5002s-projects.vercel.app （Vercel・main→自動デプロイ）
+- スタック: Next.js 16 / React 19 / TypeScript / Tailwind v4 / `astronomy-engine` / Vitest
+- 5タブ: 今日 ・ 大きな流れ ・ 生まれ ・ 暦 ・ 事典
+
+## ⚠️ 改修する前に
+
+**[`docs/SPEC.md`](docs/SPEC.md) を必ず読んでください。** 特に:
+
+- **§4 依存関係・影響範囲マップ** — どのファイルを変えると何に波及するか
+- **§5 不変条件（検証済み基準値）** — テストが固定している値。変わったらバグの合図
+- **§12 改修時チェックリスト** — 影響確認 → ブランチ → テスト追加 → 全緑 → 実機 → provenance版 → PR
+
+占術ロジックは**参照値テスト（160件）で不変条件を固定**しています。基盤（`lib/time.ts` `lib/koyomi.ts` `lib/astro.ts` `lib/profile.ts` `lib/flow.ts`）ほど広く波及するため、変更時は影響先を必ず再検証してください。実装を変えたら `docs/SPEC.md` も更新すること。
+
+## 開発
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev          # 開発サーバ（http://localhost:3000）
+npm test             # 参照値テスト（Vitest・160件）
+npx tsc --noEmit     # 型チェック
+npx eslint .         # Lint
+npm run build        # 本番ビルド（静的プリレンダー）
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 構成
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `lib/` — ドメイン計算（純TS・UI非依存・テスト対象）。占術ごとにモジュール化。
+- `app/` `components/` — UI（5タブのダッシュボード・自作SVG図）。
+- `lib/__tests__/` — 参照値テスト（公開値・実例と照合）。
+- `docs/SPEC.md` — 技術仕様書（改修時の影響範囲・不変条件・規約）。
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+占術の方式・出典・版は `lib/provenance.ts` に集約し、流派の差し替えを局所化しています。
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+娯楽・参考としてお楽しみください。
