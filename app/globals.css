@@ -831,6 +831,22 @@ body {
 .rokusei-name { font-size: 1.7rem; color: var(--text); margin-top: 2px; }
 .rokusei-num { font-size: 0.8rem; color: var(--text-dim); }
 .rokusei-num b { color: var(--accent-soft); font-size: 1.15rem; margin-left: 4px; }
+.rokusei-card { align-items: flex-start; }
+.rokusei-runki { font-size: 1.5rem; color: var(--accent-soft); margin-top: 2px; }
+.rokusei-runki[data-sakkai='dai'] { color: var(--caution); }
+.rokusei-runki[data-sakkai='chu'] { color: var(--accent); }
+.rokusei-badge {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  color: #fff;
+  background: var(--caution);
+  border-radius: 5px;
+  padding: 1px 7px;
+}
+.rokusei-badge.chu { background: var(--gold-600); color: var(--ink-950); }
+.tl-legend i.ring-caution { background: transparent; border: 2px solid var(--caution); }
 
 /* ─────────────── 大運 ─────────────── */
 .daiun-scroll {

@@ -36,6 +36,7 @@ import {
 import { biorhythm, biorhythmSeries, yakudoshi, type Biorhythm, type YakudoshiResult } from './cycles';
 import { honmeiNumberForYear, risshunYear, nenun, type Nenun } from './kyusei';
 import { majorTransits, tenchusatsuYears, type TransitEvent, type TenchusatsuYear } from './transits';
+import { unmeisei, runkiForYear, daisakkaiYears, type Unmeisei, type Runki } from './rokusei';
 import { kyusei } from './constants';
 import type { Profile } from './profile';
 
@@ -279,6 +280,7 @@ export interface TimelineYear {
   isHappou: boolean;
   yakudoshiKind: string | null;
   isTenchusatsu: boolean;
+  isDaisakkai: boolean; // 六星占術の大殺界
 }
 
 export interface MacroFlow {
@@ -294,6 +296,9 @@ export interface MacroFlow {
   transits: TransitEvent[]; // 外惑星の回帰（サターン/ジュピターリターン）
   nextTransit: TransitEvent | null;
   tenchusatsuYears: TenchusatsuYear[]; // 年天中殺の巡り
+  rokusei: Unmeisei; // 六星占術の運命星（星人±）
+  currentRunki: Runki; // 今年の運気
+  nextDaisakkai: { year: number; name: string } | null; // 次の大殺界年
 }
 
 export function computeMacroFlow(profile: Profile, now: Date): MacroFlow {
@@ -302,6 +307,7 @@ export function computeMacroFlow(profile: Profile, now: Date): MacroFlow {
   const current = nenun(h, nineYear);
 
   const tcSet = new Set(tenchusatsuYears(profile.birthInstant, nineYear - 1, 8).map((t) => t.year));
+  const rokusei = unmeisei(profile.birthInstant);
   const timeline: TimelineYear[] = [];
   let nextHappou: number | null = null;
   let nextPeak: number | null = null;
@@ -320,12 +326,15 @@ export function computeMacroFlow(profile: Profile, now: Date): MacroFlow {
       isHappou: n.happouFusagari,
       yakudoshiKind: yaku.isYakudoshi ? yaku.kind : null,
       isTenchusatsu: tcSet.has(y),
+      isDaisakkai: runkiForYear(rokusei, y).daisakkai,
     });
   }
 
   const transits = majorTransits(profile.birthInstant, now, nineYear + 8);
   const nextTransit = transits[0] ?? null;
   const upcomingTenchusatsu = tenchusatsuYears(profile.birthInstant, nineYear, 4);
+  const currentRunki = runkiForYear(rokusei, nineYear);
+  const nextDaisakkai = daisakkaiYears(profile.birthInstant, nineYear, 1)[0] ?? null;
 
   let nextYakudoshi: { year: number; kazoe: number; kind: string } | null = null;
   for (let y = toJstParts(now).year; y < toJstParts(now).year + 90; y++) {
@@ -358,5 +367,8 @@ export function computeMacroFlow(profile: Profile, now: Date): MacroFlow {
     transits,
     nextTransit,
     tenchusatsuYears: upcomingTenchusatsu,
+    rokusei,
+    currentRunki,
+    nextDaisakkai,
   };
 }
