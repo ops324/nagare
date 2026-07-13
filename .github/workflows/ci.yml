@@ -15,11 +15,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Test (参照値・不変条件)
         run: npm test
