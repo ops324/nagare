@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install
+        # npm ci はクロスプラットフォームのオプション依存(例: Tailwind oxide)で
+        # lock 厳密一致に失敗しやすいため、CIでは npm install を使う。
+        run: npm install --no-audit --no-fund --ignore-scripts
+
+      - name: Test (参照値・不変条件)
+        run: npm test
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx eslint .
+
+      - name: Build
+        run: npm run build

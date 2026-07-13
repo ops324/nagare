@@ -1,0 +1,8 @@
+#!/bin/sh
+# push 前に参照値テストを実行し、不変条件が壊れていたら push を止める。
+# 緊急時は `git push --no-verify` でスキップ可能。
+echo "▶ pre-push: npm test（参照値テスト）"
+npm test --silent || {
+  echo "✗ テストが失敗しました。push を中止します（緊急時は --no-verify）。"
+  exit 1
+}
