@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import type { BirthProfile } from '@/lib/types';
 import { buildProfile } from '@/lib/profile';
-import { computeTodayFlow, computeMacroFlow } from '@/lib/flow';
+import { computeTodayFlow, computeMacroFlow, type MacroFlow } from '@/lib/flow';
 import { meishiki } from '@/lib/shichu';
 import { houi } from '@/lib/houi';
 import { honmeishuku } from '@/lib/sukuyo';
@@ -11,7 +11,7 @@ import { nijuhasshuku } from '@/lib/koyomi';
 import { unmeisei } from '@/lib/rokusei';
 import { daiun, type Daiun } from '@/lib/daiun';
 import { honmeiNumberForYear, risshunYear } from '@/lib/kyusei';
-import { pct, jstMonthDay, jstYmd } from '@/lib/format';
+import { pct, jstMonthDay, jstYmd, jstYearMonth } from '@/lib/format';
 import { toJstParts } from '@/lib/time';
 import { AppHeader } from './AppHeader';
 import { Starfield } from './Starfield';
@@ -185,6 +185,9 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
               <p className="flowcard-desc" style={{ marginTop: 8 }}>
                 {macro.current.note}
               </p>
+              <div className="nenun-meta" style={{ marginTop: 8 }}>
+                この運気の期間　{jstYearMonth(macro.currentPhasePeriod.start)} 〜 {jstYearMonth(macro.currentPhasePeriod.end)}ごろ
+              </div>
             </div>
 
             <SectionHead label="人生周期のタイムライン" />
@@ -201,44 +204,9 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
 
             <SectionHead label="次の転機" />
             <div className="cards">
-              {macro.nextTransit && (
-                <TurningPoint
-                  year={macro.nextTransit.year}
-                  tone="good"
-                  title={`${macro.nextTransit.label}（${macro.nextTransit.age}歳ごろ）`}
-                  note="人生の大きな節目。これまでを見直し、次のステージへ舵を切る時期。"
-                />
-              )}
-              {macro.nextHappou && (
-                <TurningPoint year={macro.nextHappou} tone="caution" title="八方塞がり" note={CAUTION_COPY.happou.note} />
-              )}
-              {macro.nextDaisakkai && (
-                <TurningPoint
-                  year={macro.nextDaisakkai.year}
-                  tone="caution"
-                  title={`大殺界（${macro.nextDaisakkai.name}）`}
-                  note={CAUTION_COPY.daisakkai.note}
-                />
-              )}
-              {macro.tenchusatsuYears[0] && (
-                <TurningPoint
-                  year={macro.tenchusatsuYears[0].year}
-                  tone="caution"
-                  title={`天中殺（${macro.tenchusatsuYears[0].branchName}年）`}
-                  note={CAUTION_COPY.tenchusatsu.note}
-                />
-              )}
-              {macro.nextYakudoshi && (
-                <TurningPoint
-                  year={macro.nextYakudoshi.year}
-                  tone="caution"
-                  title={`${macro.nextYakudoshi.kind}（数え${macro.nextYakudoshi.kazoe}）`}
-                  note="心身の変化に気を配り、無理のない選択を。"
-                />
-              )}
-              {macro.nextPeak && macro.nextPeak > macro.currentYear && (
-                <TurningPoint year={macro.nextPeak} tone="good" title="運気の頂点（離宮）" note="華やかで注目を集める年。存分に前へ。見栄・別れには少し注意。" />
-              )}
+              {buildTurningPoints(macro).map((t) => (
+                <TurningPoint key={`${t.year}-${t.title}`} year={t.year} tone={t.tone} title={t.title} note={t.note} />
+              ))}
             </div>
           </section>
         )}
@@ -403,6 +371,37 @@ function DaiunList({
       </p>
     </>
   );
+}
+
+type TurningItem = { year: number; title: string; note: string; tone: 'good' | 'caution' | 'neutral' };
+
+/** 「次の転機」を各種占術から集約し、年の昇順に並べて返す（同年は挿入順を維持） */
+function buildTurningPoints(macro: MacroFlow): TurningItem[] {
+  const items: TurningItem[] = [];
+  if (macro.nextTransit) {
+    items.push({
+      year: macro.nextTransit.year,
+      tone: 'good',
+      title: `${macro.nextTransit.label}（${macro.nextTransit.age}歳ごろ）`,
+      note: '人生の大きな節目。これまでを見直し、次のステージへ舵を切る時期。',
+    });
+  }
+  if (macro.nextHappou) {
+    items.push({ year: macro.nextHappou, tone: 'caution', title: '八方塞がり', note: CAUTION_COPY.happou.note });
+  }
+  if (macro.nextDaisakkai) {
+    items.push({ year: macro.nextDaisakkai.year, tone: 'caution', title: `大殺界（${macro.nextDaisakkai.name}）`, note: CAUTION_COPY.daisakkai.note });
+  }
+  if (macro.tenchusatsuYears[0]) {
+    items.push({ year: macro.tenchusatsuYears[0].year, tone: 'caution', title: `天中殺（${macro.tenchusatsuYears[0].branchName}年）`, note: CAUTION_COPY.tenchusatsu.note });
+  }
+  if (macro.nextYakudoshi) {
+    items.push({ year: macro.nextYakudoshi.year, tone: 'caution', title: `${macro.nextYakudoshi.kind}（数え${macro.nextYakudoshi.kazoe}）`, note: '心身の変化に気を配り、無理のない選択を。' });
+  }
+  if (macro.nextPeak && macro.nextPeak > macro.currentYear) {
+    items.push({ year: macro.nextPeak, tone: 'good', title: '運気の頂点（離宮）', note: '華やかで注目を集める年。存分に前へ。見栄・別れには少し注意。' });
+  }
+  return items.sort((a, b) => a.year - b.year);
 }
 
 function TurningPoint({

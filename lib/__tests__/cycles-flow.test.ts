@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { jstNoon } from '../time';
+import { jstNoon, toJstParts } from '../time';
 import { kazoedoshi, yakudoshi, biorhythm } from '../cycles';
 import { buildProfile } from '../profile';
 import { computeTodayFlow, computeMacroFlow } from '../flow';
@@ -74,5 +74,20 @@ describe('大きな流れ', () => {
     expect(macro.timeline).toHaveLength(10);
     expect(macro.timeline.find((t) => t.isNow)?.year).toBe(2026);
     expect(macro.theme.length).toBeGreaterThan(0);
+  });
+
+  it('currentPhasePeriod は立春(2月)始まり・約1年・start<now<end', () => {
+    const p = buildProfile({ date: '1999-06-01', gender: '女' });
+    const now = jstNoon(2026, 7, 13);
+    const macro = computeMacroFlow(p, now);
+    const { start, end } = macro.currentPhasePeriod;
+    expect(toJstParts(start).month).toBe(2); // 立春は2月
+    expect(toJstParts(start).year).toBe(2026);
+    expect(toJstParts(end).year).toBe(2027);
+    expect(start.getTime()).toBeLessThan(now.getTime());
+    expect(now.getTime()).toBeLessThan(end.getTime());
+    const days = (end.getTime() - start.getTime()) / 86_400_000;
+    expect(days).toBeGreaterThan(360);
+    expect(days).toBeLessThan(370);
   });
 });

@@ -34,7 +34,7 @@ import {
   type SupermoonInfo,
 } from './seiyo';
 import { biorhythm, biorhythmSeries, yakudoshi, type Biorhythm, type YakudoshiResult } from './cycles';
-import { honmeiNumberForYear, risshunYear, nenun, type Nenun } from './kyusei';
+import { honmeiNumberForYear, risshunYear, risshunInstant, nenun, type Nenun } from './kyusei';
 import { majorTransits, tenchusatsuYears, type TransitEvent, type TenchusatsuYear } from './transits';
 import { unmeisei, runkiForYear, daisakkaiYears, type Unmeisei, type Runki } from './rokusei';
 import { kyusei } from './constants';
@@ -288,6 +288,7 @@ export interface MacroFlow {
   currentYear: number; // 九星の立春基準年
   honmei: Kyusei;
   current: Nenun;
+  currentPhasePeriod: { start: Date; end: Date }; // 今年の運気の期間（立春〜次の立春）
   theme: string;
   timeline: TimelineYear[];
   nextHappou: number | null;
@@ -305,6 +306,8 @@ export function computeMacroFlow(profile: Profile, now: Date): MacroFlow {
   const h = honmeiNumberForYear(profile.risshunYear);
   const nineYear = risshunYear(now);
   const current = nenun(h, nineYear);
+  // 今年の運気（九星年運）の期間：立春(nineYear) 〜 次の立春(nineYear+1)
+  const currentPhasePeriod = { start: risshunInstant(nineYear), end: risshunInstant(nineYear + 1) };
 
   const tcSet = new Set(tenchusatsuYears(profile.birthInstant, nineYear - 1, 8).map((t) => t.year));
   const rokusei = unmeisei(profile.birthInstant);
@@ -359,6 +362,7 @@ export function computeMacroFlow(profile: Profile, now: Date): MacroFlow {
     currentYear: nineYear,
     honmei,
     current,
+    currentPhasePeriod,
     theme,
     timeline,
     nextHappou,
