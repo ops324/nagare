@@ -19,7 +19,9 @@ jobs:
           cache: 'npm'
 
       - name: Install
-        run: npm ci --ignore-scripts
+        # npm ci はクロスプラットフォームのオプション依存(例: Tailwind oxide)で
+        # lock 厳密一致に失敗しやすいため、CIでは npm install を使う。
+        run: npm install --no-audit --no-fund --ignore-scripts
 
       - name: Test (参照値・不変条件)
         run: npm test
