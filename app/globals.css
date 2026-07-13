@@ -609,6 +609,44 @@ body {
   margin: 10px 2px 0;
 }
 
+/* ─────────────── 横スクロールのタブ（5つ） ─────────────── */
+.tabs-scroll {
+  display: flex;
+  grid-template-columns: none;
+  max-width: 560px;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs-scroll::-webkit-scrollbar { display: none; }
+.tabs-scroll .tab {
+  flex: 1 0 auto;
+  white-space: nowrap;
+  font-size: 0.84rem;
+  padding: 9px 15px;
+}
+
+/* ─────────────── 占術事典（一覧） ─────────────── */
+.jiten-list { padding: 2px 0; }
+.jiten-row {
+  display: grid;
+  grid-template-columns: 108px 1fr;
+  gap: 14px;
+  padding: 12px 16px;
+  align-items: baseline;
+  border-top: 1px solid var(--border);
+}
+.jiten-row:first-child { border-top: 0; }
+.jiten-name { font-size: 1.05rem; color: var(--text); letter-spacing: 0.03em; line-height: 1.35; }
+.jiten-yomi { display: block; font-size: 0.56rem; color: var(--text-faint); margin-top: 2px; letter-spacing: 0.04em; }
+.jiten-desc { font-size: 0.82rem; color: var(--text-dim); line-height: 1.75; }
+.jiten-row[data-tone='good'] .jiten-name { color: var(--good); }
+.jiten-row[data-tone='caution'] .jiten-name { color: var(--caution); }
+@media (max-width: 400px) { .jiten-row { grid-template-columns: 92px 1fr; gap: 11px; padding: 11px 13px; } }
+
+/* 六星カードの上段 */
+.rokusei-top { display: flex; align-items: flex-start; justify-content: space-between; }
+
 /* ─────────────── 命式（四柱推命） ─────────────── */
 .meishiki { padding: 16px; }
 .meishiki-pillars {

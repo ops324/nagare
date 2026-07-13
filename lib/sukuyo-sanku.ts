@@ -10,6 +10,7 @@
  */
 import { SHUKU27 } from './sukuyo';
 import { PROVENANCE, type Provenance } from './provenance';
+import { SANKU_DESC } from './copy';
 
 const NAMES = SHUKU27.map((s) => s.name);
 // グループ内 index 1..8 の関係名
@@ -21,16 +22,6 @@ const PAIR: Record<string, string> = {
   安: '安壊', 壊: '安壊',
   危: '成危', 成: '成危',
 };
-const NOTE: Record<string, string> = {
-  命: '同じ本命宿。宿曜で最も宿命的なご縁。似た者どうしで深く響き合う。',
-  業: '因果で結ばれる「業胎」の縁。past↔futureをまたぐ深いつながり。',
-  胎: '因果で結ばれる「業胎」の縁。育て・育てられる関係にもなりやすい。',
-  栄親: '最良の相性。互いに繁栄と親愛をもたらし、尊重し合える関係。',
-  友衰: '助け合いと消耗が同居。良いときは支え合い、無理は禁物。',
-  安壊: '安心と破壊が表裏の関係。近いほど強く惹かれるが、こじれると激しい。',
-  成危: '成し遂げと危うさの関係。刺激的で、勢いと注意が背中合わせ。',
-};
-
 function mod(n: number, m: number): number {
   return ((n % m) + m) % m;
 }
@@ -70,6 +61,6 @@ export function sanku(honmeiName: string, otherName: string): SankuResult {
 
   const pair = PAIR[category] ?? category;
   const label = distance ? `${distance}距離の${pair}` : category;
-  const note = NOTE[category] ?? NOTE[pair] ?? '';
+  const note = SANKU_DESC[pair] ?? '';
   return { d, category, pair, distance, label, note, provenance: PROVENANCE.sukuyoSanku };
 }

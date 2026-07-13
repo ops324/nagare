@@ -24,13 +24,16 @@ import { Meishiki } from './Meishiki';
 import { KyuseiBan } from './KyuseiBan';
 import { CalendarMonth } from './CalendarMonth';
 import { Aisho } from './Aisho';
+import { Jiten } from './Jiten';
+import { SHUKU_TRAIT, RUNKI_DESC, CAUTION_COPY } from '@/lib/copy';
 
-type Tab = 'today' | 'macro' | 'birth' | 'calendar';
+type Tab = 'today' | 'macro' | 'birth' | 'calendar' | 'jiten';
 const TABS: { key: Tab; label: string }[] = [
   { key: 'today', label: '今日' },
   { key: 'macro', label: '大きな流れ' },
   { key: 'birth', label: '生まれ' },
   { key: 'calendar', label: '暦' },
+  { key: 'jiten', label: '事典' },
 ];
 
 function eclipseWhen(instant: Date, now: Date): string {
@@ -64,9 +67,18 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
       <Starfield />
       <AppHeader now={now} sub={sub} />
       <main className="shell">
-        <div className="tabs tabs-4" role="tablist">
+        <div className="tabs tabs-scroll" role="tablist">
           {TABS.map((t) => (
-            <button key={t.key} className="tab" role="tab" data-active={tab === t.key} onClick={() => setTab(t.key)}>
+            <button
+              key={t.key}
+              className="tab"
+              role="tab"
+              data-active={tab === t.key}
+              onClick={(e) => {
+                setTab(t.key);
+                e.currentTarget.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+              }}
+            >
               {t.label}
             </button>
           ))}
@@ -198,14 +210,14 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
                 />
               )}
               {macro.nextHappou && (
-                <TurningPoint year={macro.nextHappou} tone="caution" title="八方塞がり" note="足元を固め、力を蓄える一年。大きな移動や新規は控えめに。" />
+                <TurningPoint year={macro.nextHappou} tone="caution" title="八方塞がり" note={CAUTION_COPY.happou.note} />
               )}
               {macro.nextDaisakkai && (
                 <TurningPoint
                   year={macro.nextDaisakkai.year}
                   tone="caution"
                   title={`大殺界（${macro.nextDaisakkai.name}）`}
-                  note="六星占術の運気の冬。新規の勝負より、種まき・充電・現状維持を大切に。"
+                  note={CAUTION_COPY.daisakkai.note}
                 />
               )}
               {macro.tenchusatsuYears[0] && (
@@ -213,7 +225,7 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
                   year={macro.tenchusatsuYears[0].year}
                   tone="caution"
                   title={`天中殺（${macro.tenchusatsuYears[0].branchName}年）`}
-                  note="運気が休息に入る時。新規の勝負より、種まきと充電を。"
+                  note={CAUTION_COPY.tenchusatsu.note}
                 />
               )}
               {macro.nextYakudoshi && (
@@ -247,33 +259,34 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
               <div className="twin-label">本命宿</div>
               <div className="sukuyo-honmei font-display">{shuku.full}</div>
               <div className="twin-sub">{shuku.yomi}しゅく</div>
-              <p className="flowcard-desc" style={{ marginTop: 8 }}>
-                生まれた日に月が宿った宿。性格と相性（三九の秘法・27宿）の基になります。
-              </p>
+              <p className="flowcard-desc" style={{ marginTop: 8 }}>{SHUKU_TRAIT[shuku.name]}</p>
             </div>
 
             <SectionHead label="相性（三九の秘法）" />
             <Aisho myHonmei={shuku.name} />
 
             <SectionHead label="六星占術" />
-            <div className="card rokusei-card">
-              <div>
-                <div className="chip-label">運命星</div>
-                <div className="rokusei-name font-display">{rokusei.label}</div>
-                <div className="chip-sub">星数 {rokusei.seisu}</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div className="chip-label">今年の運気</div>
-                <div
-                  className="rokusei-runki font-display"
-                  data-sakkai={macro.currentRunki.daisakkai ? 'dai' : macro.currentRunki.chusakkai || macro.currentRunki.shosakkai ? 'chu' : ''}
-                >
-                  {macro.currentRunki.name}
+            <div className="card" style={{ padding: 16 }}>
+              <div className="rokusei-top">
+                <div>
+                  <div className="chip-label">運命星</div>
+                  <div className="rokusei-name font-display">{rokusei.label}</div>
+                  <div className="chip-sub">星数 {rokusei.seisu}</div>
                 </div>
-                {macro.currentRunki.daisakkai && <div className="rokusei-badge">大殺界</div>}
-                {macro.currentRunki.chusakkai && <div className="rokusei-badge chu">中殺界</div>}
-                {macro.currentRunki.shosakkai && <div className="rokusei-badge chu">小殺界</div>}
+                <div style={{ textAlign: 'right' }}>
+                  <div className="chip-label">今年の運気</div>
+                  <div
+                    className="rokusei-runki font-display"
+                    data-sakkai={macro.currentRunki.daisakkai ? 'dai' : macro.currentRunki.chusakkai || macro.currentRunki.shosakkai ? 'chu' : ''}
+                  >
+                    {macro.currentRunki.name}
+                  </div>
+                  {macro.currentRunki.daisakkai && <div className="rokusei-badge">大殺界</div>}
+                  {macro.currentRunki.chusakkai && <div className="rokusei-badge chu">中殺界</div>}
+                  {macro.currentRunki.shosakkai && <div className="rokusei-badge chu">小殺界</div>}
+                </div>
               </div>
+              <p className="flowcard-desc" style={{ marginTop: 10 }}>{RUNKI_DESC[macro.currentRunki.name]}</p>
             </div>
 
             <SectionHead label="大運（四柱推命・10年区切り）" />
@@ -300,6 +313,8 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
             <p className="soft-note">六曜・二十四節気・開運日（天赦日／一粒万倍日／甲子）を月ごとに。</p>
           </section>
         )}
+
+        {tab === 'jiten' && <Jiten />}
 
         <div className="hair" style={{ margin: '40px 0 18px' }} />
         <div className="footer">
