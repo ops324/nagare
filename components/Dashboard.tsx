@@ -23,6 +23,7 @@ import { Biorhythm } from './Biorhythm';
 import { Meishiki } from './Meishiki';
 import { KyuseiBan } from './KyuseiBan';
 import { CalendarMonth } from './CalendarMonth';
+import { Aisho } from './Aisho';
 
 type Tab = 'today' | 'macro' | 'birth' | 'calendar';
 const TABS: { key: Tab; label: string }[] = [
@@ -241,6 +242,9 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
                 生まれた日に月が宿った宿。性格と相性（三九の秘法・27宿）の基になります。
               </p>
             </div>
+
+            <SectionHead label="相性（三九の秘法）" />
+            <Aisho myHonmei={shuku.name} />
 
             <SectionHead label="六星占術" />
             <div className="card rokusei-card">
