@@ -29,4 +29,10 @@ export const PROVENANCE = {
     source: '暦注の二十八宿',
     version: 'v1',
   },
+  /** 今日の色（五行ラッキーカラー）：日干の五行配当を日本の伝統色に写像（表示用・色の割当はUI層） */
+  luckyColor: {
+    method: '日干の五行配当（甲乙木・丙丁火・戊己土・庚辛金・壬癸水）→ 五行の伝統色（萌黄・紅・琥珀・金箔・浅葱）',
+    source: '陰陽五行説の十干配当＋日本の伝統色',
+    version: 'gogyo-color-v1',
+  },
 } as const satisfies Record<string, Provenance>;

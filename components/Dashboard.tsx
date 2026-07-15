@@ -1,12 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { BirthProfile } from '@/lib/types';
 import { buildProfile } from '@/lib/profile';
 import { computeTodayFlow, computeMacroFlow, type MacroFlow } from '@/lib/flow';
 import { meishiki } from '@/lib/shichu';
 import { houi } from '@/lib/houi';
-import { honmeishuku } from '@/lib/sukuyo';
+import { honmeishuku, todayShuku } from '@/lib/sukuyo';
 import { nijuhasshuku } from '@/lib/koyomi';
 import { unmeisei } from '@/lib/rokusei';
 import { daiun, type Daiun } from '@/lib/daiun';
@@ -14,7 +14,10 @@ import { honmeiNumberForYear, risshunYear } from '@/lib/kyusei';
 import { pct, jstMonthDay, jstYmd, jstYearMonth } from '@/lib/format';
 import { toJstParts } from '@/lib/time';
 import { AppHeader } from './AppHeader';
-import { Starfield } from './Starfield';
+import { NavBar, type NavKey } from './NavBar';
+import { Hitokoto } from './Hitokoto';
+import { LuckyActions } from './LuckyActions';
+import { luckyColorOf } from './lucky';
 import { FlowMeter } from './FlowMeter';
 import { MoonGlyph } from './MoonGlyph';
 import { FlowCard } from './FlowCard';
@@ -27,14 +30,7 @@ import { Aisho } from './Aisho';
 import { Jiten } from './Jiten';
 import { SHUKU_TRAIT, RUNKI_DESC, CAUTION_COPY } from '@/lib/copy';
 
-type Tab = 'today' | 'macro' | 'birth' | 'calendar' | 'jiten';
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'today', label: '今日' },
-  { key: 'macro', label: '大きな流れ' },
-  { key: 'birth', label: '生まれ' },
-  { key: 'calendar', label: '暦' },
-  { key: 'jiten', label: '事典' },
-];
+type Tab = NavKey;
 
 function eclipseWhen(instant: Date, now: Date): string {
   return toJstParts(instant).year === toJstParts(now).year ? jstMonthDay(instant) : jstYmd(instant);
@@ -53,6 +49,8 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
     [profile, now],
   );
   const shuku = useMemo(() => honmeishuku(profile.birthInstant), [profile]);
+  const meinichi = useMemo(() => todayShuku(now, shuku).isMeinichi, [now, shuku]);
+  const lucky = useMemo(() => luckyColorOf(now), [now]);
   const nijuu = useMemo(() => nijuhasshuku(now), [now]);
   const rokusei = useMemo(() => unmeisei(profile.birthInstant), [profile]);
   const daiunData = useMemo(() => daiun(profile.birthInstant, profile.gender, profile.hasTime), [profile]);
@@ -62,44 +60,70 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
   const sub = `${today.data.term.current?.name ?? ''}・${today.data.rokuyo.name}`;
   const retroNow = today.data.retrogrades.filter((r) => r.retrograde);
 
+  // 祝祭：吉日バッジ（常時）と天赦日バースト（日1回・reduced-motion では出さない）
+  const feteName = useMemo(() => {
+    const sj = today.data.senjitsu;
+    return (sj.find((s) => s.key === 'tensha') ?? sj.find((s) => s.key === 'ichiryu'))?.name;
+  }, [today]);
+  const isTensha = useMemo(() => today.data.senjitsu.some((s) => s.key === 'tensha'), [today]);
+  const [burst, setBurst] = useState(false);
+  useEffect(() => {
+    if (!isTensha) return;
+    try {
+      const key = `${jstYmd(now)}:tensha`;
+      if (localStorage.getItem('nagare.fete.v1') === key) return;
+      localStorage.setItem('nagare.fete.v1', key);
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- 日次ガード通過時のみ一度だけ祝祭を起動する意図的なゲート
+        setBurst(true);
+      }
+    } catch {
+      /* localStorage 不可なら演出なし */
+    }
+  }, [isTensha, now]);
+
+  const switchTab = (key: Tab) => {
+    setTab(key);
+    window.scrollTo({ top: 0 });
+  };
+
+  // 今日の色（五行）をテーマに反映
+  useEffect(() => {
+    document.documentElement.setAttribute('data-lucky', lucky.key);
+  }, [lucky.key]);
+
   return (
     <>
-      <Starfield />
       <AppHeader now={now} sub={sub} />
       <main className="shell">
-        <div className="tabs tabs-scroll" role="tablist">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              className="tab"
-              role="tab"
-              data-active={tab === t.key}
-              onClick={(e) => {
-                setTab(t.key);
-                e.currentTarget.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
-              }}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
         {tab === 'today' && (
           <section aria-label="今日の流れ">
-            <FlowMeter score={today.score} label={today.label} summary={today.summary} />
+            <FlowMeter
+              score={today.score}
+              label={today.label}
+              summary={today.summary}
+              burst={burst}
+              taian={today.data.rokuyo.index === 0}
+              feteName={feteName}
+            />
 
-            {today.data.term.current && (
-              <div className="card" style={{ marginTop: 14, padding: '12px 14px' }}>
-                <div className="eyebrow">いまの二十四節気</div>
-                <div className="nenun-meta" style={{ marginTop: 4 }}>
-                  {today.data.term.current.name}（{today.data.term.current.yomi}）
-                  {jstMonthDay(today.data.term.current.instant)}
-                  {today.data.term.next && <> 〜 {jstMonthDay(today.data.term.next.instant)}</>}ごろ
-                </div>
-              </div>
-            )}
+            <Hitokoto now={now} today={today} meinichi={meinichi} lucky={lucky} shimmer={burst} />
 
-            <div className="card moonrow rise" style={{ marginTop: 18 }}>
+            <div className="section-head">
+              <span className="eyebrow eyebrow-lucky">今日の開運アクション</span>
+              <hr className="hair" />
+            </div>
+            <LuckyActions today={today} />
+
+            <SectionHead label="今日の兆し" />
+            <div className="cards">
+              {today.highlights.map((it, i) => (
+                <FlowCard key={`h${i}`} item={it} index={i} />
+              ))}
+            </div>
+
+            <SectionHead label="月と潮" />
+            <div className="card moonrow rise">
               <div className="moon-float">
                 <MoonGlyph phaseAngle={m.phaseAngle} size={88} />
               </div>
@@ -114,16 +138,6 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
                   　潮は{today.data.tide.name}。
                 </p>
               </div>
-            </div>
-
-            <SectionHead label="あなたの生まれ" />
-            <BirthChips profile={profile} tenchusatsu={meishikiData.tenchusatsu.name} />
-
-            <SectionHead label="今日の兆し" />
-            <div className="cards">
-              {today.highlights.map((it, i) => (
-                <FlowCard key={`h${i}`} item={it} index={i} />
-              ))}
             </div>
 
             <SectionHead label="バイオリズム" />
@@ -278,6 +292,17 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
 
         {tab === 'calendar' && (
           <section aria-label="暦">
+            {today.data.term.current && (
+              <div className="card" style={{ marginTop: 4, padding: '12px 14px' }}>
+                <div className="eyebrow">いまの二十四節気</div>
+                <div className="nenun-meta" style={{ marginTop: 4 }}>
+                  {today.data.term.current.name}（{today.data.term.current.yomi}）
+                  {jstMonthDay(today.data.term.current.instant)}
+                  {today.data.term.next && <> 〜 {jstMonthDay(today.data.term.next.instant)}</>}ごろ
+                </div>
+              </div>
+            )}
+
             <SectionHead label="今日の二十八宿" />
             <div className="card sukuyo-card">
               <div className="sukuyo-honmei font-display">{nijuu.full}</div>
@@ -289,7 +314,7 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
 
             <SectionHead label="暦カレンダー" />
             <CalendarMonth now={now} />
-            <p className="soft-note">六曜・二十四節気・開運日（天赦日／一粒万倍日／甲子）を月ごとに。</p>
+            <p className="soft-note">六曜・二十四節気・開運日（天赦日・一粒万倍日・甲子・寅の日・巳の日）を月ごとに。</p>
           </section>
         )}
 
@@ -303,6 +328,7 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
           <p>娯楽・参考としてお楽しみください。</p>
         </div>
       </main>
+      <NavBar active={tab} onChange={switchTab} />
     </>
   );
 }

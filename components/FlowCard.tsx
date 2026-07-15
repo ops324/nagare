@@ -3,7 +3,7 @@ import type { FlowItem } from '@/lib/types';
 export function FlowCard({ item, index = 0 }: { item: FlowItem; index?: number }) {
   return (
     <article
-      className="card flowcard rise"
+      className="card-filled flowcard rise"
       data-tone={item.tone}
       style={{ animationDelay: `${Math.min(index, 8) * 55}ms` }}
     >

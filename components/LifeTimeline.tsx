@@ -26,9 +26,9 @@ export function LifeTimeline({ timeline }: { timeline: TimelineYear[] }) {
       <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="人生周期のタイムライン">
         <defs>
           <linearGradient id="tl-grad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="var(--gold-600)" stopOpacity="0.3" />
-            <stop offset="50%" stopColor="var(--gold-400)" />
-            <stop offset="100%" stopColor="var(--gold-300)" stopOpacity="0.5" />
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.25" />
+            <stop offset="50%" stopColor="var(--primary)" />
+            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.5" />
           </linearGradient>
         </defs>
 
@@ -60,18 +60,18 @@ export function LifeTimeline({ timeline }: { timeline: TimelineYear[] }) {
               {/* ノード */}
               {t.isNow ? (
                 <>
-                  <circle cx={x} cy={y} r="11" fill="none" stroke="var(--gold-300)" strokeWidth="1.4" opacity="0.6">
+                  <circle cx={x} cy={y} r="11" fill="none" stroke="var(--primary)" strokeWidth="1.4" opacity="0.6">
                     <animate attributeName="r" values="9;15;9" dur="3.2s" repeatCount="indefinite" />
                     <animate attributeName="opacity" values="0.6;0;0.6" dur="3.2s" repeatCount="indefinite" />
                   </circle>
-                  <circle cx={x} cy={y} r="6.5" fill="#fffaf0" stroke="var(--gold-500)" strokeWidth="1.5" />
+                  <circle cx={x} cy={y} r="6.5" fill="var(--primary)" stroke="var(--surface-container-low)" strokeWidth="1.5" />
                 </>
               ) : (
                 <circle
                   cx={x}
                   cy={y}
                   r={t.isHappou ? 6 : 4.5}
-                  fill={t.isHappou ? 'var(--ink-900)' : color}
+                  fill={t.isHappou ? 'var(--surface-container-low)' : color}
                   stroke={t.isHappou ? 'var(--gold-400)' : 'none'}
                   strokeWidth="2"
                 />
@@ -94,7 +94,7 @@ export function LifeTimeline({ timeline }: { timeline: TimelineYear[] }) {
                 y={H - 14}
                 textAnchor="middle"
                 fontSize="12.5"
-                fill={t.isNow ? 'var(--accent-soft)' : 'var(--text-dim)'}
+                fill={t.isNow ? 'var(--primary)' : 'var(--text-dim)'}
                 style={{ fontFamily: 'var(--font-display)', fontVariantNumeric: 'tabular-nums' }}
               >
                 {t.year}
