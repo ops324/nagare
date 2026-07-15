@@ -15,6 +15,9 @@ interface DayCell {
   tensha: boolean;
   ichiryu: boolean;
   kanoene: boolean;
+  tora: boolean;
+  mi: boolean;
+  tsuchinotomi: boolean;
 }
 
 export function CalendarMonth({ now }: { now: Date }) {
@@ -40,6 +43,9 @@ export function CalendarMonth({ now }: { now: Date }) {
         tensha: sj.includes('tensha'),
         ichiryu: sj.includes('ichiryu'),
         kanoene: sj.includes('kinoene'),
+        tora: sj.includes('tora'),
+        mi: sj.includes('mi'),
+        tsuchinotomi: sj.includes('tsuchinotomi'),
       });
     }
     return out;
@@ -95,6 +101,12 @@ export function CalendarMonth({ now }: { now: Date }) {
               {c.tensha && <span className="mk mk-tensha" title="天赦日">★</span>}
               {c.ichiryu && <span className="mk mk-ichiryu" title="一粒万倍日">●</span>}
               {c.kanoene && <span className="mk mk-kanoene" title="甲子">甲</span>}
+              {c.tora && <span className="mk mk-tora" title="寅の日">寅</span>}
+              {(c.mi || c.tsuchinotomi) && (
+                <span className={c.tsuchinotomi ? 'mk mk-tsuchinotomi' : 'mk mk-mi'} title={c.tsuchinotomi ? '己巳（特に強い巳の日）' : '巳の日'}>
+                  巳
+                </span>
+              )}
             </div>
           </div>
         ))}
@@ -103,6 +115,8 @@ export function CalendarMonth({ now }: { now: Date }) {
         <span><b className="mk-tensha">★</b> 天赦日</span>
         <span><b className="mk-ichiryu">●</b> 一粒万倍日</span>
         <span><b className="mk-kanoene">甲</b> 甲子</span>
+        <span><b className="mk-tora">寅</b> 寅の日</span>
+        <span><b className="mk-mi">巳</b> 巳の日（<b className="mk-tsuchinotomi">金</b>＝己巳）</span>
       </div>
     </div>
   );

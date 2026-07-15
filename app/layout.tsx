@@ -11,7 +11,7 @@ const mincho = Shippori_Mincho({
 });
 
 const gothic = Noto_Sans_JP({
-  weight: ["400", "500", "700"],
+  weight: ["400", "500", "600", "700"],
   subsets: ["latin"],
   display: "swap",
   variable: "--font-gothic",
@@ -26,8 +26,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#faf9fd" },
-    { media: "(prefers-color-scheme: dark)", color: "#121318" },
+    { media: "(prefers-color-scheme: light)", color: "#fdfaf1" },
+    { media: "(prefers-color-scheme: dark)", color: "#161828" },
   ],
   width: "device-width",
   initialScale: 1,

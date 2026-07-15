@@ -69,6 +69,17 @@ export function Jiten() {
         }))}
       />
       <JitenSection
+        label="今日の色（五行）"
+        note="日干の五行（甲乙=木・丙丁=火・戊己=土・庚辛=金・壬癸=水）を日本の伝統色に写して「今日の色」としています。"
+        items={[
+          { name: '木 — 萌黄', yomi: 'もえぎ', desc: '芽吹きの緑。成長・はじまり・のびやかさの気。' },
+          { name: '火 — 紅', yomi: 'くれない', desc: '華やぎの赤。情熱・表現・出会いの気。' },
+          { name: '土 — 琥珀', yomi: 'こはく', desc: '実りの黄土。安定・蓄え・足元を固める気。' },
+          { name: '金 — 金箔', yomi: 'きんぱく', desc: '磨きの金。豊かさ・完成の気。金の日は、流れの金箔がいちばん煌めく日。' },
+          { name: '水 — 浅葱', yomi: 'あさぎ', desc: '澄んだ水色。知恵・流れ・浄化の気。' },
+        ]}
+      />
+      <JitenSection
         label="注意期間の見かた"
         items={Object.values(CAUTION_COPY).map((c) => ({ name: c.title, desc: c.note, tone: 'caution' as const }))}
       />
