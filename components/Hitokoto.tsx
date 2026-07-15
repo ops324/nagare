@@ -33,6 +33,7 @@ function useStreak(now: Date): number {
         else if (todayNum - prev.lastNum === 1) next = prev.streak + 1;
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ last: todayKey, lastNum: todayNum, streak: next }));
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- マウント時に端末保存の連続日数を一度だけ読む意図的なゲート（useProfile と同様）
       setStreak(next);
     } catch {
       /* localStorage 不可の環境では表示しないだけ */

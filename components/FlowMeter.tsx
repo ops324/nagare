@@ -50,13 +50,13 @@ export function FlowMeter({
   const value = arc(100, 100, 84, START, START + RANGE * f);
   const cap = polar(100, 100, 84, START + RANGE * f);
 
-  const [flying, setFlying] = useState(false);
+  const [burstDone, setBurstDone] = useState(false);
   useEffect(() => {
     if (!burst) return;
-    setFlying(true);
-    const t = setTimeout(() => setFlying(false), 2000);
+    const t = setTimeout(() => setBurstDone(true), 2000);
     return () => clearTimeout(t);
   }, [burst]);
+  const flying = burst && !burstDone;
 
   return (
     <div className="flowmeter" data-high={score >= 78} data-taian={taian}>

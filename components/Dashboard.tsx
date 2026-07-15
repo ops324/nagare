@@ -73,7 +73,10 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
       const key = `${jstYmd(now)}:tensha`;
       if (localStorage.getItem('nagare.fete.v1') === key) return;
       localStorage.setItem('nagare.fete.v1', key);
-      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) setBurst(true);
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- 日次ガード通過時のみ一度だけ祝祭を起動する意図的なゲート
+        setBurst(true);
+      }
     } catch {
       /* localStorage 不可なら演出なし */
     }
