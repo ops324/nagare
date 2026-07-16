@@ -3,6 +3,7 @@
 import { useProfile } from '@/lib/useProfile';
 import { Onboarding } from '@/components/Onboarding';
 import { Dashboard } from '@/components/Dashboard';
+import { SkyField } from '@/components/SkyField';
 
 export default function Page() {
   const { profile, setProfile, clear, loaded } = useProfile();
@@ -10,13 +11,19 @@ export default function Page() {
   if (!loaded) {
     return (
       <main className="splash">
+        <SkyField />
         <div className="splash-mark font-display">流れ</div>
       </main>
     );
   }
 
   if (!profile) {
-    return <Onboarding onSubmit={setProfile} />;
+    return (
+      <>
+        <SkyField />
+        <Onboarding onSubmit={setProfile} />
+      </>
+    );
   }
 
   return <Dashboard birth={profile} onReset={clear} />;

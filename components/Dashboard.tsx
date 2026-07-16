@@ -18,6 +18,9 @@ import { NavBar, type NavKey } from './NavBar';
 import { Hitokoto } from './Hitokoto';
 import { LuckyActions } from './LuckyActions';
 import { luckyColorOf } from './lucky';
+import { sekkiColorOf } from './sekki';
+import { SkyField } from './SkyField';
+import { FlowLine } from './FlowLine';
 import { FlowMeter } from './FlowMeter';
 import { MoonGlyph } from './MoonGlyph';
 import { FlowCard } from './FlowCard';
@@ -92,10 +95,18 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
     document.documentElement.setAttribute('data-lucky', lucky.key);
   }, [lucky.key]);
 
+  // 節気の彩（星霜）をテーマに反映
+  const sekki = useMemo(() => sekkiColorOf(today.data.term.current?.name), [today]);
+  useEffect(() => {
+    document.documentElement.setAttribute('data-sekki', sekki.key);
+  }, [sekki.key]);
+
   return (
     <>
+      <SkyField moonPhaseAngle={m.phaseAngle} retrogrades={retroNow} />
       <AppHeader now={now} sub={sub} />
       <main className="shell">
+        <FlowLine key={tab} amp={tab === 'today' ? today.score / 100 : 0.45} seed={1 + ['today', 'macro', 'birth', 'calendar', 'jiten'].indexOf(tab)} />
         {tab === 'today' && (
           <section aria-label="今日の流れ">
             <FlowMeter
