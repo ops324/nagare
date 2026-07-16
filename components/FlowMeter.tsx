@@ -48,6 +48,7 @@ export function FlowMeter({
   const f = Math.max(0, Math.min(100, score)) / 100;
   const track = arc(100, 100, 84, START, START + RANGE);
   const value = arc(100, 100, 84, START, START + RANGE * f);
+  const whisper = arc(100, 100, 90, START, START + RANGE);
   const cap = polar(100, 100, 84, START + RANGE * f);
 
   const [burstDone, setBurstDone] = useState(false);
@@ -57,6 +58,22 @@ export function FlowMeter({
     return () => clearTimeout(t);
   }, [burst]);
   const flying = burst && !burstDone;
+
+  // スコアのカウントアップ（弧の描画と同期・reduced-motion では即座に最終値）
+  const [disp, setDisp] = useState(0);
+  useEffect(() => {
+    const dur = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1200;
+    let raf = 0;
+    const t0 = performance.now();
+    const tick = (t: number) => {
+      const p = dur === 0 ? 1 : Math.min((t - t0) / dur, 1);
+      const e = 1 - Math.pow(1 - p, 3);
+      setDisp(Math.round(score * e));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [score]);
 
   return (
     <div className="flowmeter" data-high={score >= 78} data-taian={taian}>
@@ -86,7 +103,9 @@ export function FlowMeter({
             />
           );
         })}
-        <path d={track} fill="none" stroke="var(--surface-container-highest)" strokeWidth="9" strokeLinecap="round" opacity="0.9" />
+        {/* 節気の残光 — 弧の外周にほのかな季節の色 */}
+        <path d={whisper} fill="none" stroke="var(--sekki)" strokeWidth="1" strokeLinecap="round" opacity="0.28" />
+        <path d={track} fill="none" stroke="var(--surface-container-highest)" strokeWidth="3" strokeLinecap="round" opacity="0.9" />
         <path
           d={value}
           fill="none"
@@ -117,7 +136,7 @@ export function FlowMeter({
           </span>
         ))}
       <div className="flowmeter-center">
-        <div className="numeral flowmeter-score">{score}</div>
+        <div className="numeral flowmeter-score">{disp}</div>
         <div className="flowmeter-label font-display">{label}</div>
         {feteName && <div className="fete-badge">{feteName}</div>}
         {summary && <div className="flowmeter-summary">{summary}</div>}

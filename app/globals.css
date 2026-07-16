@@ -1,60 +1,74 @@
+/* Hallmark · macrostructure: Sky Scroll (custom) · theme: custom 星霜
+ * vibe: "今日の空 × 節気の彩 × 一本の流れ" · paper: sky-state (night oklch(17% 0.04 275) / day oklch(97% 0.02 90))
+ * accent: gold oklch(82% 0.11 95) + sekki(24) · display: Shippori Mincho · body: Noto Sans JP
+ * axes: paper=state-driven / display=roman-serif(mincho) / accent=warm-gold+seasonal
+ */
 @import "tailwindcss";
 
 /*
-  流れ — Material 3 × 和
-  Google の Material 3（トーナルカラー・塗りのサーフェス・控えめなエレベーション）を基調に、
-  primary＝金箔由来のゴールド（tertiary と同系）。青は暦の慣習（土曜）にのみ残す。
-  見出し・大きな漢字値は明朝（Shippori Mincho）を残し、和の個性を要所に保つ。
-  ライト/ダークは prefers-color-scheme 連動（data-theme で上書き可）。
+  流れ — 星霜（せいそう）
+  地＝今日の空（実時刻連動: html[data-sky="dawn|day|dusk|night"] で全トークンが移ろう）
+  彩＝二十四節気の伝統色（html[data-sekki] が --sekki を差す）
+  背骨＝一本の流れ線（FlowLine が節気色→金のグラデで descend）
+  金＝聖域色（ゲージ・スコア・ラベルは常に金 — 運が低い日も美しい）
+  五行の今日の色（html[data-lucky]）は開運レイヤー専用として維持。
 */
+
+/* 空の遷移をなめらかに（登録プロパティは color として補間される） */
+@property --bg-hi { syntax: "<color>"; inherits: true; initial-value: #10142a; }
+@property --bg-lo { syntax: "<color>"; inherits: true; initial-value: #080a18; }
+@property --stars { syntax: "<number>"; inherits: true; initial-value: 1; }
 
 :root {
   color-scheme: dark;
 
-  /* ── M3 カラーロール（ダーク既定）／ primary=金（金箔・tertiary と同系） ── */
+  /* ── 夜（既定）：夜紺の星空 ── */
+  --bg-hi: #10142a;
+  --bg-lo: #080a18;
+  --stars: 1;
+  --star-dim: #6e7bb8;
+  --star-bright: #c9d6ff;
+
+  /* M3 カラーロール（夜）／ primary=金（金箔） */
   --primary: #dbc66f;
   --on-primary: #3b2f00;
   --primary-container: #554600;
   --on-primary-container: #f9e287;
   --secondary: #bfc6dc;
   --on-secondary: #293041;
-  /* container は面で出る（セグメント／ナビの活性ピル）ため生成り寄りの温色に */
-  --secondary-container: #4a4735;
-  --on-secondary-container: #e7e0c8;
-  --tertiary: #dbc66f; /* 金 */
+  --secondary-container: #434a63;
+  --on-secondary-container: #dde3f8;
+  --tertiary: #dbc66f;
   --on-tertiary: #3b2f00;
   --tertiary-container: #554600;
   --on-tertiary-container: #f9e287;
-  --caution: #ffb4a3; /* M3 error 相当（凶・注意） */
+  --caution: #ffb4a3;
   --on-caution: #5f1505;
   --caution-container: #7d2e1c;
   --on-caution-container: #ffdad2;
-  --good: #97d5a9; /* 吉 */
+  --good: #97d5a9;
   --on-good: #00391d;
   --good-container: #175237;
   --on-good-container: #b3f1cd;
-  --surface: #121420;
-  --on-surface: #e4e3ea;
-  --on-surface-variant: #c2c3d0;
-  --surface-container-lowest: #0d0e17;
-  --surface-container-low: #1a1c28;
-  --surface-container: #1e2030;
-  --surface-container-high: #282a3a;
-  --surface-container-highest: #333546;
-  --outline: #8e90a0;
-  --outline-variant: #3f4152;
-  /* 生成りの光（ダーク＝夜紺の光）: body::before のグラデーション */
-  --bg-hi: #161828;
-  --bg-lo: #101220;
+  --surface: #0e1120;
+  --on-surface: #e6e4ee;
+  --on-surface-variant: #b9bccf;
+  --surface-container-lowest: #080a15;
+  --surface-container-low: #141729;
+  --surface-container: #191d31;
+  --surface-container-high: #232842;
+  --surface-container-highest: #2e3450;
+  --outline: #8b8fa5;
+  --outline-variant: #363b55;
 
-  /* ── 金 gold（tertiary のトーン階段・SVGからも参照） ── */
+  /* 金 gold（tertiary のトーン階段・SVGからも参照） */
   --gold-100: #f9e287;
   --gold-300: #e8d384;
   --gold-400: #dbc66f;
   --gold-500: #bfab55;
   --gold-600: #a28f3e;
 
-  /* ── 旧セマンティック名の別名（既存クラス/SVG互換） ── */
+  /* 旧セマンティック名の別名（既存クラス/SVG互換） */
   --bg: var(--surface);
   --border: var(--outline-variant);
   --border-strong: var(--outline);
@@ -66,11 +80,11 @@
   --accent-soft: var(--gold-300);
   --silver: var(--secondary);
 
-  /* ── 曜日（暦の慣習・土=青/日=赤。テーマの操作色とは独立させる） ── */
+  /* 曜日（暦の慣習・土=青/日=赤。操作色とは独立） */
   --weekday-sun: #ffb4a3;
   --weekday-sat: #8aa6d9;
 
-  /* ── 今日の色（五行ラッキーカラー・既定=土/琥珀・html[data-lucky] で切替） ── */
+  /* 今日の色（五行・既定=土/琥珀・html[data-lucky] で切替） */
   --lucky-l: #8b5000;
   --lucky-d: #ffb870;
   --lucky-container-l: #ffdcbe;
@@ -82,96 +96,60 @@
   --on-lucky-container: var(--on-lucky-container-d);
   --lucky-wash: color-mix(in srgb, var(--lucky) 9%, var(--surface-container-low));
 
-  /* ── モーション（M3 Expressive スプリング） ── */
+  /* 節気の彩（既定=立春/若草・html[data-sekki] で切替） */
+  --sekki-l: #3e6b1f;
+  --sekki-d: #a4d878;
+  --sekki: var(--sekki-d);
+  --sekki-wash: color-mix(in srgb, var(--sekki) 8%, var(--surface-container-low));
+
+  /* モーション（M3 Expressive スプリング＋線描画） */
   --spring-out: cubic-bezier(0.34, 1.56, 0.64, 1);
   --spring-soft: cubic-bezier(0.38, 1.21, 0.22, 1);
   --emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --draw-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
 
-  /* ── エレベーション / シェイプ ── */
+  /* エレベーション / シェイプ */
   --elev-1: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
   --elev-2: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
-  --shape-sm: 8px;
-  --shape-md: 12px;
-  --shape-lg: 16px;
+  --shape-sm: 10px;
+  --shape-md: 14px;
+  --shape-lg: 20px;
   --shape-full: 999px;
-  --radius-card: 12px;
+  --radius-card: 16px;
 
-  /* ── フォント ── */
+  /* フォント */
   --font-display: var(--font-mincho), "Hiragino Mincho ProN", serif;
   --font-body: var(--font-gothic), "Hiragino Sans", system-ui, sans-serif;
+
+  /* 空の状態遷移（登録プロパティのみ補間） */
+  transition: --bg-hi 2400ms ease, --bg-lo 2400ms ease, --stars 2400ms ease;
 }
 
-/* 五行→伝統色（木=萌黄・火=紅・土=琥珀・金=金箔・水=浅葱） */
-[data-lucky="moku"] { --lucky-l: #4c662b; --lucky-d: #b1d18a; --lucky-container-l: #cdeda3; --on-lucky-container-l: #102000; --lucky-container-d: #354e16; --on-lucky-container-d: #cdeda3; }
-[data-lucky="ka"] { --lucky-l: #8f3d51; --lucky-d: #ffb1c5; --lucky-container-l: #ffd9e0; --on-lucky-container-l: #3a071b; --lucky-container-d: #723347; --on-lucky-container-d: #ffd9e0; }
-[data-lucky="do"] { --lucky-l: #8b5000; --lucky-d: #ffb870; --lucky-container-l: #ffdcbe; --on-lucky-container-l: #2d1600; --lucky-container-d: #693c00; --on-lucky-container-d: #ffdcbe; }
-[data-lucky="kin"] { --lucky-l: #715c0f; --lucky-d: #dbc66f; --lucky-container-l: #fde287; --on-lucky-container-l: #231b00; --lucky-container-d: #554600; --on-lucky-container-d: #f9e287; }
-[data-lucky="sui"] { --lucky-l: #006874; --lucky-d: #82d3e0; --lucky-container-l: #97f0ff; --on-lucky-container-l: #001f24; --lucky-container-d: #004f58; --on-lucky-container-d: #97f0ff; }
-
-@theme inline {
-  --color-primary: var(--primary);
-  --color-on-primary: var(--on-primary);
-  --color-surface: var(--surface);
-  --color-on-surface: var(--on-surface);
-  --color-outline: var(--outline);
-  --color-gold: var(--gold-400);
-  --color-good: var(--good);
-  --color-caution: var(--caution);
+/* ── 宵（夕暮れ）：茜がかった夜 — 夜との差分のみ ── */
+:root[data-sky="dusk"] {
+  --bg-hi: #221d38;
+  --bg-lo: #38222c;
+  --stars: 0.55;
+  --star-dim: #8d7fa8;
+  --star-bright: #e8c9b0;
+  --surface: #151222;
+  --surface-container-lowest: #0d0a17;
+  --surface-container-low: #1b172b;
+  --surface-container: #211c33;
+  --surface-container-high: #2c2544;
+  --surface-container-highest: #383052;
+  --outline-variant: #453b58;
+  --secondary-container: #4d4258;
+  --on-secondary-container: #ecdcf0;
 }
 
-/* light theme — prefers-color-scheme 連動、data-theme で上書き可（2ブロックは同期維持） */
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    color-scheme: light;
-    --primary: #715c0f;
-    --on-primary: #ffffff;
-    --primary-container: #fde287;
-    --on-primary-container: #231b00;
-    --secondary: #575e71;
-    --on-secondary: #ffffff;
-    --secondary-container: #e7e0c8;
-    --on-secondary-container: #21201a;
-    --tertiary: #715c0f;
-    --on-tertiary: #ffffff;
-    --tertiary-container: #fde287;
-    --on-tertiary-container: #231b00;
-    --caution: #9c4331;
-    --on-caution: #ffffff;
-    --caution-container: #ffdad2;
-    --on-caution-container: #3e0500;
-    --good: #2f6b4e;
-    --on-good: #ffffff;
-    --good-container: #b3f1cd;
-    --on-good-container: #00210f;
-    --surface: #faf6ec;
-    --on-surface: #1b1b18;
-    --on-surface-variant: #47463f;
-    --surface-container-lowest: #fffdf7;
-    --surface-container-low: #f3efe2;
-    --surface-container: #efeadb;
-    --surface-container-high: #e9e3d0;
-    --surface-container-highest: #e2dbc5;
-    --outline: #78766a;
-    --outline-variant: #d5d1c0;
-    --bg-hi: #fdfaf1;
-    --bg-lo: #f6f0e0;
-    --gold-100: #fde287;
-    --gold-300: #8d742c;
-    --gold-400: #715c0f;
-    --gold-500: #5d4b03;
-    --gold-600: #4a3b00;
-    /* 生成り地では金を暗い側へ振る（gold-300 は 4.2:1 で AA 未達） */
-    --accent-soft: var(--gold-500);
-    --weekday-sun: #9c4331;
-    --weekday-sat: #3a5c9e;
-    --lucky: var(--lucky-l);
-    --lucky-container: var(--lucky-container-l);
-    --on-lucky-container: var(--on-lucky-container-l);
-    --lucky-wash: color-mix(in srgb, var(--lucky) 7%, var(--surface-container-low));
-  }
-}
-:root[data-theme="light"] {
+/* ── 昼・暁（共通の明るい地）── */
+:root[data-sky="day"],
+:root[data-sky="dawn"] {
   color-scheme: light;
+  --stars: 0;
+  --star-dim: #b3a8d8;
+  --star-bright: #7d6fb8;
   --primary: #715c0f;
   --on-primary: #ffffff;
   --primary-container: #fde287;
@@ -217,6 +195,68 @@
   --lucky-container: var(--lucky-container-l);
   --on-lucky-container: var(--on-lucky-container-l);
   --lucky-wash: color-mix(in srgb, var(--lucky) 7%, var(--surface-container-low));
+  --sekki: var(--sekki-l);
+  --sekki-wash: color-mix(in srgb, var(--sekki) 6%, var(--surface-container-low));
+  --elev-1: 0 1px 2px 0 rgba(58, 48, 20, 0.14), 0 1px 3px 1px rgba(58, 48, 20, 0.08);
+  --elev-2: 0 1px 2px 0 rgba(58, 48, 20, 0.16), 0 2px 6px 2px rgba(58, 48, 20, 0.1);
+}
+
+/* ── 暁（夜明け）：曙がかった朝 — 昼との差分のみ ── */
+:root[data-sky="dawn"] {
+  --stars: 0.3;
+  --bg-hi: #e9e6f2;
+  --bg-lo: #fbe7d4;
+  --surface: #faf4ec;
+  --surface-container-lowest: #fffcf6;
+  --surface-container-low: #f6ede4;
+  --surface-container: #f2e6da;
+  --surface-container-high: #ecdfcf;
+  --surface-container-highest: #e5d7c4;
+  --outline-variant: #d8cec0;
+}
+
+/* ── 節気の彩（二十四節気 → 伝統色。-l=明るい地用 / -d=暗い地用）── */
+[data-sekki="risshun"] { --sekki-l: #3e6b1f; --sekki-d: #a4d878; } /* 若草 */
+[data-sekki="usui"] { --sekki-l: #a4344f; --sekki-d: #f2a0b4; } /* 紅梅 */
+[data-sekki="keichitsu"] { --sekki-l: #5a7714; --sekki-d: #c0dd60; } /* 萌黄 */
+[data-sekki="shunbun"] { --sekki-l: #b04a67; --sekki-d: #f5b8c8; } /* 桜 */
+[data-sekki="seimei"] { --sekki-l: #6b5aa8; --sekki-d: #c3b5f0; } /* 藤 */
+[data-sekki="kokuu"] { --sekki-l: #2e7d5b; --sekki-d: #8fd9b6; } /* 若竹 */
+[data-sekki="rikka"] { --sekki-l: #4f52a3; --sekki-d: #aab2f0; } /* 杜若 */
+[data-sekki="shouman"] { --sekki-l: #607a1e; --sekki-d: #c2d97a; } /* 苗色 */
+[data-sekki="boushu"] { --sekki-l: #2f6bb0; --sekki-d: #93c2f5; } /* 露草 */
+[data-sekki="geshi"] { --sekki-l: #274f9e; --sekki-d: #9db8f2; } /* 瑠璃 */
+[data-sekki="shousho"] { --sekki-l: #00707c; --sekki-d: #7fd6e2; } /* 浅葱 */
+[data-sekki="taisho"] { --sekki-l: #b03a1e; --sekki-d: #ffab8f; } /* 緋 */
+[data-sekki="risshuu"] { --sekki-l: #5e4f9e; --sekki-d: #bcaef0; } /* 桔梗 */
+[data-sekki="shosho"] { --sekki-l: #8a7500; --sekki-d: #e5d15a; } /* 女郎花 */
+[data-sekki="hakuro"] { --sekki-l: #4a6fa5; --sekki-d: #a9c6ec; } /* 薄花 */
+[data-sekki="shuubun"] { --sekki-l: #645a9e; --sekki-d: #c0b4ec; } /* 竜胆 */
+[data-sekki="kanro"] { --sekki-l: #8a5a00; --sekki-d: #e8b866; } /* 琥珀 */
+[data-sekki="soukou"] { --sekki-l: #a04a1e; --sekki-d: #f0a578; } /* 柿 */
+[data-sekki="rittou"] { --sekki-l: #2f4a8a; --sekki-d: #a0b6e8; } /* 紺青 */
+[data-sekki="shousetsu"] { --sekki-l: #3f5f80; --sekki-d: #a3c0da; } /* 薄縹 */
+[data-sekki="taisetsu"] { --sekki-l: #3a5560; --sekki-d: #9cc0cc; } /* 藍鉄 */
+[data-sekki="touji"] { --sekki-l: #8a6d00; --sekki-d: #e8cc5a; } /* 柚子 */
+[data-sekki="shoukan"] { --sekki-l: #3a6d70; --sekki-d: #96d0d2; } /* 千草 */
+[data-sekki="daikan"] { --sekki-l: #31427e; --sekki-d: #a4b4e6; } /* 瑠璃紺 */
+
+/* 五行→伝統色（木=萌黄・火=紅・土=琥珀・金=金箔・水=浅葱） */
+[data-lucky="moku"] { --lucky-l: #4c662b; --lucky-d: #b1d18a; --lucky-container-l: #cdeda3; --on-lucky-container-l: #102000; --lucky-container-d: #354e16; --on-lucky-container-d: #cdeda3; }
+[data-lucky="ka"] { --lucky-l: #8f3d51; --lucky-d: #ffb1c5; --lucky-container-l: #ffd9e0; --on-lucky-container-l: #3a071b; --lucky-container-d: #723347; --on-lucky-container-d: #ffd9e0; }
+[data-lucky="do"] { --lucky-l: #8b5000; --lucky-d: #ffb870; --lucky-container-l: #ffdcbe; --on-lucky-container-l: #2d1600; --lucky-container-d: #693c00; --on-lucky-container-d: #ffdcbe; }
+[data-lucky="kin"] { --lucky-l: #715c0f; --lucky-d: #dbc66f; --lucky-container-l: #fde287; --on-lucky-container-l: #231b00; --lucky-container-d: #554600; --on-lucky-container-d: #f9e287; }
+[data-lucky="sui"] { --lucky-l: #006874; --lucky-d: #82d3e0; --lucky-container-l: #97f0ff; --on-lucky-container-l: #001f24; --lucky-container-d: #004f58; --on-lucky-container-d: #97f0ff; }
+
+@theme inline {
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-surface: var(--surface);
+  --color-on-surface: var(--on-surface);
+  --color-outline: var(--outline);
+  --color-gold: var(--gold-400);
+  --color-good: var(--good);
+  --color-caution: var(--caution);
 }
 
 * {
@@ -228,24 +268,103 @@ html {
 }
 
 body {
-  background-color: var(--bg);
+  background-color: var(--bg-lo);
   color: var(--text);
   font-family: var(--font-body);
   font-feature-settings: "palt" 1;
   letter-spacing: normal;
   line-height: 1.6;
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
-/* 生成りの光 — 上からほのかに差す光のグラデーション（基準イメージの地） */
+/* 今日の空 — 実時刻の空のグラデーション（星図はさらに上の .skyfield） */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
-  z-index: -1;
+  z-index: -2;
   background: linear-gradient(180deg, var(--bg-hi), var(--bg-lo));
+}
+
+/* ─────────────── 星図（SkyField） ─────────────── */
+.skyfield {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+.skyfield svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.sf-stars {
+  opacity: var(--stars);
+}
+.sf-star {
+  animation: twinkle 3.4s ease-in-out infinite;
+}
+.sf-moon {
+  position: absolute;
+  top: clamp(64px, 9vh, 120px);
+  right: clamp(18px, 7vw, 64px);
+  /* 月は宵と夜のもの — 暁・昼では空に溶けて消える */
+  opacity: clamp(0, calc((var(--stars) - 0.34) / 0.66), 1);
+  animation: float-y 9s ease-in-out infinite;
+  filter: drop-shadow(0 0 18px color-mix(in srgb, var(--star-bright) 35%, transparent));
+}
+.sf-retro {
+  position: absolute;
+  font-size: 13px;
+  color: var(--star-bright);
+  opacity: calc(var(--stars) * 0.8);
+  letter-spacing: 0.06em;
+  animation: retro-drift 26s ease-in-out infinite alternate;
+}
+.sf-retro small {
+  font-size: 10px;
+  color: var(--star-dim);
+  margin-left: 4px;
+}
+@keyframes retro-drift {
+  from { transform: translateX(0); }
+  to { transform: translateX(-18px); }
+}
+
+/* ─────────────── 流れ線（FlowLine）───────────────
+   3層の光の川：淡い川筋（常に見えている・ぼかし）→ 帯 → 輝く芯。
+   帯と芯だけがスクロールで描かれ、川筋は先に流路を予感させる。 */
+.flowline {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+.flowline svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+.flowline path {
+  fill: none;
+  stroke-linecap: round;
+}
+.flowline .fl-glow {
+  stroke-width: 12;
+  opacity: 0.12;
+}
+.flowline .fl-ribbon {
+  stroke-width: 3.4;
+  opacity: 0.3;
+}
+.flowline .fl-core {
+  stroke-width: 1.5;
+  opacity: 0.85;
 }
 
 /* 明朝の見出し */
@@ -255,35 +374,41 @@ body::before {
   letter-spacing: 0.06em;
 }
 
-/* 細い罫（M3 divider） */
+/* 細い罫（星霜: 端が空へ溶ける） */
 .hair {
   height: 1px;
-  background: var(--outline-variant);
+  background: linear-gradient(90deg, var(--outline-variant), color-mix(in srgb, var(--outline-variant) 0%, transparent));
   border: 0;
 }
 
-/* カード（M3 elevated card） */
+/* カード（空に浮かぶ半透明の面・流れ線が背後を通る） */
 .card {
-  background: var(--surface-container-low);
-  border: none;
+  background: color-mix(in srgb, var(--surface-container-low) 86%, transparent);
+  border: 1px solid color-mix(in srgb, var(--outline-variant) 55%, transparent);
   border-radius: var(--radius-card);
   box-shadow: var(--elev-1);
+  position: relative;
+  z-index: 1;
 }
 
-/* filled カード（影なし・リスト系の第2層） */
+/* filled カード（リスト系の第2層） */
 .card-filled {
-  background: var(--surface-container);
+  background: color-mix(in srgb, var(--surface-container) 88%, transparent);
   border-radius: var(--radius-card);
+  position: relative;
+  z-index: 1;
 }
 
-/* 小見出しラベル（M3 label-medium） */
+/* 小見出しラベル（節気の眉・常に金） */
 .eyebrow {
   font-size: 12px;
   font-weight: 500;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.16em;
   color: var(--primary);
   text-transform: none;
 }
+.eyebrow-lucky { color: var(--lucky); }
+.eyebrow-sekki { color: var(--sekki); }
 
 /* 数字を明朝で大きく */
 .numeral {
@@ -313,6 +438,7 @@ body::before {
 
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
+  :root { transition: none; }
 }
 
 /* focus */
@@ -332,10 +458,11 @@ body::before {
 .shell {
   max-width: 780px;
   margin: 0 auto;
-  padding: 12px 16px calc(104px + env(safe-area-inset-bottom));
+  padding: 12px 16px calc(118px + env(safe-area-inset-bottom));
+  position: relative;
 }
 
-/* ─────────────── ヘッダー（M3 top app bar） ─────────────── */
+/* ─────────────── ヘッダー（空に溶ける） ─────────────── */
 .appbar {
   position: sticky;
   top: 0;
@@ -346,14 +473,16 @@ body::before {
   gap: 12px;
   min-height: 64px;
   padding: 8px max(16px, calc((100% - 748px) / 2));
-  background: var(--bg-hi);
-  border-bottom: 1px solid var(--outline-variant);
+  background: color-mix(in srgb, var(--bg-hi) 55%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid color-mix(in srgb, var(--outline-variant) 45%, transparent);
 }
 .appbar-mark {
   font-family: var(--font-display);
   font-weight: 800;
   font-size: 1.375rem;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   color: var(--text);
 }
 .appbar-mark span { color: var(--primary); }
@@ -365,27 +494,37 @@ body::before {
 }
 .appbar-date b { color: var(--on-surface); font-weight: 500; font-family: var(--font-display); }
 
-/* ─────────────── 下部ナビゲーションバー（M3 Navigation Bar） ─────────────── */
+/* ─────────────── 下部ナビ（空に浮かぶ櫂・floating pill） ─────────────── */
 .navbar {
   position: fixed;
   inset: auto 0 0 0;
   z-index: 30;
-  background: var(--surface-container);
-  padding-bottom: env(safe-area-inset-bottom);
+  padding: 0 14px calc(10px + env(safe-area-inset-bottom));
+  pointer-events: none;
+  background: transparent;
 }
 .navbar-inner {
+  pointer-events: auto;
   display: flex;
-  max-width: 600px;
+  max-width: 440px;
   margin: 0 auto;
-  height: 80px;
+  height: 66px;
+  background: color-mix(in srgb, var(--surface-container) 78%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid color-mix(in srgb, var(--outline-variant) 60%, transparent);
+  border-radius: var(--shape-full);
+  box-shadow: var(--elev-2);
+  padding: 0 6px;
 }
 .navbar-item {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 12px 0 0;
+  justify-content: center;
+  gap: 3px;
+  padding: 0;
   background: none;
   border: 0;
   cursor: pointer;
@@ -393,8 +532,8 @@ body::before {
   -webkit-tap-highlight-color: transparent;
 }
 .navbar-ind {
-  width: 64px;
-  height: 32px;
+  width: 52px;
+  height: 28px;
   border-radius: var(--shape-full);
   display: grid;
   place-items: center;
@@ -408,7 +547,7 @@ body::before {
   color: var(--on-secondary-container);
 }
 .navbar-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   letter-spacing: normal;
 }
@@ -417,16 +556,40 @@ body::before {
   font-weight: 700;
 }
 
-/* ─────────────── フローメーター（金の聖域：弧・ラベル・光暈） ─────────────── */
-.flowmeter { position: relative; width: min(280px, 74vw); margin: 4px auto 8px; }
-/* 光の座布団 — 基準イメージのゲージ周りのほのかな光（375px幅でもはみ出さない範囲で） */
+/* ─────────────── フローメーター（金の聖域：地平線の弧） ─────────────── */
+.flowmeter { position: relative; width: min(300px, 80vw); margin: 10px auto 8px; z-index: 1; }
+/* 光暈 — 真円の光源。芯（金）→暖色の広がり→節気色の裾→完全透明の多段減衰で、
+   箱の端に達する前に必ず消える（矩形の境目を出さない）。ゆっくり呼吸する。 */
 .flowmeter::before {
   content: "";
   position: absolute;
-  inset: -8% -10%;
+  left: 50%;
+  top: 44%;
+  width: 170%;
+  aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
   z-index: -1;
-  background: radial-gradient(72% 60% at 50% 42%, color-mix(in srgb, var(--gold-400) 13%, transparent), transparent 74%);
   pointer-events: none;
+  background:
+    radial-gradient(
+      closest-side,
+      color-mix(in srgb, var(--gold-100) 15%, transparent) 0%,
+      color-mix(in srgb, var(--gold-400) 8%, transparent) 24%,
+      transparent 46%
+    ),
+    radial-gradient(
+      closest-side,
+      color-mix(in srgb, var(--gold-400) 6%, transparent) 0%,
+      color-mix(in srgb, var(--sekki) 4%, transparent) 44%,
+      color-mix(in srgb, var(--sekki) 1.5%, transparent) 60%,
+      transparent 74%
+    );
+  animation: glow-breathe 8s ease-in-out infinite;
+}
+@keyframes glow-breathe {
+  0%, 100% { opacity: 0.85; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
 }
 .flowmeter-svg { width: 100%; height: auto; display: block; }
 .flowmeter-value {
@@ -447,7 +610,7 @@ body::before {
   padding: 0 22%;
 }
 .flowmeter-score {
-  font-size: 3.6rem;
+  font-size: clamp(3.4rem, 15vw, 4.2rem);
   line-height: 1;
   color: var(--text);
   font-weight: 800;
@@ -461,7 +624,8 @@ body::before {
   margin-top: 4px;
   font-size: 1.02rem;
   color: var(--gold-400); /* 常に金 — 運が低い日も美しい */
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
+  font-family: var(--font-display);
 }
 .fete-badge {
   display: inline-block;
@@ -498,18 +662,37 @@ body::before {
   line-height: 1.5;
 }
 
-/* ─────────────── セクション見出し ─────────────── */
+/* ─────────────── セクション見出し（明朝の章題＋溶ける罫） ─────────────── */
 .section-head {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin: 32px 2px 14px;
+  gap: 14px;
+  margin: 40px 2px 14px;
+  position: relative;
+  z-index: 1;
 }
-.section-head .eyebrow { white-space: nowrap; }
+.section-head .eyebrow {
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--on-surface);
+}
+.section-head .eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--sekki);
+  margin-right: 10px;
+  vertical-align: 2px;
+}
 .section-head .hair { flex: 1; }
 
 /* ─────────────── フローカード ─────────────── */
-.cards { display: flex; flex-direction: column; gap: 12px; }
+.cards { display: flex; flex-direction: column; gap: 12px; position: relative; z-index: 1; }
 .flowcard {
   display: flex;
   gap: 14px;
@@ -549,12 +732,12 @@ body::before {
   color: var(--text-dim);
   line-height: 1.7;
 }
-.flowcard[data-tone="good"] { border-left: 3px solid var(--good); }
-.flowcard[data-tone="caution"] { border-left: 3px solid var(--caution); }
-.flowcard[data-tone="neutral"] { border-left: 3px solid var(--outline-variant); }
+.flowcard[data-tone="good"] { border-left: 3px solid var(--good); border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.flowcard[data-tone="caution"] { border-left: 3px solid var(--caution); border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.flowcard[data-tone="neutral"] { border-left: 3px solid var(--outline-variant); border-top-left-radius: 0; border-bottom-left-radius: 0; }
 
 /* ─────────────── 生まれ / 属性チップ ─────────────── */
-.chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 10px; position: relative; z-index: 1; }
 .chip {
   padding: 12px 15px;
   min-width: 96px;
@@ -579,18 +762,34 @@ body::before {
 .moonrow-body { flex: 1; min-width: 0; }
 .moon-float { animation: float-y 7s ease-in-out infinite; }
 
-/* ─────────────── スプラッシュ ─────────────── */
+/* ─────────────── スプラッシュ（夜空に線が流れる） ─────────────── */
 .splash {
   min-height: 100vh;
   display: grid;
   place-items: center;
 }
 .splash-mark {
-  font-size: 2.4rem;
-  letter-spacing: 0.2em;
+  font-size: 2.6rem;
+  letter-spacing: 0.24em;
   color: var(--primary);
-  opacity: 0.85;
+  opacity: 0.9;
   animation: twinkle 2.6s ease-in-out infinite;
+  position: relative;
+}
+.splash-mark::after {
+  content: "";
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: -14px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-400), transparent);
+  transform-origin: left;
+  animation: splash-line 1.6s var(--draw-ease) both;
+}
+@keyframes splash-line {
+  from { transform: scaleX(0); opacity: 0; }
+  to { transform: scaleX(1); opacity: 1; }
 }
 
 /* ─────────────── オンボーディング ─────────────── */
@@ -600,16 +799,20 @@ body::before {
   align-items: center;
   justify-content: center;
   padding: 40px 20px;
+  position: relative;
 }
 .onboard-inner {
   width: 100%;
   max-width: 440px;
+  position: relative;
+  z-index: 1;
 }
 .onboard-mark {
-  font-size: 3rem;
-  letter-spacing: 0.2em;
+  font-size: 3.4rem;
+  letter-spacing: 0.24em;
   text-align: center;
   color: var(--text);
+  animation: rise 720ms var(--spring-soft) both;
 }
 .onboard-lead {
   margin-top: 16px;
@@ -617,8 +820,9 @@ body::before {
   font-size: 0.86rem;
   color: var(--text-dim);
   line-height: 1.9;
+  animation: rise 720ms var(--spring-soft) 120ms both;
 }
-.onboard-form { display: flex; flex-direction: column; gap: 18px; }
+.onboard-form { display: flex; flex-direction: column; gap: 18px; animation: rise 720ms var(--spring-soft) 240ms both; }
 
 .field { display: flex; flex-direction: column; gap: 7px; }
 .field-label { font-size: 12px; font-weight: 500; letter-spacing: 0.5px; color: var(--primary); }
@@ -627,7 +831,7 @@ body::before {
 .field input {
   appearance: none;
   width: 100%;
-  background: transparent;
+  background: color-mix(in srgb, var(--surface-container-lowest) 55%, transparent);
   border: 1px solid var(--outline);
   border-radius: var(--shape-sm);
   color: var(--text);
@@ -695,9 +899,10 @@ body::before {
   color: var(--on-primary);
   background: var(--primary);
   cursor: pointer;
-  transition: box-shadow 0.2s;
+  transition: box-shadow 0.2s, transform 0.15s ease;
 }
 .cta:hover:not(:disabled) { box-shadow: var(--elev-1); }
+.cta:active:not(:disabled) { transform: scale(0.985); }
 .cta:disabled {
   background: color-mix(in srgb, var(--on-surface) 12%, transparent);
   color: color-mix(in srgb, var(--on-surface) 38%, transparent);
@@ -714,7 +919,7 @@ body::before {
   color: var(--text);
   font-weight: 500;
 }
-.nenun-card { padding: 18px; margin-top: 12px; border-left: 3px solid var(--outline-variant); }
+.nenun-card { padding: 18px; margin-top: 12px; border-left: 3px solid var(--outline-variant); border-top-left-radius: 0; border-bottom-left-radius: 0; }
 .nenun-card[data-tone='good'] { border-left-color: var(--good); }
 .nenun-card[data-tone='caution'] { border-left-color: var(--caution); }
 .nenun-phase { font-size: 1.6rem; margin-top: 4px; color: var(--text); }
@@ -727,6 +932,8 @@ body::before {
   padding: 4px 20px 6px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
+  position: relative;
+  z-index: 1;
 }
 .timeline-scroll svg { display: block; }
 
@@ -741,6 +948,7 @@ body::before {
 .tl-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .tl-legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 .tl-legend i.ring { background: transparent; border: 2px solid var(--gold-400); }
+.tl-legend i.ring-caution { background: transparent; border: 2px solid var(--caution); }
 
 /* ─────────────── バイオリズム凡例 ─────────────── */
 .bio-legend { display: flex; justify-content: center; gap: 18px; margin-top: 6px; font-size: 0.76rem; color: var(--text-dim); }
@@ -749,7 +957,7 @@ body::before {
 .bio-leg b { font-family: var(--font-display); font-variant-numeric: tabular-nums; }
 
 /* ─────────────── フッター ─────────────── */
-.footer { text-align: center; }
+.footer { text-align: center; position: relative; z-index: 1; }
 .footer p { font-size: 0.6875rem; color: var(--on-surface-variant); margin-top: 12px; }
 /* M3 outlined button */
 .reset {
@@ -772,6 +980,8 @@ body::before {
   color: var(--on-surface-variant);
   line-height: 1.7;
   margin: 10px 2px 0;
+  position: relative;
+  z-index: 1;
 }
 
 /* ─────────────── 占術事典（一覧） ─────────────── */
@@ -931,7 +1141,7 @@ body::before {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: var(--surface-container-lowest);
+  background: color-mix(in srgb, var(--surface-container-lowest) 80%, transparent);
   overflow: hidden;
 }
 .cal-day[data-today='true'] { background: var(--primary-container); }
@@ -947,7 +1157,8 @@ body::before {
 .cal-roku[data-tone='bad'] { color: var(--caution); }
 .cal-term {
   font-size: 0.625rem;
-  color: var(--accent);
+  color: var(--sekki);
+  font-weight: 600;
   margin-top: 1px;
   text-align: center;
   line-height: 1.1;
@@ -1012,14 +1223,13 @@ body::before {
 /* ─────────────── 六星占術 ─────────────── */
 .rokusei-card {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   padding: 16px 18px;
 }
 .rokusei-name { font-size: 1.7rem; color: var(--text); margin-top: 2px; }
 .rokusei-num { font-size: 0.8rem; color: var(--text-dim); }
 .rokusei-num b { color: var(--on-surface); font-size: 1.15rem; margin-left: 4px; }
-.rokusei-card { align-items: flex-start; }
 .rokusei-runki { font-size: 1.5rem; color: var(--primary); margin-top: 2px; }
 .rokusei-runki[data-sakkai='dai'] { color: var(--caution); }
 .rokusei-runki[data-sakkai='chu'] { color: var(--tertiary); }
@@ -1035,7 +1245,6 @@ body::before {
   padding: 1px 8px;
 }
 .rokusei-badge.chu { background: var(--tertiary-container); color: var(--on-tertiary-container); }
-.tl-legend i.ring-caution { background: transparent; border: 2px solid var(--caution); }
 
 /* ─────────────── 大運 ─────────────── */
 .daiun-scroll {
@@ -1044,6 +1253,8 @@ body::before {
   overflow-x: auto;
   padding: 2px 2px 8px;
   -webkit-overflow-scrolling: touch;
+  position: relative;
+  z-index: 1;
 }
 .daiun-cell {
   flex: 0 0 auto;
@@ -1063,7 +1274,6 @@ body::before {
 .daiun-cell[data-cur='true'] .daiun-yomi { color: var(--on-tertiary-container); opacity: 0.75; }
 
 /* ─────────────── 開運レイヤー（今日の色・ひとこと・開運アクション・祝祭） ─────────────── */
-.eyebrow-lucky { color: var(--lucky); }
 
 /* ひとことカード（ヒーロー・今日の気配を纏う） */
 .hitokoto {
@@ -1117,10 +1327,12 @@ body::before {
   display: flex;
   gap: 12px;
   align-items: flex-start;
-  background: var(--surface-container);
+  background: color-mix(in srgb, var(--surface-container) 88%, transparent);
   border-radius: var(--radius-card);
   padding: 13px 15px;
   transition: transform 160ms ease;
+  position: relative;
+  z-index: 1;
 }
 .lucky-action:active { transform: scale(0.98); }
 .lucky-action.lucky-first {
@@ -1193,4 +1405,3 @@ body::before {
   70% { transform: scaleX(1.05); }
   100% { transform: scaleX(1); }
 }
-

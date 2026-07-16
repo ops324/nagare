@@ -27,18 +27,26 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#fdfaf1" },
-    { media: "(prefers-color-scheme: dark)", color: "#161828" },
+    { media: "(prefers-color-scheme: dark)", color: "#10142a" },
   ],
   width: "device-width",
   initialScale: 1,
 };
 
+/**
+ * 初回描画前に空の状態（data-sky）を近似バンドで仮決めする（FOUC 回避）。
+ * 太陽高度による精密な判定は SkyField がマウント直後に上書きする。
+ * data-theme の上書き（dark→夜 / light→昼）もここで尊重する。
+ */
+const SKY_BOOT = `(function(){try{var d=document.documentElement;var t=d.getAttribute('data-theme');var s;if(t==='dark'){s='night';}else if(t==='light'){s='day';}else{var h=(new Date().getUTCHours()+9)%24;if(h>=7&&h<16){s='day';}else if(h>=4&&h<7){s='dawn';}else if(h>=16&&h<19){s='dusk';}else{s='night';}}d.setAttribute('data-sky',s);}catch(e){}})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ja" className={`${mincho.variable} ${gothic.variable}`}>
+    <html lang="ja" className={`${mincho.variable} ${gothic.variable}`} suppressHydrationWarning>
       <body>
+        <script dangerouslySetInnerHTML={{ __html: SKY_BOOT }} />
         {children}
       </body>
     </html>
