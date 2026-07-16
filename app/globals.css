@@ -3,7 +3,7 @@
 /*
   流れ — Material 3 × 和
   Google の Material 3（トーナルカラー・塗りのサーフェス・控えめなエレベーション）を基調に、
-  primary＝紺青由来のブルー、tertiary＝金箔由来のゴールド。
+  primary＝金箔由来のゴールド（tertiary と同系）。青は暦の慣習（土曜）にのみ残す。
   見出し・大きな漢字値は明朝（Shippori Mincho）を残し、和の個性を要所に保つ。
   ライト/ダークは prefers-color-scheme 連動（data-theme で上書き可）。
 */
@@ -11,15 +11,16 @@
 :root {
   color-scheme: dark;
 
-  /* ── M3 カラーロール（ダーク既定）／ primary=瑠璃（七宝の青） ── */
-  --primary: #adc6ff;
-  --on-primary: #0a2f6b;
-  --primary-container: #1d4390;
-  --on-primary-container: #d8e2ff;
+  /* ── M3 カラーロール（ダーク既定）／ primary=金（金箔・tertiary と同系） ── */
+  --primary: #dbc66f;
+  --on-primary: #3b2f00;
+  --primary-container: #554600;
+  --on-primary-container: #f9e287;
   --secondary: #bfc6dc;
   --on-secondary: #293041;
-  --secondary-container: #3f4759;
-  --on-secondary-container: #dbe2f9;
+  /* container は面で出る（セグメント／ナビの活性ピル）ため生成り寄りの温色に */
+  --secondary-container: #4a4735;
+  --on-secondary-container: #e7e0c8;
   --tertiary: #dbc66f; /* 金 */
   --on-tertiary: #3b2f00;
   --tertiary-container: #554600;
@@ -62,8 +63,12 @@
   --text-dim: var(--on-surface-variant);
   --text-faint: var(--outline);
   --accent: var(--primary);
-  --accent-soft: var(--primary);
+  --accent-soft: var(--gold-300);
   --silver: var(--secondary);
+
+  /* ── 曜日（暦の慣習・土=青/日=赤。テーマの操作色とは独立させる） ── */
+  --weekday-sun: #ffb4a3;
+  --weekday-sat: #8aa6d9;
 
   /* ── 今日の色（五行ラッキーカラー・既定=土/琥珀・html[data-lucky] で切替） ── */
   --lucky-l: #8b5000;
@@ -118,14 +123,14 @@
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
     color-scheme: light;
-    --primary: #1e50a2;
+    --primary: #715c0f;
     --on-primary: #ffffff;
-    --primary-container: #d8e2ff;
-    --on-primary-container: #001a43;
+    --primary-container: #fde287;
+    --on-primary-container: #231b00;
     --secondary: #575e71;
     --on-secondary: #ffffff;
-    --secondary-container: #dbe2f9;
-    --on-secondary-container: #141b2c;
+    --secondary-container: #e7e0c8;
+    --on-secondary-container: #21201a;
     --tertiary: #715c0f;
     --on-tertiary: #ffffff;
     --tertiary-container: #fde287;
@@ -155,6 +160,10 @@
     --gold-400: #715c0f;
     --gold-500: #5d4b03;
     --gold-600: #4a3b00;
+    /* 生成り地では金を暗い側へ振る（gold-300 は 4.2:1 で AA 未達） */
+    --accent-soft: var(--gold-500);
+    --weekday-sun: #9c4331;
+    --weekday-sat: #3a5c9e;
     --lucky: var(--lucky-l);
     --lucky-container: var(--lucky-container-l);
     --on-lucky-container: var(--on-lucky-container-l);
@@ -163,14 +172,14 @@
 }
 :root[data-theme="light"] {
   color-scheme: light;
-  --primary: #1e50a2;
+  --primary: #715c0f;
   --on-primary: #ffffff;
-  --primary-container: #d8e2ff;
-  --on-primary-container: #001a43;
+  --primary-container: #fde287;
+  --on-primary-container: #231b00;
   --secondary: #575e71;
   --on-secondary: #ffffff;
-  --secondary-container: #dbe2f9;
-  --on-secondary-container: #141b2c;
+  --secondary-container: #e7e0c8;
+  --on-secondary-container: #21201a;
   --tertiary: #715c0f;
   --on-tertiary: #ffffff;
   --tertiary-container: #fde287;
@@ -200,6 +209,10 @@
   --gold-400: #715c0f;
   --gold-500: #5d4b03;
   --gold-600: #4a3b00;
+  /* 生成り地では金を暗い側へ振る（gold-300 は 4.2:1 で AA 未達） */
+  --accent-soft: var(--gold-500);
+  --weekday-sun: #9c4331;
+  --weekday-sat: #3a5c9e;
   --lucky: var(--lucky-l);
   --lucky-container: var(--lucky-container-l);
   --on-lucky-container: var(--on-lucky-container-l);
@@ -907,8 +920,8 @@ body::before {
   color: var(--text-dim);
   padding: 4px 0;
 }
-.cal-w[data-wd='0'] { color: var(--caution); }
-.cal-w[data-wd='6'] { color: var(--primary); }
+.cal-w[data-wd='0'] { color: var(--weekday-sun); }
+.cal-w[data-wd='6'] { color: var(--weekday-sat); }
 .cal-day {
   position: relative;
   aspect-ratio: 1 / 1.15;
@@ -927,8 +940,8 @@ body::before {
   font-weight: 700;
 }
 .cal-daynum { font-family: var(--font-display); font-size: 0.82rem; color: var(--text); font-variant-numeric: tabular-nums; }
-.cal-day[data-wd='0'] .cal-daynum { color: var(--caution); }
-.cal-day[data-wd='6'] .cal-daynum { color: var(--primary); }
+.cal-day[data-wd='0'] .cal-daynum { color: var(--weekday-sun); }
+.cal-day[data-wd='6'] .cal-daynum { color: var(--weekday-sat); }
 .cal-roku { font-size: 0.625rem; margin-top: 1px; color: var(--on-surface-variant); }
 .cal-roku[data-tone='good'] { color: var(--good); }
 .cal-roku[data-tone='bad'] { color: var(--caution); }

@@ -8,7 +8,7 @@ interface Pt {
 const LINES = [
   { key: 'physical', label: 'からだ', color: 'var(--primary)' },
   { key: 'emotional', label: 'こころ', color: 'var(--caution)' },
-  { key: 'intellectual', label: '知性', color: 'var(--tertiary)' },
+  { key: 'intellectual', label: '知性', color: 'var(--silver)' },
 ] as const;
 
 export function Biorhythm({ series }: { series: Pt[] }) {
@@ -40,8 +40,8 @@ export function Biorhythm({ series }: { series: Pt[] }) {
         {/* 基準線 */}
         <line x1={padX} y1={H / 2} x2={W - padX} y2={H / 2} stroke="var(--border-hair)" strokeWidth="1" />
         {/* 今日の縦線 */}
-        <line x1={x(0)} y1={padY - 6} x2={x(0)} y2={H - padY + 6} stroke="var(--primary)" strokeWidth="1" strokeDasharray="2 3" opacity="0.7" />
-        <text x={x(0)} y={12} textAnchor="middle" fontSize="9" fill="var(--primary)" style={{ letterSpacing: '0.02em' }}>
+        <line x1={x(0)} y1={padY - 6} x2={x(0)} y2={H - padY + 6} stroke="var(--gold-500)" strokeWidth="1" strokeDasharray="2 3" opacity="0.7" />
+        <text x={x(0)} y={12} textAnchor="middle" fontSize="9" fill="var(--accent)" style={{ letterSpacing: '0.02em' }}>
           今日
         </text>
         {LINES.map((l) => (
