@@ -472,7 +472,7 @@ body::before {
   justify-content: space-between;
   gap: 12px;
   min-height: 64px;
-  padding: 8px max(16px, calc((100% - 748px) / 2));
+  padding: calc(8px + env(safe-area-inset-top)) max(16px, calc((100% - 748px) / 2)) 8px;
   background: color-mix(in srgb, var(--bg-hi) 55%, transparent);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -493,6 +493,46 @@ body::before {
   line-height: 1.5;
 }
 .appbar-date b { color: var(--on-surface); font-weight: 500; font-family: var(--font-display); }
+.appbar-share {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--outline-variant) 55%, transparent);
+  background: color-mix(in srgb, var(--bg-hi) 40%, transparent);
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease, background 160ms ease, transform 120ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.appbar-share:hover {
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 45%, transparent);
+}
+.appbar-share:active { transform: scale(0.92); }
+.appbar-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 60;
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  color: var(--on-surface);
+  background: color-mix(in srgb, var(--bg-hi) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--outline-variant) 55%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+  animation: toast-in 220ms var(--spring-out, ease);
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
 
 /* ─────────────── 下部ナビ（空に浮かぶ櫂・floating pill） ─────────────── */
 .navbar {

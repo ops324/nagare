@@ -22,6 +22,15 @@ export const metadata: Metadata = {
   title: "流れ — 天体・暦・命術で今の流れを読む",
   description:
     "生年月日から、天体の動き・星座・暦・生まれの傾向をひとつに束ね、『今日の流れ』と『大きな流れ』を読み解くアプリ。",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "流れ",
+  },
+  icons: {
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {
@@ -31,6 +40,9 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
+  // PWA 全画面時にステータスバー／ノッチ下まで描画を広げ、
+  // env(safe-area-inset-*) を有効化する（.appbar / .navbar が参照）。
+  viewportFit: "cover",
 };
 
 /**
