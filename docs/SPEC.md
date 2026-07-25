@@ -4,7 +4,7 @@
 > 特に「**§4 依存関係・影響範囲**」「**§5 不変条件（検証済み基準値）**」「**§12 改修時チェックリスト**」を、コード変更前に必ず確認してください。
 > 実装と乖離したら本書を更新すること（本書はコードと同じリポジトリで管理する生きたドキュメント）。
 
-最終更新: 2026-07-26 / 対象: `main`（PR #1〜#27 反映済み。「星霜」リデザイン＝実時刻連動の空4状態・節気の彩・流れ線・星図、操作色は金基調を継承。PWAアイコン・マニフェスト・シェア機能。**デザイントークンの土台（余白/文字/層/レイアウトのスケール）と和文フォントの入れ替わり修正**）
+最終更新: 2026-07-26 / 対象: `main`（PR #1〜#30 反映済み。「星霜」リデザイン＝実時刻連動の空4状態・節気の彩・流れ線・星図、操作色は金基調を継承。PWA。**デザイントークンの土台＋和文フォント修正（#27）／デスクトップ三ゾーン「柱・流れ・空」（#28）／入口体験 `/welcome`（#29）／席を移る活性ピルと reduced-motion の穴塞ぎ（#30）**）
 
 ---
 
@@ -25,7 +25,9 @@
 
 技術スタック: Next.js 16（App Router）/ React 19 / TypeScript / Tailwind CSS v4 / `astronomy-engine`(MIT) / `date-fns` / Vitest。デプロイ: Vercel（GitHub連携・main→本番自動、PR→プレビュー）。リポジトリ: `ops324/nagare`。
 
-**PWA**: `app/manifest.ts`（`MetadataRoute.Manifest`）で `/manifest.webmanifest` を生成。`display:standalone` によりホーム画面起動時 URL バーを非表示。`app/icon.png`（favicon自動認識）・`public/icon-{192,512}.png`（マニフェスト用）・`public/apple-touch-icon.png`（iOS用）を配置。`layout.tsx` の `viewport.viewportFit:'cover'` と `.appbar` の `env(safe-area-inset-top)` パディングで全画面時のノッチ被りを回避。
+ルートは2つ。**`/`**（`app/page.tsx`・localStorage ゲート＝スプラッシュ／入口／ダッシュボード）と **`/welcome`**（`app/welcome/`・ゲート無しの常設入口体験。静的プリレンダー）。ほかに `app/robots.ts`・`app/sitemap.ts`。
+
+**PWA**: `app/manifest.ts`（`MetadataRoute.Manifest`）で `/manifest.webmanifest` を生成。`display:standalone` によりホーム画面起動時 URL バーを非表示。**`start_url: '/'` は変更してはならない** — インストール済みのPWAは導入時のマニフェストをキャッシュしており、変えると既存ユーザーがアプリではなく入口に着地する（入口を常設の別ルートにしているのはこのため・§7）。`app/icon.png`（favicon自動認識）・`public/icon-{192,512}.png`（マニフェスト用）・`public/apple-touch-icon.png`（iOS用）を配置。`layout.tsx` の `viewport.viewportFit:'cover'` と `.appbar` の `env(safe-area-inset-top)` パディングで全画面時のノッチ被りを回避。
 
 ## 3. ファイル構成（`lib/`）
 
@@ -81,7 +83,7 @@ UI: `app/layout.tsx`（フォント・テーマカラー）、`app/page.tsx`（�
 
 ## 5. 不変条件（検証済み基準値）— これらは壊してはならない
 
-改修後、以下が変わったら**バグの疑い**。すべて Vitest（`npm test`・180件）で固定済み。
+改修後、以下が変わったら**バグの疑い**。すべて Vitest（`npm test`・185件）で固定済み。
 
 | 項目 | 基準値（出典） |
 |---|---|
@@ -185,13 +187,32 @@ UI: `app/layout.tsx`（フォント・テーマカラー）、`app/page.tsx`（�
 - **カラー**: primary＝**金**（金箔・light `#715c0f`/dark `#dbc66f`）。tertiary は primary と同値の同系ゴールド（`--accent` が primary の別名、`--accent-soft` は一段ずらしたトーン＝dark `--gold-300`／light `--gold-500`。生成り地では `--gold-300` が 4.2:1 で AA 未達のため、ライトは暗い側へ振る）。good/caution＝M3トーンの吉/凶（caution が M3 error 役を兼務）。`--secondary-container` はセグメント／ナビの活性ピルとして**面で出る**ため生成り寄りの温色（light `#e7e0c8`/dark `#4a4735`）。`--secondary` 自体は銀青のまま＝`--silver` の別名で、細い線・小さな字（`Biorhythm.tsx` の知性、`LifeTimeline.tsx` の中立トーン、`.mk-kanoene`）にのみ乗る。サーフェスは `--surface-container-*` 階層（生成り/夜紺トーン）。カードは3層＝hero（`.card`＋`--elev-1`）／filled（`.card-filled`・影なし）／outlined。
 - **曜日色**: 土＝青（light `#3a5c9e`/dark `#8aa6d9`）、日＝赤（light `#9c4331`/dark `#ffb4a3`）は暦の慣習であって操作色ではないため、`--weekday-sat`/`--weekday-sun` として**テーマから独立**させる（`--primary`/`--caution` を参照しない。参照すると操作色の変更で土曜が追随して慣習が壊れる）。アプリ内で青が残る唯一の箇所。
 - **開運レイヤー**: ①「今日の色」＝日干の五行→伝統色（`components/lucky.ts`、`html[data-lucky]`＋`--lucky*` トークン、方式は `PROVENANCE.luckyColor`）。適用はひとことカードと開運アクションの2ゾーンのみ ②ひとこと（`components/Hitokoto.tsx`＝挨拶＋トップシグナル＋`BAND_COPY` のテンプレ合成・非LLM、ストリーク・命の日バッジ） ③開運アクション（`components/LuckyActions.tsx`＝シグナル優先度で `ACTION_COPY` から最大3件・朗報ファースト） ④祝祭モーション（スプリングトークン `--spring-*`、天赦日の金の粒バースト＝日1回ガード＋reduced-motion 抑止、大安の脈動、score≥78 の金ブルーム、スコア数字は rAF カウントアップ。ゲージは弧・光暈・ラベルまで常に金の聖域。**光暈は真円の光源**＝`aspect-ratio 1:1`＋`border-radius 50%`＋`closest-side` の多段減衰（金の芯→暖色→節気色の裾→完全透明・囲み矩形の端に達する前に必ず消えるため境目が出ない）で、8秒周期の呼吸つき。外周には節気色の残光弧）。
-- **ナビ**: 画面下部の浮遊ピル型ナビゲーションバー（`components/NavBar.tsx`・5項目・アイコン自作SVG・`nav`＋`aria-current` セマンティクス・半透明＋blur・活性ピルのスプリングモーフ）。ヘッダーも半透明 blur で空に溶ける。
+- **ナビ**: 画面下部の浮遊ピル型ナビゲーションバー（`components/NavBar.tsx`・5項目・アイコン自作SVG・`nav`＋`aria-current` セマンティクス・半透明＋blur）。ヘッダーも半透明 blur で空に溶ける。**活性ピルは項目ごとに置かず「1枚が席を移る」**（`.navbar-pill`）。位置と大きさは活性項目（`[aria-current="page"] .navbar-ind`）の矩形を **JS が実測**して inline style で渡し、動くのは `transform` だけ＝合成のみで済む。CSS で位置を算術しないのは、レールの `gap` やラベル折り返しで簡単に狂うため。**`ResizeObserver` は observe 時に一度発火する性質を使って初回計測もコールバック経由にしている**（effect 本体で `setState` せず `react-hooks/set-state-in-effect` に触れない）。`active` が変わると effect が貼り直され、その initial callback で測り直す。この方式のおかげで**モバイルの横並びとデスクトップの縦レールに同じコードで効く**（ピル寸法も 52×28 / 44×32 を自動で採る）。
+- **モーション方針**: **アニメーションライブラリは入れない**（依存ゼロ・CSS＋rAF のみ）。PR #30 で `motion` と `lenis` を実際に入れて計測した上で外した経緯があり、同じ検討を繰り返さないために理由を残す：
+  - `motion`：最もインパクトのある共有要素モーフ（`layoutId`）は `LazyMotion` の `domAnimation` では動かず **`domMax` が必要**で、約6kB という見積もりが成立しない。毎朝開く PWA に約30kB は割に合わず、同じ動きは実測＋`transform` で 0kB で書ける（上記のナビピル）。
+  - `lenis`（慣性スクロール）：**有効時は `scrollY` が動いても `window` の `scroll` イベントが一度も発火しない**（実測）。本アプリは流れ線の `stroke-dashoffset` 描画・星図の視差・入口の節気24色巡回が**すべて scroll イベント駆動**のため両立しない（実際に節気の巡回が止まった）。スクロール駆動の設計にスクロールハイジャッカーを足さないこと。
+  - タブ遷移は本文列を `key` で貼り替えて `.tab-enter`（`transform`/`opacity` のみ）で立ち上げる。
 - **AppHeader シェアボタン**: ヘッダー右端の丸ボタン（`'use client'`）。`navigator.share()` 対応ブラウザ（モバイル等）はネイティブシェートを表示。非対応（デスクトップ等）は URL をクリップボードにコピーし「リンクをコピーしました」トーストをナビバー上に表示（1800ms）。Clipboard API 権限エラー時は `execCommand('copy')` にフォールバック。シェアはUI派生処理で占術値には非関与。
 - **タイポグラフィ**: 本文/UI＝Noto Sans JP（400/500/600/700）、ワードマーク・大きな漢字値・数字（スコア/日付/暦）＝Shippori Mincho（和の要所）。**文字サイズ下限 11px**、text-faint は装飾専用。10px の例外は2系統だけで、`__tests__/design-tokens.test.ts` の許可リストで固定している＝①暦セル内（7列×6段に日付・六曜・節気・選日印を収めるため）②`.sf-retro small`（星図の逆行ラベル・背景装飾で読ませる情報ではない）。**これ以外に 11px 未満を増やさない**（PR #27 で `.rokusei-badge` の 9.6px を下限へ戻した。大殺界/中殺界は装飾ではなく読ませるラベル）。
 - **フォント読込**（`layout.tsx`）: `next/font/google` の `subsets` は**プリロード対象の選択であって字形の間引きではない**ため、`["latin"]` でも CJK の `@font-face` は全て配信される（日本語がフォールバックしている、という読みは誤り）。実際の欠陥は入れ替わり（FOUT）側で、既定の `adjustFontFallback` がラテン参照字形からメトリクスを合成するため CJK では上書き値が合わず、ワードマークとスコア数字がガタつく。**両フォントとも `fallback` に CJK 実体を持つ端末フォントを明示し `adjustFontFallback: false`** とする（PR #27）。`preload: false` と `display: 'swap'` は維持。
 - **スケール（トークン体系）**: 余白 `--sp-3xs..5xl`（4px基数11段）＋ `--gutter` `--flow-rhythm`／文字 `--fs-micro..hero`（流体は `clamp()`）＋ 行間 `--lh-*` ・字送り `--tr-*`／層 `--elev-0..3` `--blur-sm..xl` `--veil-*`（カード・クローム・ナビ等の半透明レシピ）`--hairline-*`／レイアウト `--shell-max` `--column-max(-wide)` `--rail-w` `--appbar-max` `--nav-h`。**新規CSSは必ずトークンで書く**（リテラルを使う場合は PR 本文に理由を記す）。`--fs-score` はフローメーター＝金の聖域なので安易に動かさない。
 - **スタイルの書き方**: **意味論的CSS（`.card` `.flowcard` `.navbar-inner` …）で書き、Tailwind のユーティリティクラスは使わない**。理由＝①3軸カスケード（`data-sky`×`data-sekki`×`data-lucky` で約40変数を差し替え、`@property` 登録トークンを transition で補間）は CSS 変数のための設計で、ユーティリティ化すると `bg-[var(--surface-container-low)]` の羅列になり退化する ②ユーティリティの使用実績はゼロで、採用は「移行の続き」ではなく全20コンポーネントの書き換え＝本§7が丸ごと陳腐化する ③PR #24 が意味論的CSSのままフルリデザインを完走している。`@import "tailwindcss"` は Preflight のリセットに依存しているため残す（`@theme inline` はトークンを Tailwind 側へ公開する橋渡し）。
 - **Figma ミラー**: https://www.figma.com/design/rcwg1QG9F8ZsjSrrfXq33p （`app/globals.css` が正・食い違ったらコードが正しい）。変数213個／7コレクション＝`sky · night/dusk/day/dawn`（カスケード解決済みの実値）・`sekki`(24×l/d)・`lucky`(5×6)・`scale`（上記スケール＝コードとの契約書）、文字スタイル14・効果スタイル7。**Starter プランは1コレクション＝1モード制限**のため、空の4状態はモードではなく独立コレクション（変数名は4つとも同一）に分けてある。Figma の Noto Sans JP には SemiBold(600) が無く Medium で代替（ブラウザは可変フォントで出るためコード側は問題なし）。
+- **デスクトップ＝三ゾーン「柱・流れ・空」**（PR #28）。780px より広い領域は元々死に地だった。ブレークポイントは3段：
+  - **1024〜1279px**：柱＋流れの**二ゾーン**。この幅で右の「空」まで割ると 1 ゾーンが 64〜128px しか残らず、余白ではなく“詰まり”に見えるため空は開かない
+  - **1280px〜**：`.skyzone` を開いて三ゾーン
+  - **1440px〜**：レールの余白を広げる
+  - **柱**＝左のナビレール（`position: fixed`。グリッド列にはせず `.shell` の `padding-left` で場所を空ける）。**中央列＝`--column-max: 720px`。現行の実効幅 748px とほぼ同じなのでカードCSSを1行も変えずに済む**（デスクトップ化を低リスクにしている核心）。**空**＝右のほぼ空白で、`position: sticky` の要約パネル（スコア・節気・六曜・宿・今日の色。すべて計算済みの値を読むだけ）と `SkyField` の月の移動先。密度ではなく余白が意匠。
+  - `.shell[data-wide]`（大きな流れ/生まれ/暦/事典）は中央列を `--column-max-wide: 1040px` にし `.cards` を auto-fit グリッドへ。**今日タブは全幅で単列を維持**する（ゲージ→ひとこと→開運アクションの読みのリズムがプロダクトそのもので、多列化すると流れ線の物語が切れる）。
+  - `.column` は**モバイルでは position を持たない**ため `.flowline` は従来どおり `.shell` を基準にする（見えは不変）。デスクトップでのみ `position: relative` になり流れ線の基準が本文列へ移る。
+  - **`FlowLine` の振幅は px でクランプする**（`Math.min(w * (0.13+0.17*amp), 190)`）。割合だけで決めると 1040px 列で ±312px まで膨らみレールや空へはみ出す。モバイル（375px → 最大112px）にはかからない。
+  - `SkyField` の星は viewport 連動（72/110/160）。配列は**同じ seed のまま 160 個へ延長し `slice`** するので、mulberry32 の逐次生成により**先頭72個は完全に同一**＝モバイルはピクセル一致。
+  - キーボードでタブ移動（`1`〜`5`・`←`/`→`。入力欄にフォーカスがあるときは奪わない）。
+- **入口体験**（PR #29・`app/welcome/` ＋ `components/entry/EntryExperience.tsx`）: 未登録の訪問者に `/` が返すプリレンダーHTMLはスプラッシュ画面だったため、**常設ルート `/welcome` を新設**した。`manifest.ts` の `start_url: '/'` はインストール済みPWAがキャッシュ済みで変更できないので、**`/` はゲートごと維持し `!profile` 分岐だけを compact 版に差し替える**（ゲートの形・`useProfile`・スプラッシュ・manifest は不変）。五幕＝空／流れ／二十四の彩／読むもの／はじまり。
+  - **今日の実値（節気・六曜・干支・今日の色）はマウント後に読む**。描画時に日付を読むと静的プリレンダーでビルド時刻に固まり、ハイドレーションも壊れる（`useProfile` と同じマウントゲート方式）。
+  - **節気の24色巡回は compact ではしない**（ダッシュボードの `data-sekki` と競合するため）。
+  - スウォッチは `li` に `data-sekki` を載せる。`[data-sekki]` は**素の属性セレクタ**なので要素単位で `--sekki-l/-d` が差し替わる。`:root` の `--sekki` は継承値で効かないため、地の明暗でどちらを採るかは CSS 側（`.entry-swatches li`）で決める。
+  - **月は `SkyField`（背景層）が実相で描く一つだけ**。入口側で重ねて描かない（空に月は一つ）。
 - **旧変数互換**: `--accent` `--gold-*` `--border-*` `--text-*` `--silver` 等は M3 トークンへの別名として維持（SVGコンポーネントが参照）。
 
 今日タブの構成順：ゲージ → ひとこと → 開運アクション → 今日の兆し → 月と潮 → バイオリズム → 天体の便り → 気をつけたいこと（節気カードは暦タブ先頭へ移動・生まれチップは生まれタブのみ）。
@@ -207,7 +228,7 @@ BirthProfile { date:'YYYY-MM-DD'(必須); time?:'HH:mm'; place?:{lat,lng,name}; 
 
 ## 9. 品質保証（テスト対応表）
 
-`npm test`（Vitest・180件）。**参照値テスト＝§5の不変条件を固定**。改修時は必ず緑を維持。
+`npm test`（Vitest・185件）。**参照値テスト＝§5の不変条件を固定**。改修時は必ず緑を維持。
 
 | テスト | 守っている対象 |
 |---|---|
@@ -224,7 +245,7 @@ BirthProfile { date:'YYYY-MM-DD'(必須); time?:'HH:mm'; place?:{lat,lng,name}; 
 | transits.test | 回帰・年天中殺 |
 | astro.test | 太陽星座・月・**水星逆行の妥当性(年40〜90日)**・**逆行の留日(2026-07-24)** |
 | cycles-flow.test | 数え年・厄年・バイオ・profile・今日/大きな流れ |
-| **design-tokens.test**（`__tests__/`） | **デザイントークンの構造**＝§12.6 の同期を機械的に固定。節気24組が `-l`/`-d` 両方を持ち重複・余剰が無い／五行5色が6変数そろう／`--primary` と `--accent-soft` が明暗の両ブロックで定義され、生成り地の `accent-soft` が `gold-500` 側である（AA 4.5:1 の担保）／曜日色が `--primary`・`--caution` を参照しない／`@property` の syntax が `<color>`・`<number>`／11px未満は許可リストの箇所のみ／スケールトークンが欠けていない。**`app/globals.css` をテキストとして読むだけで `lib/` には非依存** |
+| **design-tokens.test**（`__tests__/`） | **デザイントークンの構造**＝§12.6 の同期を機械的に固定。節気24組が `-l`/`-d` 両方を持ち重複・余剰が無い／五行5色が6変数そろう／`--primary` と `--accent-soft` が明暗の両ブロックで定義され、生成り地の `accent-soft` が `gold-500` 側である（AA 4.5:1 の担保）／曜日色が `--primary`・`--caution` を参照しない／`@property` の syntax が `<color>`・`<number>`／11px未満は許可リストの箇所のみ／スケールトークンが欠けていない／**reduced-motion が animation と transition の両方を（疑似要素まで）止めている**／デスクトップのブレークポイント3段と `--rail-w` の 0px・88px、`.skyzone` が既定 none で 1280 ブロックでのみ block に戻ること。**`app/globals.css` をテキストとして読むだけで `lib/` には非依存** |
 
 その他ゲート: `tsc --noEmit`（型）、`eslint`（react-hooks の effect 内同期 setState 禁止等。意図的な localStorage マウントゲートは理由付き disable コメント＝`useProfile` 方式）、`next build`（静的プリレンダー）、pre-push フック＝`npm test` 自動実行、GitHub Actions CI（verify）、Claude Preview 実機確認。
 
@@ -251,8 +272,17 @@ BirthProfile { date:'YYYY-MM-DD'(必須); time?:'HH:mm'; place?:{lat,lng,name}; 
 1. **影響範囲を§4で確認**。基盤（time/koyomi/astro/profile/flow）ほど広く波及する。
 2. `git checkout -b feat/...` で**ブランチを切る**（main直接編集しない）。
 3. 変更したドメイン関数に**参照値テストを追加/更新**（§5の値を壊さない）。
-4. `npm test`（180件）→ `tsc --noEmit` → `eslint .` → `npm run build` を**すべて緑**に。
-5. 表示に関わるなら **Claude Preview で実機確認**（空4状態＝`data-sky` を dawn/day/dusk/night に強制・スマホ 320/375px・今日の色は `data-lucky` 5色）。**レイアウトが突然崩れたら（例：星図が固定されず月が左上に落ちる）まず dev サーバーの stale CSS を疑う**：ブランチ切替や `npm run build` を挟むと Turbopack の CSS 再コンパイルが固まり、旧 CSS を配信し続けることがある。配信中の CSS を `curl` して `data-sky`／`skyfield` が含まれるかで判定し（無ければ stale）、`.next/dev` を消して dev サーバーを再起動する。ソースや本番ビルドは無傷。
+4. `npm test`（185件）→ `tsc --noEmit` → `eslint .` → `npm run build` を**すべて緑**に。
+5. 表示に関わるなら **Claude Preview で実機確認**。見る軸は4つ：
+   - **空4状態**＝`data-sky` を dawn/day/dusk/night に強制（`SkyField` が60秒ごとに実時刻で上書きするので、`data-theme="dark"/"light"` を立てて `resolveSky` の override を効かせるのが確実）
+   - **幅** 320 / 375 / **1024 / 1280 / 1440 / 1920**（デスクトップ3ゾーンは §7 のとおり境界が3段ある）
+   - **今日の色** `data-lucky` 5色
+   - **`prefers-reduced-motion` を強制した状態**でも全タブと入口を確認（PR #30 以前は transition が止まっておらず、この観点が抜けていた）
+   
+   **レイアウトが突然崩れたら（例：星図が固定されず月が左上に落ちる）まず dev サーバーの stale CSS を疑う**：ブランチ切替や `npm run build` を挟むと Turbopack の CSS 再コンパイルが固まり、旧 CSS を配信し続けることがある。配信中の CSS を `curl` して `@media` 一覧や新しいクラス名が含まれるかで判定し（無ければ stale）、`.next/dev` を消して dev サーバーを再起動する。ソースや本番ビルドは無傷。
+   > **grep のパターンに注意**：出力CSSは `min-width: 1024px` のようにコロン後にスペースが入る。`min-width:1024px`（スペース無し）だけで grep すると**新鮮な CSS を stale と誤判定する**。実際に一度誤判定した。
+   
+   **スクロール駆動の機能を実測するときは rAF に揃える**：流れ線の描画・節気の24色巡回は rAF スロットリングされるため、`scrollTo` 直後に `setTimeout` だけで読むと更新前の値を拾う（一度これで「巡回が止まった」と誤診した）。`requestAnimationFrame` を2回挟んでから読むこと。
 6. **デザイントークンを変えたら同期を確認**（この項の大半は `__tests__/design-tokens.test.ts` が自動で守る。散文はCIで守れないため、規約を足したらテストにも足すこと）：空4状態の整合＝明るい地の共通ブロック（`[data-sky="day"], [data-sky="dawn"]`）と暁/宵の差分ブロックで `--primary`/`--accent-soft`/`--weekday-*` を揃える・`viewport.themeColor`（layout.tsx）・`--bg-hi/--bg-lo`（`@property` 登録済み＝構文は `<color>` 固定）。金の作法（操作色は金・caution に金を載せない・明るい地では金を暗い側のトーンへ振って AA 4.5:1 を確保）を崩さない。`--weekday-sat/sun` は暦の慣習用で操作色から独立（§7）。節気色（`--sekki-l/-d` 24組）は装飾アクセント専用＝本文文字には乗せない。金を別の色へ振り直す場合は**同系の金が重なる 2 グラフ**（`Biorhythm.tsx` の からだ/知性、`LifeTimeline.tsx` の帯とノード）で線が判別できるか必ず確認する。
 7. 占術の方式・流派・文言を変えたら **`provenance` の version を更新**し、本書§5/§10も更新。
 8. PR作成→検証結果を本文に記載→**squashマージ→Vercel自動デプロイ**。
@@ -260,7 +290,7 @@ BirthProfile { date:'YYYY-MM-DD'(必須); time?:'HH:mm'; place?:{lat,lng,name}; 
 
 ## 13. 用語集（抜粋）
 
-日干支/干支＝十干十二支の60周期。節月＝節気で区切る月（立春=寅月）。回座＝九星が年盤で巡る位置。八方塞がり＝本命星が中宮に入る年。空亡/天中殺＝日柱の旬で余る2支。運命星/星人＝六星占術の分類。大殺界＝六星の運気の陰影・停止・減退。本命宿＝生時の月が宿る27宿。三九の秘法＝宿曜の相性。二十八宿＝暦の日替わりの宿（牛宿を含む28）。今日の色＝日干の五行（甲乙木・丙丁火・戊己土・庚辛金・壬癸水）を日本の伝統色（萌黄・紅・琥珀・金箔・浅葱）に写した日替わりアクセント。命の日＝今日の27宿が本命宿と重なる個人の吉日（`todayShuku().isMeinichi`）。星霜＝本アプリのデザイン言語（今日の空×節気の彩×一本の流れ）。空の状態＝実時刻の太陽高度による dawn/day/dusk/night の4状態（`data-sky`）。節気の彩＝二十四節気を日本の伝統色に写した季節アクセント（`data-sekki`・`--sekki`）。流れ線＝タブ全高を降りる3層（川筋・帯・芯）の光の川（`FlowLine`・帯と芯はスクロールで描画）。星図＝背景の星・月相・逆行マークの層（`SkyField`）。スケール＝余白・文字・層・レイアウト幅の基準トークン群（`--sp-*` `--fs-*` `--veil-*` 等・§7）。ヴェール＝カードやクロームの半透明レシピをトークン化したもの（`--veil-card` 等）。髪の毛線＝枠線用の淡い outline-variant（`--hairline*`）。
+日干支/干支＝十干十二支の60周期。節月＝節気で区切る月（立春=寅月）。回座＝九星が年盤で巡る位置。八方塞がり＝本命星が中宮に入る年。空亡/天中殺＝日柱の旬で余る2支。運命星/星人＝六星占術の分類。大殺界＝六星の運気の陰影・停止・減退。本命宿＝生時の月が宿る27宿。三九の秘法＝宿曜の相性。二十八宿＝暦の日替わりの宿（牛宿を含む28）。今日の色＝日干の五行（甲乙木・丙丁火・戊己土・庚辛金・壬癸水）を日本の伝統色（萌黄・紅・琥珀・金箔・浅葱）に写した日替わりアクセント。命の日＝今日の27宿が本命宿と重なる個人の吉日（`todayShuku().isMeinichi`）。星霜＝本アプリのデザイン言語（今日の空×節気の彩×一本の流れ）。三ゾーン＝デスクトップの「柱（ナビレール）・流れ（本文列）・空（右の余白）」。入口体験＝未登録の訪問者に見せる五幕（`/welcome` と `/` の compact 版）。空の状態＝実時刻の太陽高度による dawn/day/dusk/night の4状態（`data-sky`）。節気の彩＝二十四節気を日本の伝統色に写した季節アクセント（`data-sekki`・`--sekki`）。流れ線＝タブ全高を降りる3層（川筋・帯・芯）の光の川（`FlowLine`・帯と芯はスクロールで描画）。星図＝背景の星・月相・逆行マークの層（`SkyField`）。スケール＝余白・文字・層・レイアウト幅の基準トークン群（`--sp-*` `--fs-*` `--veil-*` 等・§7）。ヴェール＝カードやクロームの半透明レシピをトークン化したもの（`--veil-card` 等）。髪の毛線＝枠線用の淡い outline-variant（`--hairline*`）。
 
 ---
 
