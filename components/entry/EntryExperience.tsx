@@ -145,6 +145,10 @@ export function EntryExperience({
   const today = useToday();
   const sekkiRef = useRef<HTMLElement>(null);
   useSekkiScroll(sekkiRef, !compact);
+  // 慣性スクロールのライブラリ（Lenis 等）は入れない。
+  // この入口は流れ線の描画・星図の視差・節気の24色巡回がすべて
+  // window の scroll イベント駆動で、スクロールを乗っ取る実装とは両立しない
+  // （実測：Lenis 有効時は scrollY が動いても scroll イベントが一度も発火しなかった）。
 
   const sekki = sekkiColorOf(today?.term);
   const lucky = today ? luckyColorOf(new Date()) : null;

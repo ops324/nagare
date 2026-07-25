@@ -200,6 +200,28 @@ describe('スケールトークンの土台', () => {
   });
 });
 
+describe('prefers-reduced-motion の担保', () => {
+  const at = () => {
+    const i = CSS.indexOf('@media (prefers-reduced-motion: reduce)');
+    expect(i, 'reduced-motion ブロックが無い').toBeGreaterThanOrEqual(0);
+    // ネストした宣言ブロックを跨ぐので、次のトップレベル閉じ括弧まで取る
+    return CSS.slice(i, CSS.indexOf('\n}', i));
+  };
+
+  it('アニメーションと transition の両方を止める', () => {
+    const b = at();
+    expect(b).toContain('animation-duration: 0.001ms !important');
+    // transition を止め忘れると、ナビの活性ピルなどが reduced-motion でも動く
+    expect(b, 'transition が止まっていない').toContain('transition-duration: 0.001ms !important');
+  });
+
+  it('疑似要素にも効かせている', () => {
+    const b = at();
+    expect(b).toContain('*::before');
+    expect(b).toContain('*::after');
+  });
+});
+
 describe('デスクトップ（三ゾーン「柱・流れ・空」）', () => {
   it('ブレークポイントが3段そろっている', () => {
     // 1024=柱＋流れの二ゾーン / 1280=空を開いて三ゾーン / 1440=レールに余白を足す
