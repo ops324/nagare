@@ -430,7 +430,7 @@ body::before {
 .sf-retro small {
   font-size: 10px;
   color: var(--star-dim);
-  margin-left: 4px;
+  margin-left: var(--sp-2xs);
 }
 @keyframes retro-drift {
   from { transform: translateX(0); }
@@ -486,8 +486,8 @@ body::before {
 
 /* カード（空に浮かぶ半透明の面・流れ線が背後を通る） */
 .card {
-  background: color-mix(in srgb, var(--surface-container-low) 86%, transparent);
-  border: 1px solid color-mix(in srgb, var(--outline-variant) 55%, transparent);
+  background: var(--veil-card);
+  border: 1px solid var(--hairline);
   border-radius: var(--radius-card);
   box-shadow: var(--elev-1);
   position: relative;
@@ -496,7 +496,7 @@ body::before {
 
 /* filled カード（リスト系の第2層） */
 .card-filled {
-  background: color-mix(in srgb, var(--surface-container) 88%, transparent);
+  background: var(--veil-filled);
   border-radius: var(--radius-card);
   position: relative;
   z-index: 1;
@@ -571,7 +571,7 @@ body::before {
 .shell {
   max-width: var(--shell-max);
   margin: 0 auto;
-  padding: 12px 16px calc(118px + env(safe-area-inset-bottom));
+  padding: var(--sp-md) var(--sp-lg) calc(118px + env(safe-area-inset-bottom));
   position: relative;
 }
 /* 本文列。モバイルではただのブロック＝レイアウト中立で、
@@ -593,13 +593,13 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--sp-md);
   min-height: 64px;
-  padding: calc(8px + env(safe-area-inset-top)) max(16px, calc((100% - 748px) / 2)) 8px;
-  background: color-mix(in srgb, var(--bg-hi) 55%, transparent);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid color-mix(in srgb, var(--outline-variant) 45%, transparent);
+  padding: calc(8px + env(safe-area-inset-top)) max(16px, calc((100% - var(--appbar-max)) / 2)) var(--sp-sm);
+  background: var(--veil-chrome);
+  backdrop-filter: blur(var(--blur-md));
+  -webkit-backdrop-filter: blur(var(--blur-md));
+  border-bottom: 1px solid var(--hairline-soft);
 }
 .appbar-mark {
   font-family: var(--font-display);
@@ -623,8 +623,8 @@ body::before {
   width: 40px;
   height: 40px;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--outline-variant) 55%, transparent);
-  background: color-mix(in srgb, var(--bg-hi) 40%, transparent);
+  border: 1px solid var(--hairline);
+  background: var(--veil-field);
   color: var(--on-surface-variant);
   cursor: pointer;
   transition: color 160ms ease, border-color 160ms ease, background 160ms ease, transform 120ms ease;
@@ -641,15 +641,15 @@ body::before {
   bottom: calc(96px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   z-index: 60;
-  padding: 9px 16px;
+  padding: 9px var(--sp-lg);
   border-radius: 999px;
   font-size: 0.8125rem;
   color: var(--on-surface);
-  background: color-mix(in srgb, var(--bg-hi) 88%, transparent);
-  border: 1px solid color-mix(in srgb, var(--outline-variant) 55%, transparent);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+  background: var(--veil-toast);
+  border: 1px solid var(--hairline);
+  backdrop-filter: blur(var(--blur-md));
+  -webkit-backdrop-filter: blur(var(--blur-md));
+  box-shadow: var(--elev-3);
   animation: toast-in 220ms var(--spring-out, ease);
 }
 @keyframes toast-in {
@@ -672,14 +672,14 @@ body::before {
   position: relative;
   max-width: 440px;
   margin: 0 auto;
-  height: 66px;
-  background: color-mix(in srgb, var(--surface-container) 78%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid color-mix(in srgb, var(--outline-variant) 60%, transparent);
+  height: var(--nav-h);
+  background: var(--veil-nav);
+  backdrop-filter: blur(var(--blur-lg));
+  -webkit-backdrop-filter: blur(var(--blur-lg));
+  border: 1px solid var(--hairline-strong);
   border-radius: var(--shape-full);
   box-shadow: var(--elev-2);
-  padding: 0 6px;
+  padding: 0 var(--sp-xs);
 }
 .navbar-item {
   flex: 1;
@@ -740,7 +740,7 @@ body::before {
 }
 
 /* ─────────────── フローメーター（金の聖域：地平線の弧） ─────────────── */
-.flowmeter { position: relative; width: min(300px, 80vw); margin: 10px auto 8px; z-index: 1; }
+.flowmeter { position: relative; width: min(300px, 80vw); margin: 10px auto var(--sp-sm); z-index: 1; }
 /* 光暈 — 真円の光源。芯（金）→暖色の広がり→節気色の裾→完全透明の多段減衰で、
    箱の端に達する前に必ず消える（矩形の境目を出さない）。ゆっくり呼吸する。 */
 .flowmeter::before {
@@ -804,7 +804,7 @@ body::before {
   text-shadow: 0 0 26px color-mix(in srgb, var(--gold-100) 60%, transparent);
 }
 .flowmeter-label {
-  margin-top: 4px;
+  margin-top: var(--sp-2xs);
   font-size: 1.02rem;
   color: var(--gold-400); /* 常に金 — 運が低い日も美しい */
   letter-spacing: 0.04em;
@@ -817,7 +817,7 @@ body::before {
   color: var(--on-tertiary-container);
   border: 1px solid var(--gold-400);
   border-radius: var(--shape-full);
-  padding: 1px 12px;
+  padding: 1px var(--sp-md);
   font-size: 11px;
   font-weight: 600;
   animation: badge-in 420ms var(--spring-out) 1.1s both;
@@ -838,7 +838,7 @@ body::before {
   line-height: 1;
 }
 .flowmeter-summary {
-  margin-top: 8px;
+  margin-top: var(--sp-sm);
   font-size: 0.6875rem;
   color: var(--on-surface-variant);
   letter-spacing: 0.02em;
@@ -850,7 +850,7 @@ body::before {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin: 40px 2px 14px;
+  margin: var(--sp-3xl) var(--sp-3xs) 14px;
   position: relative;
   z-index: 1;
 }
@@ -875,11 +875,11 @@ body::before {
 .section-head .hair { flex: 1; }
 
 /* ─────────────── フローカード ─────────────── */
-.cards { display: flex; flex-direction: column; gap: 12px; position: relative; z-index: 1; }
+.cards { display: flex; flex-direction: column; gap: var(--sp-md); position: relative; z-index: 1; }
 .flowcard {
   display: flex;
   gap: 14px;
-  padding: 15px 16px;
+  padding: 15px var(--sp-lg);
   align-items: flex-start;
 }
 .flowcard-emoji {
@@ -897,7 +897,7 @@ body::before {
   letter-spacing: normal;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-sm);
   flex-wrap: wrap;
 }
 .flowcard-sys {
@@ -907,10 +907,10 @@ body::before {
   color: var(--on-surface-variant);
   border: 1px solid var(--outline-variant);
   border-radius: var(--shape-sm);
-  padding: 1px 8px;
+  padding: 1px var(--sp-sm);
 }
 .flowcard-desc {
-  margin-top: 4px;
+  margin-top: var(--sp-2xs);
   font-size: 0.875rem;
   color: var(--text-dim);
   line-height: 1.7;
@@ -922,7 +922,7 @@ body::before {
 /* ─────────────── 生まれ / 属性チップ ─────────────── */
 .chips { display: flex; flex-wrap: wrap; gap: 10px; position: relative; z-index: 1; }
 .chip {
-  padding: 12px 15px;
+  padding: var(--sp-md) 15px;
   min-width: 96px;
   flex: 1 1 auto;
 }
@@ -940,7 +940,7 @@ body::before {
   display: flex;
   gap: 18px;
   align-items: center;
-  padding: 16px;
+  padding: var(--sp-lg);
 }
 .moonrow-body { flex: 1; min-width: 0; }
 .moon-float { animation: float-y 7s ease-in-out infinite; }
@@ -981,7 +981,7 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px;
+  padding: var(--sp-3xl) 20px;
   position: relative;
 }
 .onboard-inner {
@@ -998,7 +998,7 @@ body::before {
   animation: rise 720ms var(--spring-soft) both;
 }
 .onboard-lead {
-  margin-top: 16px;
+  margin-top: var(--sp-lg);
   text-align: center;
   font-size: 0.86rem;
   color: var(--text-dim);
@@ -1021,7 +1021,7 @@ body::before {
   font-family: var(--font-body);
   font-size: 16px;
   letter-spacing: normal;
-  padding: 14px 16px;
+  padding: 14px var(--sp-lg);
 }
 .field input:focus {
   border-color: var(--primary);
@@ -1071,7 +1071,7 @@ body::before {
 /* M3 filled button */
 .cta {
   appearance: none;
-  margin-top: 6px;
+  margin-top: var(--sp-xs);
   border: 0;
   border-radius: var(--shape-full);
   padding: 14px;
@@ -1091,28 +1091,28 @@ body::before {
   color: color-mix(in srgb, var(--on-surface) 38%, transparent);
   cursor: not-allowed;
 }
-.onboard-note { font-size: 0.6875rem; color: var(--on-surface-variant); text-align: center; line-height: 1.7; margin-top: 4px; }
+.onboard-note { font-size: 0.6875rem; color: var(--on-surface-variant); text-align: center; line-height: 1.7; margin-top: var(--sp-2xs); }
 
 /* ─────────────── 大きな流れ ─────────────── */
 .theme-card { padding: 20px 18px; }
 .theme-text {
-  margin-top: 8px;
+  margin-top: var(--sp-sm);
   font-size: 1.12rem;
   line-height: 1.95;
   color: var(--text);
   font-weight: 500;
 }
-.nenun-card { padding: 18px; margin-top: 12px; border-left: 3px solid var(--outline-variant); border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.nenun-card { padding: 18px; margin-top: var(--sp-md); border-left: 3px solid var(--outline-variant); border-top-left-radius: 0; border-bottom-left-radius: 0; }
 .nenun-card[data-tone='good'] { border-left-color: var(--good); }
 .nenun-card[data-tone='caution'] { border-left-color: var(--caution); }
-.nenun-phase { font-size: 1.6rem; margin-top: 4px; color: var(--text); }
-.nenun-meta { font-size: 0.78rem; color: var(--accent-soft); margin-top: 4px; letter-spacing: 0.04em; }
+.nenun-phase { font-size: 1.6rem; margin-top: var(--sp-2xs); color: var(--text); }
+.nenun-meta { font-size: 0.78rem; color: var(--accent-soft); margin-top: var(--sp-2xs); letter-spacing: 0.04em; }
 
 .timeline-scroll {
   overflow-x: auto;
   overflow-y: hidden;
   margin: 0 -20px;
-  padding: 4px 20px 6px;
+  padding: var(--sp-2xs) 20px var(--sp-xs);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   position: relative;
@@ -1123,25 +1123,25 @@ body::before {
 .tl-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px 16px;
-  margin-top: 12px;
+  gap: var(--sp-md) var(--sp-lg);
+  margin-top: var(--sp-md);
   font-size: 0.7rem;
   color: var(--text-dim);
 }
-.tl-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.tl-legend span { display: inline-flex; align-items: center; gap: var(--sp-xs); }
 .tl-legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 .tl-legend i.ring { background: transparent; border: 2px solid var(--gold-400); }
 .tl-legend i.ring-caution { background: transparent; border: 2px solid var(--caution); }
 
 /* ─────────────── バイオリズム凡例 ─────────────── */
-.bio-legend { display: flex; justify-content: center; gap: 18px; margin-top: 6px; font-size: 0.76rem; color: var(--text-dim); }
-.bio-leg { display: inline-flex; align-items: center; gap: 6px; }
+.bio-legend { display: flex; justify-content: center; gap: 18px; margin-top: var(--sp-xs); font-size: 0.76rem; color: var(--text-dim); }
+.bio-leg { display: inline-flex; align-items: center; gap: var(--sp-xs); }
 .bio-leg i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
 .bio-leg b { font-family: var(--font-display); font-variant-numeric: tabular-nums; }
 
 /* ─────────────── フッター ─────────────── */
 .footer { text-align: center; position: relative; z-index: 1; }
-.footer p { font-size: 0.6875rem; color: var(--on-surface-variant); margin-top: 12px; }
+.footer p { font-size: 0.6875rem; color: var(--on-surface-variant); margin-top: var(--sp-md); }
 /* M3 outlined button */
 .reset {
   appearance: none;
@@ -1162,24 +1162,24 @@ body::before {
   font-size: 0.75rem;
   color: var(--on-surface-variant);
   line-height: 1.7;
-  margin: 10px 2px 0;
+  margin: 10px var(--sp-3xs) 0;
   position: relative;
   z-index: 1;
 }
 
 /* ─────────────── 占術事典（一覧） ─────────────── */
-.jiten-list { padding: 2px 0; }
+.jiten-list { padding: var(--sp-3xs) 0; }
 .jiten-row {
   display: grid;
   grid-template-columns: 108px 1fr;
   gap: 14px;
-  padding: 12px 16px;
+  padding: var(--sp-md) var(--sp-lg);
   align-items: baseline;
   border-top: 1px solid var(--border);
 }
 .jiten-row:first-child { border-top: 0; }
 .jiten-name { font-size: 1.05rem; color: var(--text); letter-spacing: 0.03em; line-height: 1.35; }
-.jiten-yomi { display: block; font-size: 0.6875rem; color: var(--on-surface-variant); margin-top: 2px; letter-spacing: 0.02em; }
+.jiten-yomi { display: block; font-size: 0.6875rem; color: var(--on-surface-variant); margin-top: var(--sp-3xs); letter-spacing: 0.02em; }
 .jiten-desc { font-size: 0.875rem; color: var(--text-dim); line-height: 1.75; }
 .jiten-row[data-tone='good'] .jiten-name { color: var(--good); }
 .jiten-row[data-tone='caution'] .jiten-name { color: var(--caution); }
@@ -1189,15 +1189,15 @@ body::before {
 .rokusei-top { display: flex; align-items: flex-start; justify-content: space-between; }
 
 /* ─────────────── 命式（四柱推命） ─────────────── */
-.meishiki { padding: 16px; }
+.meishiki { padding: var(--sp-lg); }
 .meishiki-pillars {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  gap: var(--sp-sm);
 }
 .pillar {
   text-align: center;
-  padding: 10px 4px 12px;
+  padding: 10px var(--sp-2xs) var(--sp-md);
   border: none;
   border-radius: var(--shape-sm);
   background: var(--surface-container-high);
@@ -1206,7 +1206,7 @@ body::before {
 .pillar-stem {
   font-size: 2rem;
   line-height: 1.1;
-  margin-top: 8px;
+  margin-top: var(--sp-sm);
   color: var(--text);
 }
 .pillar-branch {
@@ -1224,14 +1224,14 @@ body::before {
   font-size: 0.78rem;
   color: var(--text-dim);
 }
-.meishiki-meta b { color: var(--on-surface); font-size: 1rem; margin-left: 4px; }
+.meishiki-meta b { color: var(--on-surface); font-size: 1rem; margin-left: var(--sp-2xs); }
 
 /* ─────────────── 九星盤 ─────────────── */
-.kyuseiban { padding: 16px; }
+.kyuseiban { padding: var(--sp-lg); }
 .kyuseiban-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  gap: var(--sp-xs);
 }
 .ban-cell {
   position: relative;
@@ -1243,7 +1243,7 @@ body::before {
   border: none;
   border-radius: var(--shape-sm);
   background: var(--surface-container-high);
-  padding: 4px;
+  padding: var(--sp-2xs);
 }
 .ban-cell[data-state='kichi'] { background: var(--good-container); }
 .ban-cell[data-state='kichi'] .ban-dir,
@@ -1264,7 +1264,7 @@ body::before {
   position: absolute;
   bottom: 5px;
   font-size: 0.6875rem;
-  padding: 1px 6px;
+  padding: 1px var(--sp-xs);
   border-radius: var(--shape-full);
   letter-spacing: normal;
   font-weight: 500;
@@ -1272,19 +1272,19 @@ body::before {
 .ban-tag-kichi { color: var(--on-good); background: var(--good); }
 .ban-tag-kyou { color: var(--on-caution); background: var(--caution); }
 .kyuseiban-note {
-  margin-top: 12px;
+  margin-top: var(--sp-md);
   font-size: 0.875rem;
   color: var(--text-dim);
   line-height: 1.7;
 }
 
 /* ─────────────── 暦カレンダー ─────────────── */
-.calendar { padding: 14px 12px 16px; }
+.calendar { padding: 14px var(--sp-md) var(--sp-lg); }
 .cal-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: var(--sp-md);
 }
 .cal-title { font-size: 1.1rem; color: var(--text); letter-spacing: 0.06em; }
 /* M3 icon button */
@@ -1311,7 +1311,7 @@ body::before {
   text-align: center;
   font-size: 0.6875rem;
   color: var(--text-dim);
-  padding: 4px 0;
+  padding: var(--sp-2xs) 0;
 }
 .cal-w[data-wd='0'] { color: var(--weekday-sun); }
 .cal-w[data-wd='6'] { color: var(--weekday-sat); }
@@ -1320,7 +1320,7 @@ body::before {
   aspect-ratio: 1 / 1.15;
   border: none;
   border-radius: var(--shape-sm);
-  padding: 3px 2px;
+  padding: 3px var(--sp-3xs);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1346,7 +1346,7 @@ body::before {
   text-align: center;
   line-height: 1.1;
 }
-.cal-marks { display: flex; gap: 2px; margin-top: auto; height: 12px; align-items: center; }
+.cal-marks { display: flex; gap: var(--sp-3xs); margin-top: auto; height: 12px; align-items: center; }
 .mk { font-size: 0.625rem; line-height: 1; }
 .mk-tensha { color: var(--gold-300); }
 .mk-ichiryu { color: var(--good); }
@@ -1357,7 +1357,7 @@ body::before {
 .cal-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 16px;
+  gap: 10px var(--sp-lg);
   margin-top: 14px;
   font-size: 0.6875rem;
   color: var(--text-dim);
@@ -1370,12 +1370,12 @@ body::before {
   font-size: 2rem;
   color: var(--text);
   line-height: 1.1;
-  margin-top: 4px;
+  margin-top: var(--sp-2xs);
 }
 .sukuyo-card .flowcard-desc { text-align: left; }
 
 /* ─────────────── 相性（三九の秘法） ─────────────── */
-.aisho { padding: 16px; }
+.aisho { padding: var(--sp-lg); }
 .aisho-result {
   border-top: 1px solid var(--border);
   padding-top: 14px;
@@ -1392,7 +1392,7 @@ body::before {
 .aisho-row b { font-size: 1.15rem; color: var(--text); }
 .aisho-rel {
   font-size: 1.7rem;
-  margin-top: 8px;
+  margin-top: var(--sp-sm);
   color: var(--accent-soft);
 }
 .aisho-result[data-tone='good'] .aisho-rel { color: var(--good); }
@@ -1401,24 +1401,24 @@ body::before {
 
 /* ─────────────── 宿曜（本命宿／今日の宿） ─────────────── */
 .twin-label { font-size: 11px; font-weight: 500; letter-spacing: 0.5px; color: var(--primary); }
-.twin-sub { font-size: 0.6875rem; color: var(--text-dim); margin-top: 4px; }
+.twin-sub { font-size: 0.6875rem; color: var(--text-dim); margin-top: var(--sp-2xs); }
 
 /* ─────────────── 六星占術 ─────────────── */
 .rokusei-card {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 16px 18px;
+  padding: var(--sp-lg) 18px;
 }
-.rokusei-name { font-size: 1.7rem; color: var(--text); margin-top: 2px; }
+.rokusei-name { font-size: 1.7rem; color: var(--text); margin-top: var(--sp-3xs); }
 .rokusei-num { font-size: 0.8rem; color: var(--text-dim); }
-.rokusei-num b { color: var(--on-surface); font-size: 1.15rem; margin-left: 4px; }
-.rokusei-runki { font-size: 1.5rem; color: var(--primary); margin-top: 2px; }
+.rokusei-num b { color: var(--on-surface); font-size: 1.15rem; margin-left: var(--sp-2xs); }
+.rokusei-runki { font-size: 1.5rem; color: var(--primary); margin-top: var(--sp-3xs); }
 .rokusei-runki[data-sakkai='dai'] { color: var(--caution); }
 .rokusei-runki[data-sakkai='chu'] { color: var(--tertiary); }
 .rokusei-badge {
   display: inline-block;
-  margin-top: 4px;
+  margin-top: var(--sp-2xs);
   /* 0.6rem(9.6px) は 10px 例外にすら満たなかった。大殺界/中殺界は装飾ではなく
      読ませるラベルなので、SPEC §7 の下限 11px へ戻す（PR1 唯一の意図的な見た目変更）*/
   font-size: var(--fs-caption);
@@ -1427,16 +1427,16 @@ body::before {
   color: var(--on-caution);
   background: var(--caution);
   border-radius: var(--shape-full);
-  padding: 1px 8px;
+  padding: 1px var(--sp-sm);
 }
 .rokusei-badge.chu { background: var(--tertiary-container); color: var(--on-tertiary-container); }
 
 /* ─────────────── 大運 ─────────────── */
 .daiun-scroll {
   display: flex;
-  gap: 8px;
+  gap: var(--sp-sm);
   overflow-x: auto;
-  padding: 2px 2px 8px;
+  padding: var(--sp-3xs) var(--sp-3xs) var(--sp-sm);
   -webkit-overflow-scrolling: touch;
   position: relative;
   z-index: 1;
@@ -1445,7 +1445,7 @@ body::before {
   flex: 0 0 auto;
   min-width: 72px;
   text-align: center;
-  padding: 12px 8px;
+  padding: var(--sp-md) var(--sp-sm);
   border: none;
   border-radius: var(--shape-sm);
   background: var(--surface-container-high);
@@ -1453,7 +1453,7 @@ body::before {
 .daiun-cell[data-cur='true'] { background: var(--tertiary-container); }
 .daiun-age { font-size: 0.6875rem; color: var(--on-surface-variant); letter-spacing: 0.02em; }
 .daiun-cell[data-cur='true'] .daiun-age { color: var(--on-tertiary-container); }
-.daiun-kanshi { font-size: 1.5rem; color: var(--text); margin-top: 4px; line-height: 1.1; }
+.daiun-kanshi { font-size: 1.5rem; color: var(--text); margin-top: var(--sp-2xs); line-height: 1.1; }
 .daiun-cell[data-cur='true'] .daiun-kanshi { color: var(--on-tertiary-container); }
 .daiun-yomi { font-size: 0.6875rem; color: var(--on-surface-variant); margin-top: 3px; }
 .daiun-cell[data-cur='true'] .daiun-yomi { color: var(--on-tertiary-container); opacity: 0.75; }
@@ -1464,20 +1464,20 @@ body::before {
 .hitokoto {
   position: relative;
   background: var(--lucky-wash);
-  padding: 16px 18px;
+  padding: var(--sp-lg) 18px;
 }
 .hitokoto-text { font-size: 0.95rem; line-height: 1.8; color: var(--text); }
 .hitokoto-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
 .lucky-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-xs);
   background: var(--lucky-container);
   color: var(--on-lucky-container);
   font-size: 11px;
   font-weight: 500;
   border-radius: var(--shape-full);
-  padding: 3px 12px;
+  padding: 3px var(--sp-md);
 }
 .lucky-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--lucky); flex-shrink: 0; }
 .lucky-gogyo { opacity: 0.8; }
@@ -1490,7 +1490,7 @@ body::before {
   border: 1.5px solid var(--gold-400);
   color: var(--gold-400);
   border-radius: var(--shape-full);
-  padding: 1px 12px;
+  padding: 1px var(--sp-md);
   font-size: 11px;
   font-weight: 600;
   animation: badge-in 420ms var(--spring-out) both;
@@ -1510,9 +1510,9 @@ body::before {
 /* 開運アクションカード */
 .lucky-action {
   display: flex;
-  gap: 12px;
+  gap: var(--sp-md);
   align-items: flex-start;
-  background: color-mix(in srgb, var(--surface-container) 88%, transparent);
+  background: var(--veil-filled);
   border-radius: var(--radius-card);
   padding: 13px 15px;
   transition: transform 160ms ease;
@@ -1547,7 +1547,7 @@ body::before {
   font-weight: 500;
   border-radius: var(--shape-full);
   padding: 1px 10px;
-  margin-top: 6px;
+  margin-top: var(--sp-xs);
 }
 .lucky-first .lucky-chip { background: var(--lucky-container); color: var(--on-lucky-container); }
 
@@ -1592,7 +1592,7 @@ body::before {
    そこで ≥1024px では画面を3つに割る：
      柱＝左のナビレール（浮遊ピルを90°回した浮遊する櫂）
      流れ＝中央の本文列。**カードCSSは一切変えない**（720px は現行の実効幅
-           748px とほぼ同じ）＝ここがデスクトップ化を低リスクにしている核心
+           var(--appbar-max) とほぼ同じ）＝ここがデスクトップ化を低リスクにしている核心
      空＝右のほぼ空白。密度ではなく余白が意匠なので、意図的に空けておく
    ═══════════════════════════════════════════════════════════════ */
 @media (min-width: 1024px) {
