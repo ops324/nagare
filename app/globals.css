@@ -540,7 +540,17 @@ body::before {
 .rise { animation: rise 480ms var(--spring-soft) both; }
 
 @media (prefers-reduced-motion: reduce) {
-  * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
+  /* アニメーションだけでなく **transition も** 止める。
+     以前は :root（空のクロスフェード）しか止めておらず、ナビの活性ピルや
+     ボタンの transition は reduced-motion でも動いてしまっていた。 */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
   :root { transition: none; }
 }
 
@@ -659,6 +669,7 @@ body::before {
 .navbar-inner {
   pointer-events: auto;
   display: flex;
+  position: relative;
   max-width: 440px;
   margin: 0 auto;
   height: 66px;
@@ -695,9 +706,28 @@ body::before {
 .navbar-item:hover .navbar-ind {
   background: color-mix(in srgb, var(--on-surface) 8%, transparent);
 }
+/* 活性の背景はピル（1枚）が担うので、ここでは文字色だけを変える */
 .navbar-item[aria-current="page"] .navbar-ind {
-  background: var(--secondary-container);
   color: var(--on-secondary-container);
+}
+
+/* 席を移る活性ピル。位置と大きさは JS が実測して inline style で渡す。
+   動くのは transform だけなので合成のみで済む。 */
+.navbar-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: var(--shape-full);
+  background: var(--secondary-container);
+  transition: transform 460ms var(--spring-out), width 460ms var(--spring-out),
+    height 460ms var(--spring-out);
+}
+/* 項目のアイコン/ラベルはピルより前へ */
+.navbar-item {
+  position: relative;
+  z-index: 1;
 }
 .navbar-label {
   font-size: 11px;
@@ -1522,7 +1552,6 @@ body::before {
 .lucky-first .lucky-chip { background: var(--lucky-container); color: var(--on-lucky-container); }
 
 /* ナビ活性ピルのスプリングモーフ */
-.navbar-item[aria-current="page"] .navbar-ind { animation: pill-in 300ms var(--spring-out); }
 .navbar-item:active .navbar-ind { transform: scale(0.92); transition: transform 120ms ease; }
 
 /* 祝祭キーフレーム */
@@ -1554,11 +1583,6 @@ body::before {
   12% { opacity: 1; }
   60% { opacity: 0.9; }
   100% { transform: translate(var(--dx), var(--dy)) scale(1); opacity: 0; }
-}
-@keyframes pill-in {
-  0% { transform: scaleX(0.6); }
-  70% { transform: scaleX(1.05); }
-  100% { transform: scaleX(1); }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1952,4 +1976,14 @@ body::before {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--sp-xl) var(--sp-2xl);
   }
+}
+
+/* タブ遷移 — 本文列を淡く立ち上げる（これまではハードカットだった）。
+   transform/opacity だけなので合成のみ。reduced-motion は全域のキルスイッチが止める。 */
+.tab-enter {
+  animation: tab-enter 420ms var(--emphasized) both;
+}
+@keyframes tab-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
 }

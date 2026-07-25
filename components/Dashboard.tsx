@@ -140,7 +140,9 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
       <SkyField moonPhaseAngle={m.phaseAngle} retrogrades={retroNow} />
       <AppHeader now={now} sub={sub} />
       <main className="shell" data-wide={WIDE_TABS.has(tab) ? '' : undefined}>
-        <div className="column">
+        {/* key でタブごとに貼り替え、CSS アニメーションで淡く立ち上げる
+            （これまではハードカットだった）。reduced-motion は全域のキルスイッチが止める。 */}
+        <div className="column tab-enter" key={tab}>
         <FlowLine key={tab} amp={tab === 'today' ? today.score / 100 : 0.45} seed={1 + TAB_ORDER.indexOf(tab)} />
         {tab === 'today' && (
           <section aria-label="今日の流れ">

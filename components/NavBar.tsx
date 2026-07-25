@@ -1,4 +1,6 @@
-import type { ReactNode } from 'react';
+'use client';
+
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 export type NavKey = 'today' | 'macro' | 'birth' | 'calendar' | 'jiten';
 
@@ -69,10 +71,65 @@ const ITEMS: { key: NavKey; label: string; icon: ReactNode }[] = [
   },
 ];
 
+interface PillBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * 活性ピルの位置を実測する。
+ *
+ * 項目ごとにピルを置いて背景を付け替えるのではなく、**1枚が席を移る**。
+ * 位置を CSS で算術するとレールの gap やラベルの折り返しで簡単に狂うので、
+ * 活性項目の矩形をそのまま測る。transform だけで動くため合成のみで済み、
+ * モバイルの横並びとデスクトップの縦レールに同じコードで効く。
+ *
+ * ResizeObserver は observe した時点で一度発火するので、
+ * 初回計測もコールバック経由になる（effect 本体で setState しない）。
+ * active が変わると effect が貼り直され、その initial callback で測り直す。
+ */
+function usePillBox(active: NavKey) {
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [box, setBox] = useState<PillBox | null>(null);
+
+  useEffect(() => {
+    const inner = innerRef.current;
+    if (!inner) return;
+    const measure = () => {
+      const target = inner.querySelector<HTMLElement>('[aria-current="page"] .navbar-ind');
+      if (!target) return;
+      const a = inner.getBoundingClientRect();
+      const b = target.getBoundingClientRect();
+      setBox({ x: b.left - a.left, y: b.top - a.top, w: b.width, h: b.height });
+    };
+    const ro = new ResizeObserver(measure);
+    ro.observe(inner);
+    return () => ro.disconnect();
+  }, [active]);
+
+  return { innerRef, box };
+}
+
 export function NavBar({ active, onChange }: { active: NavKey; onChange: (key: NavKey) => void }) {
+  const { innerRef, box } = usePillBox(active);
+
   return (
     <nav className="navbar" aria-label="メインナビゲーション">
-      <div className="navbar-inner">
+      <div className="navbar-inner" ref={innerRef}>
+        {/* 装飾なので aria からは外す。初回計測前は出さない（左上に一瞬出るのを防ぐ）*/}
+        {box && (
+          <span
+            className="navbar-pill"
+            aria-hidden
+            style={{
+              transform: `translate(${box.x}px, ${box.y}px)`,
+              width: box.w,
+              height: box.h,
+            }}
+          />
+        )}
         {ITEMS.map((it) => (
           <button
             key={it.key}
