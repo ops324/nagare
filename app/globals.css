@@ -121,6 +121,76 @@
   --font-display: var(--font-mincho), "Hiragino Mincho ProN", serif;
   --font-body: var(--font-gothic), "Hiragino Sans", system-ui, sans-serif;
 
+  /* ──────────────────────────────────────────────────────────────
+     スケール（Pass A・加算のみ）
+     これまで余白も文字サイズも全てマジックナンバーだった。ここで基準を1本に
+     まとめ、以降の新規CSSは必ずトークンで書く（SPEC §12）。
+     値は現行の実測値と同一か、その最寄りの段に合わせてある。
+     ────────────────────────────────────────────────────────────── */
+
+  /* 余白 — 4px 基数。xs(6)/md(12)/lg(16) は既存の実値を吸収する段 */
+  --sp-3xs: 2px;
+  --sp-2xs: 4px;
+  --sp-xs: 6px;
+  --sp-sm: 8px;
+  --sp-md: 12px;
+  --sp-lg: 16px;
+  --sp-xl: 24px;
+  --sp-2xl: 32px;
+  --sp-3xl: 40px;
+  --sp-4xl: 56px;
+  --sp-5xl: 80px;
+  --gutter: clamp(16px, 4vw, 32px);
+  --flow-rhythm: clamp(28px, 5vh, 56px);
+
+  /* 文字サイズ — 下限 11px は SPEC §7 の規約。micro(10px) は装飾専用の許可制 */
+  --fs-micro: 0.625rem;
+  --fs-caption: 0.6875rem;
+  --fs-body-s: 0.8125rem;
+  --fs-body: 0.875rem;
+  --fs-body-l: 1rem;
+  --fs-title: clamp(1.02rem, 0.95rem + 0.3vw, 1.25rem);
+  --fs-headline: clamp(1.25rem, 1.1rem + 0.8vw, 1.75rem);
+  --fs-display: clamp(2.2rem, 1.6rem + 3vw, 3.6rem);
+  --fs-hero: clamp(3.4rem, 2rem + 7vw, 7rem);
+  /* スコアは金の聖域。現行値をバイト単位で据え置く（デスクトップ拡張は別PR） */
+  --fs-score: clamp(3.4rem, 15vw, 4.2rem);
+
+  --lh-tight: 1.25;
+  --lh-snug: 1.45;
+  --lh-body: 1.6;
+  --lh-loose: 1.9;
+  --tr-tight: 0.02em;
+  --tr-wide: 0.06em;
+  --tr-wider: 0.14em;
+  --tr-widest: 0.24em;
+
+  /* 層 — 半透明ヴェールと髪の毛線。現行のレシピをそのまま名前に移しただけで、
+     計算値は1つも変わらない（置換しても見た目が動かないことの担保）*/
+  --elev-0: none;
+  --elev-3: 0 6px 24px rgba(0, 0, 0, 0.28);
+  --blur-sm: 10px;
+  --blur-md: 14px;
+  --blur-lg: 16px;
+  --blur-xl: 28px;
+  --veil-card: color-mix(in srgb, var(--surface-container-low) 86%, transparent);
+  --veil-filled: color-mix(in srgb, var(--surface-container) 88%, transparent);
+  --veil-chrome: color-mix(in srgb, var(--bg-hi) 55%, transparent);
+  --veil-nav: color-mix(in srgb, var(--surface-container) 78%, transparent);
+  --veil-toast: color-mix(in srgb, var(--bg-hi) 88%, transparent);
+  --veil-field: color-mix(in srgb, var(--bg-hi) 40%, transparent);
+  --hairline: color-mix(in srgb, var(--outline-variant) 55%, transparent);
+  --hairline-soft: color-mix(in srgb, var(--outline-variant) 45%, transparent);
+  --hairline-strong: color-mix(in srgb, var(--outline-variant) 60%, transparent);
+
+  /* レイアウト幅 — --rail-w はデスクトップで 88px になる（モバイルは 0） */
+  --shell-max: 780px;
+  --column-max: 720px;
+  --column-max-wide: 1040px;
+  --rail-w: 0px;
+  --appbar-max: 748px;
+  --nav-h: 66px;
+
   /* 空の状態遷移（登録プロパティのみ補間） */
   transition: --bg-hi 2400ms ease, --bg-lo 2400ms ease, --stars 2400ms ease;
 }
@@ -248,6 +318,20 @@
 [data-lucky="kin"] { --lucky-l: #715c0f; --lucky-d: #dbc66f; --lucky-container-l: #fde287; --on-lucky-container-l: #231b00; --lucky-container-d: #554600; --on-lucky-container-d: #f9e287; }
 [data-lucky="sui"] { --lucky-l: #006874; --lucky-d: #82d3e0; --lucky-container-l: #97f0ff; --on-lucky-container-l: #001f24; --lucky-container-d: #004f58; --on-lucky-container-d: #97f0ff; }
 
+/* ──────────────────────────────────────────────────────────────
+   方針：スタイルは意味論的CSS（.card / .flowcard / .navbar-inner …）で書く。
+   Tailwind のユーティリティは使わない。理由は3つ：
+     ① 星霜は html[data-sky]×[data-sekki]×[data-lucky] で約40個のCSS変数を
+        差し替え、@property 登録済みトークンを transition で補間する設計で、
+        これはカスケード（＝CSS変数）のための仕組み。ユーティリティ化すると
+        bg-[var(--surface-container-low)] の羅列になり退化する。
+     ② 現在ユーティリティクラスの使用実績はゼロ。採用は「移行の続き」ではなく
+        全20コンポーネントの書き換えで、意味論的クラス名で書かれた SPEC §7 が
+        丸ごと陳腐化する。
+     ③ PR #24（星霜リデザイン）が意味論的CSSのままフルリデザインを完走している。
+   `@import "tailwindcss"` は Preflight のリセットに依存しているため残す。
+   下記はトークンを Tailwind 側へも公開しておく橋渡し（将来の選択肢を閉じない）。
+   ────────────────────────────────────────────────────────────── */
 @theme inline {
   --color-primary: var(--primary);
   --color-on-primary: var(--on-primary);
@@ -257,6 +341,25 @@
   --color-gold: var(--gold-400);
   --color-good: var(--good);
   --color-caution: var(--caution);
+
+  --spacing-2xs: var(--sp-2xs);
+  --spacing-xs: var(--sp-xs);
+  --spacing-sm: var(--sp-sm);
+  --spacing-md: var(--sp-md);
+  --spacing-lg: var(--sp-lg);
+  --spacing-xl: var(--sp-xl);
+  --spacing-2xl: var(--sp-2xl);
+  --spacing-3xl: var(--sp-3xl);
+
+  --text-caption: var(--fs-caption);
+  --text-body: var(--fs-body);
+  --text-title: var(--fs-title);
+  --text-headline: var(--fs-headline);
+  --text-display: var(--fs-display);
+
+  --radius-sm: var(--shape-sm);
+  --radius-lg: var(--shape-lg);
+  --radius-full: var(--shape-full);
 }
 
 * {
@@ -1276,7 +1379,9 @@ body::before {
 .rokusei-badge {
   display: inline-block;
   margin-top: 4px;
-  font-size: 0.6rem;
+  /* 0.6rem(9.6px) は 10px 例外にすら満たなかった。大殺界/中殺界は装飾ではなく
+     読ませるラベルなので、SPEC §7 の下限 11px へ戻す（PR1 唯一の意図的な見た目変更）*/
+  font-size: var(--fs-caption);
   font-weight: 500;
   letter-spacing: normal;
   color: var(--on-caution);

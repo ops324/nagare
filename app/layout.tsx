@@ -2,12 +2,22 @@ import type { Metadata, Viewport } from "next";
 import { Shippori_Mincho, Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
 
+/**
+ * 和文フォントは `subsets` に関わらず CJK の @font-face が全て配信される
+ * （subsets はプリロード対象の選択であって字形の間引きではない）。
+ * 問題は入れ替わり（FOUT）の方で、既定の `adjustFontFallback` が
+ * ラテン参照字形からメトリクスを合成するため、CJK では上書き値が合わずに
+ * ワードマークやスコア数字がガタつく。CJK 実体を持つ端末フォントを
+ * `fallback` に明示し、合成メトリクスは無効化する。
+ */
 const mincho = Shippori_Mincho({
   weight: ["500", "700", "800"],
   subsets: ["latin"],
   display: "swap",
   variable: "--font-mincho",
   preload: false,
+  fallback: ["Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "serif"],
+  adjustFontFallback: false,
 });
 
 const gothic = Noto_Sans_JP({
@@ -16,6 +26,8 @@ const gothic = Noto_Sans_JP({
   display: "swap",
   variable: "--font-gothic",
   preload: false,
+  fallback: ["Hiragino Sans", "Yu Gothic", "YuGothic", "system-ui", "sans-serif"],
+  adjustFontFallback: false,
 });
 
 export const metadata: Metadata = {
