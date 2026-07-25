@@ -199,3 +199,26 @@ describe('スケールトークンの土台', () => {
     expect(CSS).toContain('--fs-score: clamp(3.4rem, 15vw, 4.2rem)');
   });
 });
+
+describe('デスクトップ（三ゾーン「柱・流れ・空」）', () => {
+  it('ブレークポイントが3段そろっている', () => {
+    // 1024=柱＋流れの二ゾーン / 1280=空を開いて三ゾーン / 1440=レールに余白を足す
+    for (const bp of [1024, 1280, 1440]) {
+      expect(CSS, `@media (min-width: ${bp}px) が無い`).toContain(`@media (min-width: ${bp}px)`);
+    }
+  });
+
+  it('レール幅はモバイルで 0・デスクトップで 88px', () => {
+    expect(CSS).toContain('--rail-w: 0px');
+    expect(CSS).toContain('--rail-w: 88px');
+  });
+
+  it('右の「空」は 1280px 未満では出さない（64〜128px の“詰まり”を避ける）', () => {
+    // 既定は display:none。1280 ブロックの中だけで block に戻す。
+    expect(CSS).toMatch(/\.skyzone\s*\{\s*display:\s*none/);
+    const at = CSS.indexOf('@media (min-width: 1280px)');
+    expect(at).toBeGreaterThanOrEqual(0);
+    const block = CSS.slice(at, CSS.indexOf('@media (min-width: 1440px)'));
+    expect(block, '1280 ブロックで .skyzone が block に戻っていない').toContain('display: block');
+  });
+});

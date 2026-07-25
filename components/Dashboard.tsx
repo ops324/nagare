@@ -35,6 +35,15 @@ import { SHUKU_TRAIT, RUNKI_DESC, CAUTION_COPY } from '@/lib/copy';
 
 type Tab = NavKey;
 
+const TAB_ORDER: Tab[] = ['today', 'macro', 'birth', 'calendar', 'jiten'];
+
+/**
+ * 中央列を広げるタブ。表がち・一覧がちの4タブは横に余裕があると読みやすい。
+ * 今日タブだけは全幅で単列を保つ — ゲージ→ひとこと→開運アクションの
+ * 読みのリズムがプロダクトそのもので、多列化すると流れ線の物語が切れる。
+ */
+const WIDE_TABS = new Set<Tab>(['macro', 'birth', 'calendar', 'jiten']);
+
 function eclipseWhen(instant: Date, now: Date): string {
   return toJstParts(instant).year === toJstParts(now).year ? jstMonthDay(instant) : jstYmd(instant);
 }
@@ -90,6 +99,31 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
     window.scrollTo({ top: 0 });
   };
 
+  // キーボードでのタブ移動（1〜5 と ←→）。入力中は奪わない。
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = e.target as HTMLElement | null;
+      if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
+
+      const num = Number(e.key);
+      if (num >= 1 && num <= TAB_ORDER.length) {
+        e.preventDefault();
+        switchTab(TAB_ORDER[num - 1]);
+        return;
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        const i = TAB_ORDER.indexOf(tab);
+        const next = e.key === 'ArrowRight' ? i + 1 : i - 1;
+        if (next < 0 || next >= TAB_ORDER.length) return;
+        e.preventDefault();
+        switchTab(TAB_ORDER[next]);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [tab]);
+
   // 今日の色（五行）をテーマに反映
   useEffect(() => {
     document.documentElement.setAttribute('data-lucky', lucky.key);
@@ -105,8 +139,9 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
     <>
       <SkyField moonPhaseAngle={m.phaseAngle} retrogrades={retroNow} />
       <AppHeader now={now} sub={sub} />
-      <main className="shell">
-        <FlowLine key={tab} amp={tab === 'today' ? today.score / 100 : 0.45} seed={1 + ['today', 'macro', 'birth', 'calendar', 'jiten'].indexOf(tab)} />
+      <main className="shell" data-wide={WIDE_TABS.has(tab) ? '' : undefined}>
+        <div className="column">
+        <FlowLine key={tab} amp={tab === 'today' ? today.score / 100 : 0.45} seed={1 + TAB_ORDER.indexOf(tab)} />
         {tab === 'today' && (
           <section aria-label="今日の流れ">
             <FlowMeter
@@ -338,6 +373,37 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
           </button>
           <p>娯楽・参考としてお楽しみください。</p>
         </div>
+        </div>
+
+        {/* 右の「空」— デスクトップでのみ現れる。密度ではなく余白が意匠なので、
+            ここには今日を一目で掴む最小限だけを置き、あとは空けておく。
+            値はすべて既に計算済みのものを読むだけ（占術値には非関与）。 */}
+        <aside className="skyzone" aria-label="今日の要約">
+          <div className="skyzone-inner">
+            <MoonGlyph phaseAngle={m.phaseAngle} size={64} />
+            <p className="skyzone-score numeral">{today.score}</p>
+            <p className="skyzone-label">{today.label}</p>
+            <hr className="hair" />
+            <dl className="skyzone-meta">
+              <div>
+                <dt>節気</dt>
+                <dd>{today.data.term.current?.name ?? '—'}</dd>
+              </div>
+              <div>
+                <dt>六曜</dt>
+                <dd>{today.data.rokuyo.name}</dd>
+              </div>
+              <div>
+                <dt>宿</dt>
+                <dd>{nijuu.name}</dd>
+              </div>
+              <div>
+                <dt>今日の色</dt>
+                <dd>{lucky.colorName}</dd>
+              </div>
+            </dl>
+          </div>
+        </aside>
       </main>
       <NavBar active={tab} onChange={switchTab} />
     </>

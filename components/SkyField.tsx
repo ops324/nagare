@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { skyStateOf, type SkyKey } from './skyState';
 import { MoonGlyph } from './MoonGlyph';
 
@@ -39,9 +39,18 @@ interface Star {
   dur: number; // s
 }
 
+/** モバイルの星数。**この 72 個は先頭から一切動かさない**（下記 STARS の性質） */
+const BASE_STARS = 72;
+
+/**
+ * 星の配置は決定論的（seed 固定）。mulberry32 は逐次生成なので、
+ * 長さを 72→160 に伸ばしても**先頭 72 個の値は完全に同一**になる。
+ * よって `slice(0, count)` するだけで、モバイルは現行とピクセル一致のまま
+ * 広い画面だけ密度を足せる（SPEC §7「決定論的配置」も保たれる）。
+ */
 const STARS: Star[] = (() => {
   const rnd = mulberry32(20260716);
-  return Array.from({ length: 72 }, () => ({
+  return Array.from({ length: 160 }, () => ({
     x: rnd() * 100,
     y: rnd() * 100,
     r: 0.6 + rnd() * 1.1,
@@ -50,6 +59,24 @@ const STARS: Star[] = (() => {
     dur: 2.6 + rnd() * 2.8,
   }));
 })();
+
+/** 画面幅に応じた星数。SSR と初回描画は必ず BASE_STARS（ハイドレーション不一致回避） */
+function useStarCount(): number {
+  const [count, setCount] = useState(BASE_STARS);
+  useEffect(() => {
+    const wide = window.matchMedia('(min-width: 1024px)');
+    const ultra = window.matchMedia('(min-width: 1440px)');
+    const apply = () => setCount(ultra.matches ? 160 : wide.matches ? 110 : BASE_STARS);
+    apply();
+    wide.addEventListener('change', apply);
+    ultra.addEventListener('change', apply);
+    return () => {
+      wide.removeEventListener('change', apply);
+      ultra.removeEventListener('change', apply);
+    };
+  }, []);
+  return count;
+}
 
 /** data-theme の上書き（dark→夜 / light→昼）を織り込んだ現在の空 */
 function resolveSky(now: Date): SkyKey {
@@ -68,6 +95,7 @@ export function SkyField({
   retrogrades?: { name: string }[];
 }) {
   const innerRef = useRef<HTMLDivElement>(null);
+  const starCount = useStarCount();
 
   // 実時刻 → html[data-sky]（分単位で再評価・タブ復帰時も）
   useEffect(() => {
@@ -112,7 +140,7 @@ export function SkyField({
     <div className="skyfield" aria-hidden="true">
       <div ref={innerRef} style={{ position: 'absolute', inset: '-6% 0' }}>
         <svg className="sf-stars">
-          {STARS.map((s, i) => (
+          {STARS.slice(0, starCount).map((s, i) => (
             <circle
               key={i}
               className="sf-star"
