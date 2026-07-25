@@ -5,7 +5,17 @@ import type { BirthProfile, Gender } from '@/lib/types';
 
 const GENDERS: Gender[] = ['女', '男', '未回答'];
 
-export function Onboarding({ onSubmit }: { onSubmit: (p: BirthProfile) => void }) {
+/**
+ * `embedded` は入口体験の最終幕に埋め込むときの形。
+ * ワードマーク・リード文・外枠は幕側が持つので、フォームだけを出す。
+ */
+export function Onboarding({
+  onSubmit,
+  embedded = false,
+}: {
+  onSubmit: (p: BirthProfile) => void;
+  embedded?: boolean;
+}) {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [gender, setGender] = useState<Gender>('未回答');
@@ -21,19 +31,8 @@ export function Onboarding({ onSubmit }: { onSubmit: (p: BirthProfile) => void }
     onSubmit(p);
   };
 
-  return (
-    <>
-      <main className="onboard">
-        <div className="onboard-inner rise">
-          <div className="onboard-mark font-display">流れ</div>
-          <p className="onboard-lead">
-            天体の動き、暦、生まれの傾向を、ひとつに束ねて。
-            <br />
-            あなたの「今日の流れ」と「大きな流れ」を読み解きます。
-          </p>
-          <div className="hair" style={{ margin: '22px 0 26px' }} />
-
-          <form onSubmit={submit} className="onboard-form">
+  const form = (
+    <form onSubmit={submit} className="onboard-form">
             <label className="field">
               <span className="field-label">生年月日</span>
               <input
@@ -80,9 +79,23 @@ export function Onboarding({ onSubmit }: { onSubmit: (p: BirthProfile) => void }
             <p className="onboard-note">
               ※ 入力は端末内にのみ保存され、外部には送信されません。娯楽・参考としてお楽しみください。
             </p>
-          </form>
-        </div>
-      </main>
-    </>
+    </form>
+  );
+
+  if (embedded) return form;
+
+  return (
+    <main className="onboard">
+      <div className="onboard-inner rise">
+        <div className="onboard-mark font-display">流れ</div>
+        <p className="onboard-lead">
+          天体の動き、暦、生まれの傾向を、ひとつに束ねて。
+          <br />
+          あなたの「今日の流れ」と「大きな流れ」を読み解きます。
+        </p>
+        <div className="hair" style={{ margin: '22px 0 26px' }} />
+        {form}
+      </div>
+    </main>
   );
 }

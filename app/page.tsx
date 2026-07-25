@@ -1,9 +1,9 @@
 'use client';
 
 import { useProfile } from '@/lib/useProfile';
-import { Onboarding } from '@/components/Onboarding';
 import { Dashboard } from '@/components/Dashboard';
 import { SkyField } from '@/components/SkyField';
+import { EntryExperience } from '@/components/entry/EntryExperience';
 
 export default function Page() {
   const { profile, setProfile, clear, loaded } = useProfile();
@@ -17,13 +17,9 @@ export default function Page() {
     );
   }
 
+  // 未登録なら入口体験（幕を絞った compact 版）。ゲートの形は変えていない。
   if (!profile) {
-    return (
-      <>
-        <SkyField />
-        <Onboarding onSubmit={setProfile} />
-      </>
-    );
+    return <EntryExperience compact onSubmit={setProfile} />;
   }
 
   return <Dashboard birth={profile} onReset={clear} />;

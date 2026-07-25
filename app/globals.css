@@ -1737,3 +1737,219 @@ body::before {
     padding-left: var(--sp-xl);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   入口体験（EntryExperience）— /welcome と、未登録の `/`
+
+   「星霜」の増幅であって新しい意匠ではない。実時刻の空・節気の彩・
+   一本の流れ線を、そのまま物語の骨格として使う。
+   ═══════════════════════════════════════════════════════════════ */
+.entry {
+  position: relative;
+  max-width: var(--shell-max);
+  margin: 0 auto;
+  padding: 0 var(--gutter) var(--sp-5xl);
+}
+
+/* ── 一幕：空 ── */
+.entry-hero {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--sp-lg);
+  position: relative;
+  z-index: 1;
+}
+.entry-mark {
+  font-size: var(--fs-hero);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tr-widest);
+  color: var(--primary);
+  margin: 0;
+  /* 字送りは右側にも空きを作るので、視覚的な左揃えを取り戻す */
+  text-indent: 0;
+  margin-right: calc(var(--tr-widest) * -1);
+  animation: rise 900ms var(--emphasized) both;
+}
+.entry-lead {
+  font-size: var(--fs-body-l);
+  line-height: var(--lh-loose);
+  color: var(--on-surface-variant);
+  margin: 0;
+  max-width: 34em;
+  animation: rise 900ms var(--emphasized) 140ms both;
+}
+.entry-now {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-sm) var(--sp-xl);
+  margin: var(--sp-md) 0 0;
+  max-width: 32em;
+  animation: rise 900ms var(--emphasized) 280ms both;
+}
+.entry-now > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-sm);
+  padding-bottom: var(--sp-2xs);
+  border-bottom: 1px solid var(--hairline-soft);
+}
+.entry-now dt {
+  font-size: var(--fs-caption);
+  letter-spacing: var(--tr-wide);
+  color: var(--on-surface-variant);
+}
+.entry-now dd {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-body);
+  color: var(--accent-soft);
+}
+.entry-scroll {
+  margin: var(--sp-xl) 0 0;
+  font-size: var(--fs-caption);
+  letter-spacing: var(--tr-widest);
+  color: var(--outline);
+  animation: float-y 3.4s ease-in-out infinite;
+}
+
+/* ── 幕の共通形。画面に入ったら現れる ── */
+.entry-act {
+  position: relative;
+  z-index: 1;
+  padding: var(--sp-5xl) 0;
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 900ms var(--emphasized), transform 900ms var(--emphasized);
+}
+.entry-act[data-seen] {
+  opacity: 1;
+  transform: none;
+}
+.entry-eyebrow {
+  font-size: var(--fs-caption);
+  letter-spacing: var(--tr-wider);
+  color: var(--sekki);
+  margin: 0 0 var(--sp-md);
+}
+.entry-h {
+  font-size: var(--fs-display);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tr-wide);
+  color: var(--on-surface);
+  margin: 0 0 var(--sp-lg);
+  font-weight: 700;
+}
+.entry-p {
+  font-size: var(--fs-body-l);
+  line-height: var(--lh-loose);
+  color: var(--on-surface-variant);
+  margin: 0;
+  max-width: 38em;
+}
+
+/* ── 三幕：二十四の彩 ── */
+.entry-sekki-track {
+  /* 幕が画面を通過する間に24色を巡回させるので、意図的に高くする */
+  min-height: 180svh;
+}
+.entry-swatches {
+  list-style: none;
+  margin: var(--sp-2xl) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--sp-md);
+}
+.entry-swatches li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--sp-sm);
+  padding-bottom: var(--sp-xs);
+  border-bottom: 1px solid var(--hairline-soft);
+  /* li の [data-sekki] が --sekki-l/-d を差し替える。地の明暗でどちらを
+     採るかはここで決める（:root の --sekki は継承値なので効かない）*/
+  --sekki: var(--sekki-d);
+}
+[data-sky="day"] .entry-swatches li,
+[data-sky="dawn"] .entry-swatches li {
+  --sekki: var(--sekki-l);
+}
+.entry-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--shape-full);
+  background: var(--sekki);
+}
+.entry-swatch-name {
+  font-family: var(--font-display);
+  font-size: var(--fs-body-s);
+  color: var(--on-surface);
+}
+.entry-swatch-iro {
+  font-size: var(--fs-caption);
+  color: var(--on-surface-variant);
+}
+
+/* ── 四幕：読むもの ── */
+.entry-list {
+  list-style: none;
+  margin: var(--sp-xl) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-lg);
+}
+.entry-list li {
+  display: grid;
+  gap: var(--sp-2xs);
+  padding-bottom: var(--sp-md);
+  border-bottom: 1px solid var(--hairline-soft);
+}
+.entry-list b {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  letter-spacing: var(--tr-wide);
+  color: var(--primary);
+  font-weight: 700;
+}
+.entry-list span {
+  font-size: var(--fs-body);
+  line-height: var(--lh-snug);
+  color: var(--on-surface-variant);
+}
+
+/* ── 五幕：はじまり ── */
+.entry-begin .onboard-form {
+  margin-top: var(--sp-2xl);
+  max-width: 440px;
+}
+
+/* compact（未登録の `/`）— 幕を詰めて、最初の一画面で入力まで見せる */
+.entry[data-compact] .entry-hero {
+  min-height: 92svh;
+}
+.entry[data-compact] .entry-act {
+  padding: var(--sp-3xl) 0;
+}
+
+@media (min-width: 1024px) {
+  .entry {
+    max-width: 1080px;
+    padding-left: var(--sp-5xl);
+    padding-right: var(--sp-5xl);
+  }
+  .entry-now {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    max-width: none;
+  }
+  .entry-now > div {
+    flex-direction: column;
+    gap: var(--sp-2xs);
+  }
+  .entry-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-xl) var(--sp-2xl);
+  }
+}
