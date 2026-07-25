@@ -59,7 +59,11 @@ export function FlowLine({ amp = 0.5, seed = 1 }: { amp?: number; seed?: number 
     if (w < 80 || span < 420) return '';
     const rnd = mulberry32(seed * 7919 + 11);
     const step = Math.max(400, Math.min(580, span / 6));
-    const sway = w * (0.13 + 0.17 * Math.min(Math.max(amp, 0), 1));
+    // 振幅を割合だけで決めると、広い列（[data-wide] の 1040px 列など）で
+    // ±300px を超えて暴れ、レールや右の「空」へはみ出す。px で頭打ちにする。
+    // 上限 190px は現行の実効最大（780px 列 × 0.30 = 234）より内側だが、
+    // モバイル（375px 幅 → 最大 112px）には一切かからないので現行の見えは不変。
+    const sway = Math.min(w * (0.13 + 0.17 * Math.min(Math.max(amp, 0), 1)), 190);
     let dir = rnd() > 0.5 ? 1 : -1;
     let x = w * 0.5;
     let prevY = startY;

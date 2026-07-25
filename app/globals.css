@@ -559,10 +559,20 @@ body::before {
 
 /* ─────────────── レイアウト ─────────────── */
 .shell {
-  max-width: 780px;
+  max-width: var(--shell-max);
   margin: 0 auto;
   padding: 12px 16px calc(118px + env(safe-area-inset-bottom));
   position: relative;
+}
+/* 本文列。モバイルではただのブロック＝レイアウト中立で、
+   position を持たないので .flowline はこれまでどおり .shell を基準にする（見えは不変）。
+   デスクトップでのみグリッドの中央列となり、流れ線の基準もここへ移る。 */
+.column {
+  display: block;
+}
+/* 右の「空」。デスクトップまでは存在しない。 */
+.skyzone {
+  display: none;
 }
 
 /* ─────────────── ヘッダー（空に溶ける） ─────────────── */
@@ -1549,4 +1559,181 @@ body::before {
   0% { transform: scaleX(0.6); }
   70% { transform: scaleX(1.05); }
   100% { transform: scaleX(1); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   デスクトップ — 三ゾーン「柱・流れ・空」
+
+   モバイル前提のまま幅だけ広げると「引き伸ばした電話アプリ」に見える。
+   そこで ≥1024px では画面を3つに割る：
+     柱＝左のナビレール（浮遊ピルを90°回した浮遊する櫂）
+     流れ＝中央の本文列。**カードCSSは一切変えない**（720px は現行の実効幅
+           748px とほぼ同じ）＝ここがデスクトップ化を低リスクにしている核心
+     空＝右のほぼ空白。密度ではなく余白が意匠なので、意図的に空けておく
+   ═══════════════════════════════════════════════════════════════ */
+@media (min-width: 1024px) {
+  :root {
+    --rail-w: 88px;
+  }
+
+  /* 1024〜1279px は「柱＋流れ」の二ゾーン。
+     この幅で右の「空」まで割ると 1 ゾーンが 64〜128px しか残らず、
+     余白ではなく“詰まり”に見えるため、空は 1280px 以上でのみ開く。 */
+  .shell {
+    max-width: 1280px;
+    display: grid;
+    grid-template-columns: minmax(0, var(--column-max));
+    justify-content: center;
+    column-gap: var(--sp-3xl);
+    align-items: start;
+    /* レールは position:fixed なのでグリッド列にせず、左の余白として空ける */
+    padding-left: calc(var(--rail-w) + var(--sp-xl));
+    padding-right: var(--sp-xl);
+    /* ナビが下端から左端へ移るので、下の逃げは不要になる */
+    padding-bottom: var(--sp-5xl);
+  }
+  .shell[data-wide] {
+    max-width: 1440px;
+    grid-template-columns: minmax(0, var(--column-max-wide));
+  }
+
+  /* 中央列。流れ線の基準がここへ移る（inset:0 が本文列に解決される） */
+  .column {
+    position: relative;
+    min-width: 0;
+  }
+
+  /* 一覧がちのタブだけ、広い列でカードを組む */
+  .shell[data-wide] .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--sp-md);
+    align-items: start;
+  }
+  .shell[data-wide] .chips {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  /* ── 柱：ナビレール ──
+     TSX は無変更。<nav>/aria-current/ラベルのセマンティクスは既に正しい。 */
+  .navbar {
+    inset: 0 auto 0 0;
+    width: calc(var(--rail-w) + var(--sp-xl));
+    display: grid;
+    place-items: center;
+    padding: 0 0 0 var(--sp-lg);
+  }
+  .navbar-inner {
+    flex-direction: column;
+    width: var(--rail-w);
+    max-width: none;
+    height: auto;
+    padding: var(--sp-sm) 0;
+    border-radius: var(--shape-lg);
+    gap: var(--sp-3xs);
+  }
+  .navbar-item {
+    flex: 0 0 auto;
+    width: 100%;
+    padding: var(--sp-sm) 0;
+    gap: var(--sp-2xs);
+  }
+  .navbar-ind {
+    width: 44px;
+    height: 32px;
+  }
+
+  /* ── 空：右のゾーン（1280px 以上でのみ開く。下の 1280 ブロックで display を戻す）──
+     今日を一目で掴む最小限だけ。あとは空けておく。 */
+  .skyzone {
+    position: sticky;
+    top: calc(64px + var(--sp-xl));
+    padding-top: var(--sp-md);
+  }
+  .skyzone-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-sm);
+    max-width: 240px;
+  }
+  .skyzone-score {
+    font-family: var(--font-display);
+    font-size: var(--fs-headline);
+    line-height: var(--lh-tight);
+    color: var(--primary);
+    margin: var(--sp-2xs) 0 0;
+  }
+  .skyzone-label {
+    font-size: var(--fs-caption);
+    letter-spacing: var(--tr-wide);
+    color: var(--accent-soft);
+    margin: 0;
+  }
+  .skyzone .hair {
+    width: 100%;
+    margin: var(--sp-2xs) 0;
+  }
+  .skyzone-meta {
+    margin: 0;
+    display: grid;
+    gap: var(--sp-xs);
+    width: 100%;
+  }
+  .skyzone-meta > div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--sp-sm);
+  }
+  .skyzone-meta dt {
+    font-size: var(--fs-caption);
+    color: var(--on-surface-variant);
+  }
+  .skyzone-meta dd {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: var(--fs-body);
+    color: var(--on-surface);
+  }
+
+  /* ヘッダーはグリッドに合わせて広げ、空に浮くのではなく列に揃える */
+  .appbar {
+    padding-left: max(var(--sp-lg), calc((100% - 1280px) / 2 + var(--rail-w) + var(--sp-xl)));
+    padding-right: max(var(--sp-lg), calc((100% - 1280px) / 2 + var(--sp-xl)));
+  }
+
+  /* 月と逆行記号は右の「空」へ移す（CSSのみ・リサイズリスナは足さない） */
+  .sf-moon {
+    top: clamp(96px, 14vh, 200px);
+    right: clamp(40px, 9vw, 160px);
+    transform: scale(1.6);
+  }
+  .sf-retro {
+    font-size: var(--fs-body);
+  }
+}
+
+/* ここから三ゾーン「柱・流れ・空」。右の空が意味を持つ幅になって初めて開く。 */
+@media (min-width: 1280px) {
+  .shell {
+    grid-template-columns: minmax(0, var(--column-max)) 1fr;
+    justify-content: normal;
+  }
+  .shell[data-wide] {
+    grid-template-columns: minmax(0, var(--column-max-wide)) 1fr;
+  }
+  .skyzone {
+    display: block;
+  }
+}
+
+@media (min-width: 1440px) {
+  .shell {
+    padding-left: calc(var(--rail-w) + var(--sp-3xl));
+  }
+  .navbar {
+    width: calc(var(--rail-w) + var(--sp-3xl));
+    padding-left: var(--sp-xl);
+  }
 }
