@@ -102,20 +102,30 @@
   --sekki: var(--sekki-d);
   --sekki-wash: color-mix(in srgb, var(--sekki) 8%, var(--surface-container-low));
 
-  /* モーション（M3 Expressive スプリング＋線描画） */
-  --spring-out: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --spring-soft: cubic-bezier(0.38, 1.21, 0.22, 1);
+  /* モーション — イージングは一本（design.md）。
+     旧 --spring-out(1.56) / --spring-soft(1.21) のオーバーシュートは廃止した。
+     跳ね返りは快活であって品格ではない。 */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --emphasized: cubic-bezier(0.2, 0, 0, 1);
   --draw-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
 
-  /* エレベーション / シェイプ */
+  /* エレベーション / シェイプ
+     影は「ガラスの浮遊」の語彙なので面からは落とし、クローム層にだけ残す。
+     トークン定義は互換のため維持（design-tokens.test.ts が存在を検査する）。*/
   --elev-1: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
   --elev-2: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
-  --shape-sm: 10px;
-  --shape-md: 14px;
-  --shape-lg: 20px;
+  /* 紙は角が立つ。--shape-full は「円」だけに使う（.lucky-dot / .entry-swatch）*/
+  --shape-2xs: 2px;
+  --shape-sm: 3px;
+  --shape-md: 4px;
+  --shape-lg: 4px;
   --shape-full: 999px;
-  --radius-card: 16px;
+  --radius-card: 3px;
+
+  /* 地合い（和紙の目）— feTurbulence を data-URI で一度だけラスタライズしたもの。
+     ライブフィルタとして回さない（毎フレーム再計算になる）。 */
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='190' height='190'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='190' height='190' filter='url(%23n)'/%3E%3C/svg%3E");
+  --paper-opacity: 0.55;
 
   /* フォント */
   --font-display: var(--font-mincho), "Hiragino Mincho ProN", serif;
@@ -269,6 +279,8 @@
   --sekki-wash: color-mix(in srgb, var(--sekki) 6%, var(--surface-container-low));
   --elev-1: 0 1px 2px 0 rgba(58, 48, 20, 0.14), 0 1px 3px 1px rgba(58, 48, 20, 0.08);
   --elev-2: 0 1px 2px 0 rgba(58, 48, 20, 0.16), 0 2px 6px 2px rgba(58, 48, 20, 0.1);
+  /* 明るい地では紙の目が出やすいので弱める（同じ濃さだと目がうるさくなる）*/
+  --paper-opacity: 0.4;
 }
 
 /* ── 暁（夜明け）：曙がかった朝 — 昼との差分のみ ── */
@@ -383,12 +395,43 @@ body {
   text-rendering: optimizeLegibility;
 }
 /* 今日の空 — 実時刻の空のグラデーション（星図はさらに上の .skyfield） */
+/* 地＝今日の空。その日の節気の色をごく薄く染める（24日ごとに世界の色が変わる）。
+   --sekki は装飾専用トークンなので本文文字には決して使わない（SPEC §7）が、
+   「地を染める」は染めの語彙そのものなので工芸方向では主役に上げてよい。 */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
+  z-index: -3;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--sekki) 7%, var(--bg-hi)),
+    color-mix(in srgb, var(--sekki) 3%, var(--bg-lo))
+  );
+}
+:root[data-sky="day"] body::before,
+:root[data-sky="dawn"] body::before {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--sekki) 9%, var(--bg-hi)),
+    color-mix(in srgb, var(--sekki) 4%, var(--bg-lo))
+  );
+}
+
+/* 地合い（和紙の目）— 明暗**両方向**に振らせる。multiply（片方向）だと
+   生成りの暖色が灰へ濁って「くすんだ紙」になる。
+   position: fixed は .skyfield と同じ理由（絶対配置の子だと内容と一緒に流れる）。
+   層の順は 地(-3) → 紙の目(-2) → 星図(-1) → 本文。紙は地の一部なので星より下。 */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
   z-index: -2;
-  background: linear-gradient(180deg, var(--bg-hi), var(--bg-lo));
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  opacity: var(--paper-opacity);
+  background-image: var(--paper-grain);
+  background-size: 190px 190px;
 }
 
 /* ─────────────── 星図（SkyField） ─────────────── */
@@ -438,8 +481,8 @@ body::before {
 }
 
 /* ─────────────── 流れ線（FlowLine）───────────────
-   3層の光の川：淡い川筋（常に見えている・ぼかし）→ 帯 → 輝く芯。
-   帯と芯だけがスクロールで描かれ、川筋は先に流路を予感させる。 */
+   二層：暈（かさ・常に全長／ぼかし）→ 細い金線（スクロールで置かれる）。
+   幅は経路上で変わる（塗りで描いている）ので stroke-width は使わない。 */
 .flowline {
   position: absolute;
   inset: 0;
@@ -453,21 +496,14 @@ body::before {
   display: block;
   overflow: visible;
 }
-.flowline path {
-  fill: none;
-  stroke-linecap: round;
+/* 暈の濃さは地の明暗で変える。暗い地では光は広がって見えるので濃いめ、
+   明るい地では広げても見えず濁るだけなので薄める。 */
+.flowline .fl-halo {
+  opacity: 0.4;
 }
-.flowline .fl-glow {
-  stroke-width: 12;
-  opacity: 0.12;
-}
-.flowline .fl-ribbon {
-  stroke-width: 3.4;
-  opacity: 0.3;
-}
-.flowline .fl-core {
-  stroke-width: 1.5;
-  opacity: 0.85;
+:root[data-sky="day"] .flowline .fl-halo,
+:root[data-sky="dawn"] .flowline .fl-halo {
+  opacity: 0.18;
 }
 
 /* 明朝の見出し */
@@ -484,19 +520,21 @@ body::before {
   border: 0;
 }
 
-/* カード（空に浮かぶ半透明の面・流れ線が背後を通る） */
+/* カード（空の上に重ねた紙・流れ線が背後を通る）
+   ガラス→紙：ぼかしと影を落とし、角を立て、縁（--hairline）を主役にする。
+   面は残す — 一目性を守るためであり、工芸のラグジュアリーは面を持つから。 */
 .card {
   background: var(--veil-card);
   border: 1px solid var(--hairline);
   border-radius: var(--radius-card);
-  box-shadow: var(--elev-1);
   position: relative;
   z-index: 1;
 }
 
-/* filled カード（リスト系の第2層） */
+/* filled カード（リスト系の第2層）— 枠は .card より弱く、紙を重ねた段差を作る */
 .card-filled {
   background: var(--veil-filled);
+  border: 1px solid color-mix(in srgb, var(--outline-variant) 30%, transparent);
   border-radius: var(--radius-card);
   position: relative;
   z-index: 1;
@@ -537,7 +575,7 @@ body::before {
   70% { opacity: 1; transform: translateY(-2px); }
   100% { opacity: 1; transform: translateY(0); }
 }
-.rise { animation: rise 480ms var(--spring-soft) both; }
+.rise { animation: rise 480ms var(--ease-out) both; }
 
 @media (prefers-reduced-motion: reduce) {
   /* アニメーションだけでなく **transition も** 止める。
@@ -622,7 +660,7 @@ body::before {
   place-items: center;
   width: 40px;
   height: 40px;
-  border-radius: 999px;
+  border-radius: var(--shape-sm);
   border: 1px solid var(--hairline);
   background: var(--veil-field);
   color: var(--on-surface-variant);
@@ -642,7 +680,7 @@ body::before {
   transform: translateX(-50%);
   z-index: 60;
   padding: 9px var(--sp-lg);
-  border-radius: 999px;
+  border-radius: var(--shape-sm);
   font-size: 0.8125rem;
   color: var(--on-surface);
   background: var(--veil-toast);
@@ -650,7 +688,7 @@ body::before {
   backdrop-filter: blur(var(--blur-md));
   -webkit-backdrop-filter: blur(var(--blur-md));
   box-shadow: var(--elev-3);
-  animation: toast-in 220ms var(--spring-out, ease);
+  animation: toast-in 220ms var(--ease-out, ease);
 }
 @keyframes toast-in {
   from { opacity: 0; transform: translate(-50%, 8px); }
@@ -677,8 +715,7 @@ body::before {
   backdrop-filter: blur(var(--blur-lg));
   -webkit-backdrop-filter: blur(var(--blur-lg));
   border: 1px solid var(--hairline-strong);
-  border-radius: var(--shape-full);
-  box-shadow: var(--elev-2);
+  border-radius: var(--shape-sm);
   padding: 0 var(--sp-xs);
 }
 .navbar-item {
@@ -698,7 +735,7 @@ body::before {
 .navbar-ind {
   width: 52px;
   height: 28px;
-  border-radius: var(--shape-full);
+  border-radius: var(--shape-sm);
   display: grid;
   place-items: center;
   transition: background 0.2s;
@@ -706,23 +743,33 @@ body::before {
 .navbar-item:hover .navbar-ind {
   background: color-mix(in srgb, var(--on-surface) 8%, transparent);
 }
-/* 活性の背景はピル（1枚）が担うので、ここでは文字色だけを変える */
+/* 活性は線（1本）が担うので、ここでは文字色だけを変える */
 .navbar-item[aria-current="page"] .navbar-ind {
-  color: var(--on-secondary-container);
+  color: var(--primary);
 }
 
-/* 席を移る活性ピル。位置と大きさは JS が実測して inline style で渡す。
-   動くのは transform だけなので合成のみで済む。 */
+/* 席を移る活性の線。位置と大きさは JS が実測して inline style で渡す
+   （測っているのは .navbar-ind の矩形）。動くのは transform だけなので合成のみ。
+   ピルの塗りをやめ、矩形の下端に細い線を引く。JS 側は変更していない。 */
 .navbar-pill {
   position: absolute;
   top: 0;
   left: 0;
   z-index: 0;
   pointer-events: none;
-  border-radius: var(--shape-full);
-  background: var(--secondary-container);
-  transition: transform 460ms var(--spring-out), width 460ms var(--spring-out),
-    height 460ms var(--spring-out);
+  background: none;
+  transition: transform 460ms var(--ease-out), width 460ms var(--ease-out),
+    height 460ms var(--ease-out);
+}
+.navbar-pill::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -1px;
+  width: 26px;
+  height: 1.5px;
+  transform: translateX(-50%);
+  background: var(--primary);
 }
 /* 項目のアイコン/ラベルはピルより前へ */
 .navbar-item {
@@ -757,31 +804,24 @@ body::before {
   background:
     radial-gradient(
       closest-side,
-      color-mix(in srgb, var(--gold-100) 15%, transparent) 0%,
-      color-mix(in srgb, var(--gold-400) 8%, transparent) 24%,
-      transparent 46%
-    ),
-    radial-gradient(
-      closest-side,
-      color-mix(in srgb, var(--gold-400) 6%, transparent) 0%,
-      color-mix(in srgb, var(--sekki) 4%, transparent) 44%,
-      color-mix(in srgb, var(--sekki) 1.5%, transparent) 60%,
-      transparent 74%
+      color-mix(in srgb, var(--gold-100) 7%, transparent) 0%,
+      color-mix(in srgb, var(--sekki) 3%, transparent) 42%,
+      transparent 70%
     );
-  animation: glow-breathe 8s ease-in-out infinite;
+  animation: glow-breathe 10s ease-in-out infinite;
 }
+/* 息づくのは残すが振幅は半分。発光ではなく、金が空気を暖めている程度に。 */
 @keyframes glow-breathe {
-  0%, 100% { opacity: 0.85; transform: translate(-50%, -50%) scale(1); }
-  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+  0%, 100% { opacity: 0.9; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.025); }
 }
 .flowmeter-svg { width: 100%; height: auto; display: block; }
 .flowmeter-value {
   stroke-dasharray: 100;
   animation: draw 1.2s var(--emphasized) both;
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--gold-400) 40%, transparent));
 }
-.fm-cap { animation: cap-pop 420ms var(--spring-out) 950ms both; transform-origin: center; transform-box: fill-box; }
-.flowmeter[data-taian="true"] .fm-cap { animation: cap-pop 420ms var(--spring-out) 950ms both, taian-pulse 600ms ease-in-out 1.5s 2; }
+.fm-cap { animation: cap-pop 420ms var(--ease-out) 950ms both; transform-origin: center; transform-box: fill-box; }
+.flowmeter[data-taian="true"] .fm-cap { animation: cap-pop 420ms var(--ease-out) 950ms both, taian-pulse 600ms ease-in-out 1.5s 2; }
 .flowmeter-center {
   position: absolute;
   inset: 0;
@@ -797,11 +837,12 @@ body::before {
   line-height: 1;
   color: var(--text);
   font-weight: 800;
-  animation: score-pop 480ms var(--spring-soft) 250ms both;
+  animation: score-pop 480ms var(--ease-out) 250ms both;
 }
-/* スコア78以上：数字に金のブルーム */
+/* スコア78以上：金の聖域。発光（text-shadow）はネオンの語彙なのでやめ、
+   数字そのものを金の側へ寄せる。地の明暗どちらでも AA を満たす階調を使う。 */
 .flowmeter[data-high="true"] .flowmeter-score {
-  text-shadow: 0 0 26px color-mix(in srgb, var(--gold-100) 60%, transparent);
+  color: var(--accent-soft);
 }
 .flowmeter-label {
   margin-top: var(--sp-2xs);
@@ -810,26 +851,32 @@ body::before {
   letter-spacing: 0.04em;
   font-family: var(--font-display);
 }
+/* 吉日名 — 塗ったピルではなく、上下の罫に挟んだ明朝。額装の作法。 */
 .fete-badge {
   display: inline-block;
-  margin-top: 7px;
-  background: var(--tertiary-container);
-  color: var(--on-tertiary-container);
-  border: 1px solid var(--gold-400);
-  border-radius: var(--shape-full);
-  padding: 1px var(--sp-md);
+  margin-top: var(--sp-sm);
+  background: none;
+  color: var(--gold-400);
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--gold-400) 40%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--gold-400) 40%, transparent);
+  border-radius: 0;
+  padding: 3px var(--sp-md);
+  font-family: var(--font-display);
   font-size: 11px;
   font-weight: 600;
-  animation: badge-in 420ms var(--spring-out) 1.1s both;
+  letter-spacing: var(--tr-wider);
+  animation: badge-in 420ms var(--ease-out) 1.1s both;
 }
+/* 金箔が舞う。放射状に飛ぶのは花火の語彙なので、空気に乗せて上へ送る。 */
 .fete-particle {
   position: absolute;
   left: 50%;
   top: 56%;
   pointer-events: none;
-  border-radius: 50%;
+  border-radius: 1px;
   background: var(--gold-300);
-  animation: fete-fly 1.5s cubic-bezier(0.12, 0.8, 0.15, 1) both;
+  animation: fete-fly 2.8s cubic-bezier(0.25, 0.6, 0.3, 1) both;
 }
 .fete-particle.glyph {
   background: none;
@@ -848,9 +895,9 @@ body::before {
 /* ─────────────── セクション見出し（明朝の章題＋溶ける罫） ─────────────── */
 .section-head {
   display: flex;
-  align-items: center;
-  gap: 14px;
-  margin: var(--sp-3xl) var(--sp-3xs) 14px;
+  align-items: baseline;
+  gap: var(--sp-md);
+  margin: var(--sp-2xl) var(--sp-3xs) var(--sp-md);
   position: relative;
   z-index: 1;
 }
@@ -862,62 +909,65 @@ body::before {
   letter-spacing: 0.14em;
   color: var(--on-surface);
 }
+/* 章の頭には節気色の短い縦罫を立てる（丸い点は装飾、縦罫は截金の欠片）*/
 .section-head .eyebrow::before {
   content: "";
   display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
+  width: 2px;
+  height: 13px;
+  border-radius: 0;
   background: var(--sekki);
-  margin-right: 10px;
-  vertical-align: 2px;
+  margin-right: 11px;
+  vertical-align: -1px;
 }
-.section-head .hair { flex: 1; }
+.section-head .hair { flex: 1; transform: translateY(-4px); }
 
 /* ─────────────── フローカード ─────────────── */
-.cards { display: flex; flex-direction: column; gap: var(--sp-md); position: relative; z-index: 1; }
+.cards { display: flex; flex-direction: column; gap: var(--sp-lg); position: relative; z-index: 1; }
+/* 絵文字の枠を廃し、縦積みへ。系統名は眉として見出しの上に立つ。 */
 .flowcard {
-  display: flex;
-  gap: 14px;
-  padding: 15px var(--sp-lg);
-  align-items: flex-start;
+  display: block;
+  padding: var(--sp-lg);
 }
-.flowcard-emoji {
-  font-size: 1.35rem;
-  line-height: 1.6;
-  width: 30px;
-  text-align: center;
-  flex-shrink: 0;
+/* 兆し／注意の別は、左の3px縁（箱の語彙）ではなく見出し直上の短い罫で示す */
+.flowcard::before {
+  content: "";
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: var(--outline-variant);
+  margin-bottom: var(--sp-md);
 }
-.flowcard-body { flex: 1; min-width: 0; }
 .flowcard-title {
-  font-size: 16px;
+  font-size: var(--fs-body-l);
   font-weight: 600;
   color: var(--text);
   letter-spacing: normal;
   display: flex;
-  align-items: center;
-  gap: var(--sp-sm);
-  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
 }
+/* 枠に囲ったタグ → 字送りを開いた眉。見出しの上に置く */
 .flowcard-sys {
-  font-size: 11px;
+  display: block;
+  font-size: var(--fs-caption);
   font-weight: 500;
-  letter-spacing: 0.5px;
+  letter-spacing: var(--tr-widest);
   color: var(--on-surface-variant);
-  border: 1px solid var(--outline-variant);
-  border-radius: var(--shape-sm);
-  padding: 1px var(--sp-sm);
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  margin-bottom: var(--sp-xs);
 }
 .flowcard-desc {
-  margin-top: var(--sp-2xs);
+  margin-top: var(--sp-sm);
   font-size: 0.875rem;
   color: var(--text-dim);
-  line-height: 1.7;
+  line-height: 1.75;
 }
-.flowcard[data-tone="good"] { border-left: 3px solid var(--good); border-top-left-radius: 0; border-bottom-left-radius: 0; }
-.flowcard[data-tone="caution"] { border-left: 3px solid var(--caution); border-top-left-radius: 0; border-bottom-left-radius: 0; }
-.flowcard[data-tone="neutral"] { border-left: 3px solid var(--outline-variant); border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.flowcard[data-tone="good"]::before { background: var(--good); }
+.flowcard[data-tone="caution"]::before { background: var(--caution); }
+.flowcard[data-tone="neutral"]::before { background: var(--outline-variant); }
 
 /* ─────────────── 生まれ / 属性チップ ─────────────── */
 .chips { display: flex; flex-wrap: wrap; gap: 10px; position: relative; z-index: 1; }
@@ -995,7 +1045,7 @@ body::before {
   letter-spacing: 0.24em;
   text-align: center;
   color: var(--text);
-  animation: rise 720ms var(--spring-soft) both;
+  animation: rise 720ms var(--ease-out) both;
 }
 .onboard-lead {
   margin-top: var(--sp-lg);
@@ -1003,9 +1053,9 @@ body::before {
   font-size: 0.86rem;
   color: var(--text-dim);
   line-height: 1.9;
-  animation: rise 720ms var(--spring-soft) 120ms both;
+  animation: rise 720ms var(--ease-out) 120ms both;
 }
-.onboard-form { display: flex; flex-direction: column; gap: 18px; animation: rise 720ms var(--spring-soft) 240ms both; }
+.onboard-form { display: flex; flex-direction: column; gap: 18px; animation: rise 720ms var(--ease-out) 240ms both; }
 
 .field { display: flex; flex-direction: column; gap: 7px; }
 .field-label { font-size: 12px; font-weight: 500; letter-spacing: 0.5px; color: var(--primary); }
@@ -1060,8 +1110,8 @@ body::before {
   transition: background 0.2s, color 0.2s;
 }
 .seg-btn + .seg-btn { margin-left: -1px; }
-.seg-btn:first-child { border-radius: var(--shape-full) 0 0 var(--shape-full); }
-.seg-btn:last-child { border-radius: 0 var(--shape-full) var(--shape-full) 0; }
+.seg-btn:first-child { border-radius: var(--shape-sm) 0 0 var(--shape-sm); }
+.seg-btn:last-child { border-radius: 0 var(--shape-sm) var(--shape-sm) 0; }
 .seg-btn:hover { background: color-mix(in srgb, var(--on-surface) 8%, transparent); }
 .seg-btn[data-active='true'] {
   color: var(--on-secondary-container);
@@ -1073,7 +1123,7 @@ body::before {
   appearance: none;
   margin-top: var(--sp-xs);
   border: 0;
-  border-radius: var(--shape-full);
+  border-radius: var(--shape-sm);
   padding: 14px;
   font-family: var(--font-body);
   font-size: 15px;
@@ -1084,7 +1134,7 @@ body::before {
   cursor: pointer;
   transition: box-shadow 0.2s, transform 0.15s ease;
 }
-.cta:hover:not(:disabled) { box-shadow: var(--elev-1); }
+.cta:hover:not(:disabled) { background: color-mix(in srgb, var(--on-primary) 8%, var(--primary)); }
 .cta:active:not(:disabled) { transform: scale(0.985); }
 .cta:disabled {
   background: color-mix(in srgb, var(--on-surface) 12%, transparent);
@@ -1148,7 +1198,7 @@ body::before {
   background: transparent;
   border: 1px solid var(--outline);
   color: var(--primary);
-  border-radius: var(--shape-full);
+  border-radius: var(--shape-sm);
   padding: 9px 22px;
   font-size: 0.82rem;
   font-weight: 500;
@@ -1265,7 +1315,7 @@ body::before {
   bottom: 5px;
   font-size: 0.6875rem;
   padding: 1px var(--sp-xs);
-  border-radius: var(--shape-full);
+  border-radius: var(--shape-2xs);
   letter-spacing: normal;
   font-weight: 500;
 }
@@ -1295,7 +1345,7 @@ body::before {
   color: var(--on-surface-variant);
   width: 40px;
   height: 40px;
-  border-radius: var(--shape-full);
+  border-radius: var(--shape-sm);
   font-size: 1.2rem;
   cursor: pointer;
   line-height: 1;
@@ -1426,7 +1476,7 @@ body::before {
   letter-spacing: normal;
   color: var(--on-caution);
   background: var(--caution);
-  border-radius: var(--shape-full);
+  border-radius: var(--shape-2xs);
   padding: 1px var(--sp-sm);
 }
 .rokusei-badge.chu { background: var(--tertiary-container); color: var(--on-tertiary-container); }
@@ -1472,12 +1522,14 @@ body::before {
   display: inline-flex;
   align-items: center;
   gap: var(--sp-xs);
-  background: var(--lucky-container);
-  color: var(--on-lucky-container);
+  background: none;
+  border: 1px solid color-mix(in srgb, var(--lucky) 45%, transparent);
+  color: var(--lucky);
   font-size: 11px;
   font-weight: 500;
-  border-radius: var(--shape-full);
-  padding: 3px var(--sp-md);
+  letter-spacing: var(--tr-wide);
+  border-radius: var(--shape-2xs);
+  padding: 3px 10px;
 }
 .lucky-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--lucky); flex-shrink: 0; }
 .lucky-gogyo { opacity: 0.8; }
@@ -1489,11 +1541,11 @@ body::before {
   background: var(--surface);
   border: 1.5px solid var(--gold-400);
   color: var(--gold-400);
-  border-radius: var(--shape-full);
+  border-radius: var(--shape-2xs);
   padding: 1px var(--sp-md);
   font-size: 11px;
   font-weight: 600;
-  animation: badge-in 420ms var(--spring-out) both;
+  animation: badge-in 420ms var(--ease-out) both;
 }
 /* 天赦日のシマー（1回だけ・金） */
 .hitokoto-shimmer::after {
@@ -1504,7 +1556,8 @@ body::before {
   pointer-events: none;
   background: linear-gradient(105deg, transparent 40%, color-mix(in srgb, var(--gold-100) 30%, transparent) 50%, transparent 60%);
   background-size: 240% 100%;
-  animation: shimmer 1.2s ease-out 0.4s 1 both;
+  /* 速い一閃ではなく、箔の上を光がゆっくり渡る */
+  animation: shimmer 2.4s var(--ease-out) 0.4s 1 both;
 }
 
 /* 開運アクションカード */
@@ -1513,43 +1566,55 @@ body::before {
   gap: var(--sp-md);
   align-items: flex-start;
   background: var(--veil-filled);
+  border: 1px solid color-mix(in srgb, var(--outline-variant) 30%, transparent);
   border-radius: var(--radius-card);
-  padding: 13px 15px;
-  transition: transform 160ms ease;
+  padding: var(--sp-lg) 15px;
+  transition: transform 160ms var(--ease-out);
   position: relative;
   z-index: 1;
 }
-.lucky-action:active { transform: scale(0.98); }
+.lucky-action:active { transform: scale(0.99); }
 .lucky-action.lucky-first {
   background: var(--lucky-wash);
-  border-left: 3px solid var(--lucky);
+  border-left: 2px solid var(--lucky);
   border-radius: 0 var(--radius-card) var(--radius-card) 0;
-  box-shadow: var(--elev-1);
 }
+/* 丸い塗り → 罫で囲った明朝の一字（暦セルの 甲/寅/巳 と同じ語彙）*/
 .lucky-ico {
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--shape-2xs);
+  border: 1px solid color-mix(in srgb, var(--outline-variant) 55%, transparent);
+  background: none;
   display: grid;
   place-items: center;
-  font-size: 17px;
-  background: var(--surface-container-high);
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--on-surface-variant);
 }
-.lucky-first .lucky-ico { background: var(--lucky-container); }
+.lucky-first .lucky-ico {
+  border-color: color-mix(in srgb, var(--lucky) 50%, transparent);
+  color: var(--lucky);
+}
 .lucky-body { flex: 1; min-width: 0; }
 .lucky-title { font-size: 16px; font-weight: 600; color: var(--text); letter-spacing: normal; }
 .lucky-chip {
   display: inline-block;
-  background: var(--surface-container-high);
+  background: none;
+  border: 1px solid color-mix(in srgb, var(--outline-variant) 50%, transparent);
   color: var(--text-dim);
   font-size: 11px;
   font-weight: 500;
-  border-radius: var(--shape-full);
-  padding: 1px 10px;
+  letter-spacing: var(--tr-wide);
+  border-radius: var(--shape-2xs);
+  padding: 1px 8px;
   margin-top: var(--sp-xs);
 }
-.lucky-first .lucky-chip { background: var(--lucky-container); color: var(--on-lucky-container); }
+.lucky-first .lucky-chip {
+  border-color: color-mix(in srgb, var(--lucky) 40%, transparent);
+  color: var(--lucky);
+}
 
 /* ナビ活性ピルのスプリングモーフ */
 .navbar-item:active .navbar-ind { transform: scale(0.92); transition: transform 120ms ease; }
@@ -1565,9 +1630,9 @@ body::before {
   60% { opacity: 1; transform: scale(1.25); }
   100% { opacity: 1; transform: scale(1); }
 }
+/* 1.06 の行き過ぎは跳ね返り＝快活の語彙。静かに現れて止まる。 */
 @keyframes score-pop {
-  0% { opacity: 0; transform: scale(0.7); }
-  60% { opacity: 1; transform: scale(1.06); }
+  0% { opacity: 0; transform: scale(0.94); }
   100% { opacity: 1; transform: scale(1); }
 }
 @keyframes taian-pulse {
@@ -1579,10 +1644,10 @@ body::before {
   to { background-position: -120% 0; }
 }
 @keyframes fete-fly {
-  0% { transform: translate(0, 0) scale(0.4); opacity: 0; }
-  12% { opacity: 1; }
-  60% { opacity: 0.9; }
-  100% { transform: translate(var(--dx), var(--dy)) scale(1); opacity: 0; }
+  0% { transform: translate(0, 0) rotate(0deg) scale(0.5); opacity: 0; }
+  18% { opacity: 0.95; }
+  70% { opacity: 0.8; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot, 0deg)) scale(1); opacity: 0; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
