@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Shippori_Mincho, Noto_Sans_JP } from "next/font/google";
+import { OG_IMAGE, SITE_NAME, SITE_TITLE, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 /**
@@ -30,18 +31,37 @@ const gothic = Noto_Sans_JP({
   adjustFontFallback: false,
 });
 
+const DESCRIPTION =
+  "生年月日から、天体の動き・星座・暦・生まれの傾向をひとつに束ね、『今日の流れ』と『大きな流れ』を読み解くアプリ。";
+
 export const metadata: Metadata = {
-  title: "流れ — 天体・暦・命術で今の流れを読む",
-  description:
-    "生年月日から、天体の動き・星座・暦・生まれの傾向をひとつに束ね、『今日の流れ』と『大きな流れ』を読み解くアプリ。",
+  // OGP の画像・URL を絶対URLへ解決させる基点（相対パスのままではクローラが読めない）
+  metadataBase: new URL(SITE_URL),
+  title: SITE_TITLE,
+  description: DESCRIPTION,
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "流れ",
+    title: SITE_NAME,
   },
   icons: {
     apple: "/apple-touch-icon.png",
+  },
+  openGraph: {
+    type: "website",
+    locale: "ja_JP",
+    siteName: SITE_NAME,
+    url: "/",
+    title: SITE_TITLE,
+    description: DESCRIPTION,
+    images: [OG_IMAGE],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: DESCRIPTION,
+    images: [OG_IMAGE],
   },
 };
 
