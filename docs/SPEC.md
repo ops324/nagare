@@ -29,6 +29,8 @@
 
 **PWA**: `app/manifest.ts`（`MetadataRoute.Manifest`）で `/manifest.webmanifest` を生成。`display:standalone` によりホーム画面起動時 URL バーを非表示。**`start_url: '/'` は変更してはならない** — インストール済みのPWAは導入時のマニフェストをキャッシュしており、変えると既存ユーザーがアプリではなく入口に着地する（入口を常設の別ルートにしているのはこのため・§7）。`app/icon.png`（favicon自動認識）・`public/icon-{192,512}.png`（マニフェスト用）・`public/apple-touch-icon.png`（iOS用）を配置。`layout.tsx` の `viewport.viewportFit:'cover'` と `.appbar` の `env(safe-area-inset-top)` パディングで全画面時のノッチ被りを回避。
 
+**OGP**: SNS カード画像は **`public/og.png`（1200×630）** ＝ `app/icon.png` を和紙の地に据え、明朝の題と一文を添えたもの。`scripts/make-og.mjs`（sharp・要 macOS の Hiragino Mincho ProN）で生成し、**成果物をリポジトリに含める**（ビルド時には走らない）。共有定数は `lib/site.ts`（`SITE_URL` / `SITE_NAME` / `SITE_TITLE` / `OG_IMAGE`）。`layout.tsx` の **`metadataBase`（既定は本番ドメイン・`NEXT_PUBLIC_SITE_URL` で上書き可）** が無いと相対パスが絶対URLに解決されずクローラが画像を読めない。`openGraph` は**親子でマージされず丸ごと差し替わる**ため、`app/welcome/layout.tsx` にも `images` を明示している（片方を直したらもう片方も見ること）。X の大判カードには `twitter.card:'summary_large_image'` が必須。
+
 ## 3. ファイル構成（`lib/`）
 
 | 分類 | ファイル | 責務 |
@@ -37,6 +39,7 @@
 | 基盤 | `constants.ts` | 名称テーブル（干支・星座・九星・六曜・月相） |
 | 基盤 | `types.ts` | `BirthProfile` ほか共有型 |
 | 基盤 | `provenance.ts` | 方式/出典/版メタ |
+| 基盤 | `site.ts` | サイトURL・OGP画像などメタ情報の定数（占術ロジック非依存） |
 | 天体 | `astro.ts` | 太陽星座・月相・**逆行(地心)**・潮汐 |
 | 天体 | `seiyo.ts` | 日月食・ボイドタイム・スーパームーン |
 | 暦注 | `koyomi.ts` | 二十四節気・干支・旧暦・六曜・選日・**二十八宿** |
