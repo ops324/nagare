@@ -13,17 +13,27 @@ function arc(cx: number, cy: number, r: number, a0: number, a1: number) {
   return `M ${s.x.toFixed(2)} ${s.y.toFixed(2)} A ${r} ${r} 0 ${large} ${sweep} ${e.x.toFixed(2)} ${e.y.toFixed(2)}`;
 }
 
-/** 金の粒（天赦日バースト）— 事前計算の放射配置 */
-const PARTICLES = Array.from({ length: 14 }, (_, i) => {
-  const ang = (Math.PI * 2 * i) / 14 - Math.PI / 2;
-  const r = 46 + (i % 3) * 22;
-  return {
-    dx: Math.cos(ang) * r,
-    dy: Math.sin(ang) * r,
-    size: 3 + (i % 3),
-    glyph: i % 4 === 3,
+/**
+ * 金箔の粒（天赦日）— 事前計算。
+ * 放射状に飛ばすのは花火の語彙なので、空気に乗せて**上へ**送る（design.md）。
+ * 横は散らし、縦は必ず負（上方向）。回転を与えて箔が翻るようにする。
+ * 決定論的に作るので毎回同じ舞い方になる。
+ */
+const PARTICLES = (() => {
+  let a = 2026;
+  const rnd = () => {
+    a = (a * 1664525 + 1013904223) >>> 0;
+    return a / 4294967296;
   };
-});
+  return Array.from({ length: 14 }, (_, i) => ({
+    dx: (rnd() - 0.5) * 150,
+    dy: -(52 + rnd() * 120),
+    size: 2 + Math.round(rnd() * 2),
+    rot: `${(rnd() * 260 - 130).toFixed(0)}deg`,
+    delay: Math.round(rnd() * 520),
+    glyph: i % 4 === 3,
+  }));
+})();
 
 export function FlowMeter({
   score,
@@ -54,7 +64,8 @@ export function FlowMeter({
   const [burstDone, setBurstDone] = useState(false);
   useEffect(() => {
     if (!burst) return;
-    const t = setTimeout(() => setBurstDone(true), 2000);
+    // 舞う時間（2.8s）＋最大ディレイ（0.52s）を見込む。短いと箔が途中で消える
+    const t = setTimeout(() => setBurstDone(true), 3400);
     return () => clearTimeout(t);
   }, [burst]);
   const flying = burst && !burstDone;
@@ -81,8 +92,9 @@ export function FlowMeter({
         <defs>
           <linearGradient id="fm-grad" x1="0" y1="1" x2="1" y2="0">
             <stop offset="0%" stopColor="var(--gold-600)" />
-            <stop offset="45%" stopColor="var(--gold-400)" />
-            <stop offset="100%" stopColor="var(--gold-100)" />
+            <stop offset="42%" stopColor="var(--gold-400)" />
+            <stop offset="72%" stopColor="var(--gold-100)" />
+            <stop offset="100%" stopColor="var(--gold-400)" />
           </linearGradient>
         </defs>
         {/* 目盛り */}
@@ -106,16 +118,17 @@ export function FlowMeter({
         {/* 節気の残光 — 弧の外周にほのかな季節の色 */}
         <path d={whisper} fill="none" stroke="var(--sekki)" strokeWidth="1" strokeLinecap="round" opacity="0.28" />
         <path d={track} fill="none" stroke="var(--surface-container-highest)" strokeWidth="3" strokeLinecap="round" opacity="0.9" />
+        {/* 弧は細く。太い弧＋発光は「ゲージ」の語彙で、金の細線のほうが品がある */}
         <path
           d={value}
           fill="none"
           stroke="url(#fm-grad)"
-          strokeWidth="9"
+          strokeWidth="5"
           strokeLinecap="round"
           pathLength={100}
           className="flowmeter-value"
         />
-        <circle className="fm-cap" cx={cap.x} cy={cap.y} r="5.5" fill="var(--gold-100)" />
+        <circle className="fm-cap" cx={cap.x} cy={cap.y} r="3.4" fill="var(--gold-100)" />
       </svg>
       {flying &&
         PARTICLES.map((p, i) => (
@@ -129,6 +142,8 @@ export function FlowMeter({
                 height: p.glyph ? undefined : p.size,
                 '--dx': `${p.dx.toFixed(1)}px`,
                 '--dy': `${p.dy.toFixed(1)}px`,
+                '--rot': p.rot,
+                animationDelay: `${p.delay}ms`,
               } as CSSProperties
             }
           >

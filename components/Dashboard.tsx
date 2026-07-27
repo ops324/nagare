@@ -533,13 +533,10 @@ function TurningPoint({
 }) {
   return (
     <article className="card flowcard" data-tone={tone}>
-      <div className="flowcard-emoji numeral" style={{ fontSize: '1rem', color: 'var(--accent-soft)' }}>
-        {year}
-      </div>
-      <div className="flowcard-body">
-        <h3 className="flowcard-title">{title}</h3>
-        <p className="flowcard-desc">{note}</p>
-      </div>
+      {/* FlowCard と同じ律動：年を眉に置き、見出し・説明と続く */}
+      <span className="flowcard-sys numeral">{year}</span>
+      <h3 className="flowcard-title">{title}</h3>
+      <p className="flowcard-desc">{note}</p>
     </article>
   );
 }
