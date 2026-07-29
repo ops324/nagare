@@ -46,3 +46,30 @@ describe('生年月日からの運気・大殺界', () => {
     expect(unmeisei(jstNoon(1985, 8, 15)).label).toBe('火星人−');
   });
 });
+
+describe('立春前生まれの大殺界が1年ずれない（±の年境界＝立春）', () => {
+  // ± は運気のオフセットを1変える（＋は空亡第1支+2 / −は+3）ため、
+  // 暦年基準だと立春前生まれの運気サイクルが丸ごと1年ずれ、大殺界の3年もずれる。
+  const b = jstNoon(1985, 1, 20); // 立春年1984（甲子＝陽支）→ 水星人＋
+
+  it('1985-01-20（水星人＋）の大殺界は 2031陰影・2032停止・2033減退', () => {
+    expect(unmeisei(b).label).toBe('水星人＋');
+    const ys = daisakkaiYears(b, 2026, 3);
+    expect(ys).toEqual([
+      { year: 2031, name: '陰影' },
+      { year: 2032, name: '停止' },
+      { year: 2033, name: '減退' },
+    ]);
+  });
+
+  it('大殺界の翌年(2034)は減退のままにならない＝終わっている', () => {
+    expect(unmeiseiRunki(b, 2033).daisakkai).toBe(true);
+    expect(unmeiseiRunki(b, 2034).daisakkai).toBe(false);
+    expect(unmeiseiRunki(b, 2034).name).toBe('種子');
+  });
+
+  it('立春当日生まれ(1990-02-04＝天王星人＋)の大殺界は 2035〜2037', () => {
+    const ys = daisakkaiYears(jstNoon(1990, 2, 4), 2026, 3);
+    expect(ys.map((y) => y.year)).toEqual([2035, 2036, 2037]);
+  });
+});

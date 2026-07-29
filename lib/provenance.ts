@@ -13,9 +13,9 @@ export interface Provenance {
 export const PROVENANCE = {
   /** 六星占術：運命星＝日柱の空亡、運気は 6sei.net 公式の2026年表をアンカーに12年周期展開 */
   rokusei: {
-    method: '空亡→星人／年支オフセットで運気を算出',
+    method: '空亡→星人／±は立春基準の生まれ年支／年支オフセットで運気を算出',
     source: '6sei.net（細木数子・細木かおり 公式）',
-    version: '2026-anchor-v1',
+    version: '2026-anchor-v2',
   },
   /** 宿曜・三九の秘法：標準宿曜経準拠（公開実例で検証）。解説文は今後、小峰有美子氏体系で差替予定 */
   sukuyoSanku: {
