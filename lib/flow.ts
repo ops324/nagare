@@ -278,7 +278,8 @@ export interface TimelineYear {
   theme: string;
   note: string;
   tone: 'good' | 'caution' | 'neutral';
-  isNow: boolean;
+  isNow: boolean; // 九星の立春基準年としての「今」
+  isCurrentGregorian: boolean; // 暦年（元日基準）としての「今」。1/1〜立春の間だけ isNow と食い違う
   isHappou: boolean;
   yakudoshiKind: string | null;
   isTenchusatsu: boolean;
@@ -288,6 +289,7 @@ export interface TimelineYear {
 export interface MacroFlow {
   now: Date;
   currentYear: number; // 九星の立春基準年
+  gregorianYear: number; // 暦年（元日基準）。厄年はこちら。1/1〜立春は currentYear と1年ずれる
   honmei: Kyusei;
   current: Nenun;
   currentPhasePeriod: { start: Date; end: Date }; // 今年の運気の期間（立春〜次の立春）
@@ -295,6 +297,7 @@ export interface MacroFlow {
   timeline: TimelineYear[];
   nextHappou: number | null;
   nextPeak: number | null; // 次の「頂点」の年（離宮）
+  currentYakudoshi: YakudoshiResult; // 今年（暦年）の厄年。今日タブの data.yakudoshi と常に一致する
   nextYakudoshi: { year: number; kazoe: number; kind: string } | null;
   transits: TransitEvent[]; // 外惑星の回帰（サターン/ジュピターリターン）
   nextTransit: TransitEvent | null;
@@ -304,9 +307,15 @@ export interface MacroFlow {
   nextDaisakkai: { year: number; name: string } | null; // 次の大殺界年
 }
 
+// 大きな流れは2つの年基準を併せ持つ。
+//  - 立春基準（nineYear）: 九星の年運・六星の運気/大殺界・年天中殺。タイムラインの軸と「今」。
+//  - 元日基準（gregYear）: 厄年（数え年）。今日タブと同じ基準。
+// 1/1〜立春の間だけ両者が1年ずれるため、どちらの「今」なのかを取り違えないこと。
 export function computeMacroFlow(profile: Profile, now: Date): MacroFlow {
   const h = honmeiNumberForYear(profile.risshunYear);
   const nineYear = risshunYear(now);
+  const gregYear = toJstParts(now).year;
+  const currentYakudoshi = yakudoshi(profile.birthInstant, profile.gender, gregYear);
   const current = nenun(h, nineYear);
   // 今年の運気（九星年運）の期間：立春(nineYear) 〜 次の立春(nineYear+1)
   const currentPhasePeriod = { start: risshunInstant(nineYear), end: risshunInstant(nineYear + 1) };
@@ -318,6 +327,8 @@ export function computeMacroFlow(profile: Profile, now: Date): MacroFlow {
   let nextPeak: number | null = null;
   for (let y = nineYear - 1; y <= nineYear + 8; y++) {
     const n = nenun(h, y);
+    // ノードのラベルは裸の年数字なので、厄年は「暦年 y」として引くのが表示と整合する。
+    // 一方 isNow は立春基準なので、1/1〜立春の間は「今」ノードの厄年が今年のものではない。
     const yaku = yakudoshi(profile.birthInstant, profile.gender, y);
     if (n.happouFusagari && nextHappou === null && y >= nineYear) nextHappou = y;
     if (n.base === 9 && nextPeak === null && y >= nineYear) nextPeak = y;
@@ -328,6 +339,7 @@ export function computeMacroFlow(profile: Profile, now: Date): MacroFlow {
       note: n.note,
       tone: n.tone,
       isNow: y === nineYear,
+      isCurrentGregorian: y === gregYear,
       isHappou: n.happouFusagari,
       yakudoshiKind: yaku.isYakudoshi ? yaku.kind : null,
       isTenchusatsu: tcSet.has(y),
@@ -341,8 +353,10 @@ export function computeMacroFlow(profile: Profile, now: Date): MacroFlow {
   const currentRunki = runkiForYear(rokusei, nineYear);
   const nextDaisakkai = daisakkaiYears(profile.birthInstant, nineYear, 1)[0] ?? null;
 
+  // 「次の転機」なので、今年が既に厄年なら翌年以降から探す（でないと今を「次」として出してしまう）
   let nextYakudoshi: { year: number; kazoe: number; kind: string } | null = null;
-  for (let y = toJstParts(now).year; y < toJstParts(now).year + 90; y++) {
+  const fromYear = currentYakudoshi.isYakudoshi ? gregYear + 1 : gregYear;
+  for (let y = fromYear; y < fromYear + 90; y++) {
     const r = yakudoshi(profile.birthInstant, profile.gender, y);
     if (r.isYakudoshi && r.kind) {
       nextYakudoshi = { year: y, kazoe: r.kazoe, kind: r.kind };
@@ -362,6 +376,7 @@ export function computeMacroFlow(profile: Profile, now: Date): MacroFlow {
   return {
     now,
     currentYear: nineYear,
+    gregorianYear: gregYear,
     honmei,
     current,
     currentPhasePeriod,
@@ -369,6 +384,7 @@ export function computeMacroFlow(profile: Profile, now: Date): MacroFlow {
     timeline,
     nextHappou,
     nextPeak,
+    currentYakudoshi,
     nextYakudoshi,
     transits,
     nextTransit,

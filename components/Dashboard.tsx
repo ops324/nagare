@@ -274,6 +274,12 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
               <span>⚠ 厄年</span>
               <span style={{ color: 'var(--caution)' }}>殺 天中殺</span>
             </div>
+            {macro.currentYakudoshi.isYakudoshi && (
+              <p className="soft-note">
+                ※ 今年（{macro.gregorianYear}年）は{macro.currentYakudoshi.kind}（数え
+                {macro.currentYakudoshi.kazoe}歳）。厄年は数え年＝元日区切りで、流れの「今」（立春区切り）とは年の変わり目が異なります。
+              </p>
+            )}
 
             <SectionHead label="次の転機" />
             <div className="cards">

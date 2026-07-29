@@ -88,13 +88,15 @@ export function LifeTimeline({ timeline }: { timeline: TimelineYear[] }) {
                   殺
                 </text>
               )}
-              {/* 年 */}
+              {/* 年（「今」は立春基準。1/1〜立春の間だけ暦年の今が隣のノードになるので中間色で示す） */}
               <text
                 x={x}
                 y={H - 14}
                 textAnchor="middle"
                 fontSize="12.5"
-                fill={t.isNow ? 'var(--primary)' : 'var(--text-dim)'}
+                fill={
+                  t.isNow ? 'var(--primary)' : t.isCurrentGregorian ? 'var(--text)' : 'var(--text-dim)'
+                }
                 style={{ fontFamily: 'var(--font-display)', fontVariantNumeric: 'tabular-nums' }}
               >
                 {t.year}

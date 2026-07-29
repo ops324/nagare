@@ -91,3 +91,52 @@ describe('大きな流れ', () => {
     expect(days).toBeLessThan(370);
   });
 });
+
+describe('厄年の年基準（元日）と九星の年基準（立春）の食い違い', () => {
+  // 立春2026 = 2026-02-04(JST) なので、1/15 は九星では 2025年・厄年では 2026年。
+  const now = jstNoon(2026, 1, 15);
+
+  it('1985生・男：今日タブと大きな流れが同じ厄年（大厄）を出す', () => {
+    const p = buildProfile({ date: '1985-05-01', gender: '男' });
+    const macro = computeMacroFlow(p, now);
+    expect(macro.currentYear).toBe(2025); // 立春基準
+    expect(macro.gregorianYear).toBe(2026); // 元日基準
+    expect(macro.currentYakudoshi.kind).toBe('大厄');
+    expect(macro.currentYakudoshi).toEqual(computeTodayFlow(p, now).data.yakudoshi);
+  });
+
+  it('1985生・男：今年が厄年なら「次の転機」は翌年以降（今を次として出さない）', () => {
+    const p = buildProfile({ date: '1985-05-01', gender: '男' });
+    const macro = computeMacroFlow(p, now);
+    expect(macro.nextYakudoshi?.year).toBe(2027);
+    expect(macro.nextYakudoshi?.kind).toBe('後厄');
+  });
+
+  it('1985生・男：「今」ノードは立春年2025、暦年の今は2026ノード', () => {
+    const p = buildProfile({ date: '1985-05-01', gender: '男' });
+    const macro = computeMacroFlow(p, now);
+    const y2025 = macro.timeline.find((t) => t.year === 2025)!;
+    const y2026 = macro.timeline.find((t) => t.year === 2026)!;
+    expect(y2025.isNow).toBe(true);
+    expect(y2025.isCurrentGregorian).toBe(false);
+    expect(y2025.yakudoshiKind).toBe('前厄');
+    expect(y2026.isNow).toBe(false);
+    expect(y2026.isCurrentGregorian).toBe(true);
+    expect(y2026.yakudoshiKind).toBe('大厄');
+  });
+
+  it('1984生・男：「今」ノードに⚠大厄が乗っても、今年の厄年は後厄で今日タブと一致', () => {
+    const p = buildProfile({ date: '1984-05-01', gender: '男' });
+    const macro = computeMacroFlow(p, now);
+    expect(macro.currentYakudoshi.kind).toBe('後厄');
+    expect(macro.currentYakudoshi).toEqual(computeTodayFlow(p, now).data.yakudoshi);
+    expect(macro.timeline.find((t) => t.isNow)?.yakudoshiKind).toBe('大厄'); // 2025年の厄年
+  });
+
+  it('立春後（7/13）は両基準が一致し、全ノードで isNow === isCurrentGregorian', () => {
+    const p = buildProfile({ date: '1985-05-01', gender: '男' });
+    const macro = computeMacroFlow(p, jstNoon(2026, 7, 13));
+    expect(macro.currentYear).toBe(macro.gregorianYear);
+    for (const t of macro.timeline) expect(t.isCurrentGregorian).toBe(t.isNow);
+  });
+});

@@ -4,7 +4,7 @@
 > 特に「**§4 依存関係・影響範囲**」「**§5 不変条件（検証済み基準値）**」「**§12 改修時チェックリスト**」を、コード変更前に必ず確認してください。
 > 実装と乖離したら本書を更新すること（本書はコードと同じリポジトリで管理する生きたドキュメント）。
 
-最終更新: 2026-07-29 / 対象: `main`（PR #1〜#37 反映済み。**六星占術の±を立春基準へ統一＝立春前生まれの大殺界の1年ズレ修正（#37）**。「星霜」リデザイン＝実時刻連動の空4状態・節気の彩・流れ線・星図、操作色は金基調を継承。PWA。**デザイントークンの土台＋和文フォント修正（#27）／デスクトップ三ゾーン「柱・流れ・空」（#28）／入口体験 `/welcome`（#29）／席を移る活性表示と reduced-motion の穴塞ぎ（#30）／リテラルのトークン化（#33）／意匠「和紙と金箔」＝ガラス→紙・地合い・節気の染め・截金の流れ線（#34）**）
+最終更新: 2026-07-29 / 対象: `main`（PR #1〜#39 反映済み。**六星占術の±を立春基準へ統一＝立春前生まれの大殺界の1年ズレ修正（#37）／±の年境界は流派差と明記し暦年説の対抗値もテストで固定（#38・一次資料は非公開で未確定）／厄年（元日基準）と九星（立春基準）の年の取り違えを解消（#39）**。「星霜」リデザイン＝実時刻連動の空4状態・節気の彩・流れ線・星図、操作色は金基調を継承。PWA。**デザイントークンの土台＋和文フォント修正（#27）／デスクトップ三ゾーン「柱・流れ・空」（#28）／入口体験 `/welcome`（#29）／席を移る活性表示と reduced-motion の穴塞ぎ（#30）／リテラルのトークン化（#33）／意匠「和紙と金箔」＝ガラス→紙・地合い・節気の染め・截金の流れ線（#34）**）
 
 ---
 
@@ -80,13 +80,13 @@ UI: `app/layout.tsx`（フォント・テーマカラー）、`app/page.tsx`（�
 | `flow.ts` | 今日/大きな流れの全表示。**多数のドメインに依存**（下記） |
 
 `flow.computeTodayFlow` の依存: astro（月相/潮汐/逆行/星座）・koyomi（節気/六曜/選日）・seiyo（食/ボイド/スーパームーン）・cycles（厄年/バイオ）・kyusei（八方塞がり）。
-`flow.computeMacroFlow` の依存: kyusei（回座）・cycles（厄年）・transits（回帰/天中殺年）・rokusei（運気/大殺界）。
+`flow.computeMacroFlow` の依存: kyusei（回座）・cycles（厄年）・transits（回帰/天中殺年）・rokusei（運気/大殺界）。**年基準が2系統ある**：立春基準（九星・六星の運気/大殺界・年天中殺・タイムラインの軸と `isNow`）と元日基準（厄年・`gregorianYear`・`isCurrentGregorian`）。1/1〜立春の間だけ両者が1年ずれる。
 
 > **原則**：ドメイン計算は「入力（Date/BirthProfile）→ 純粋関数 → 出力」。UI からドメインの内部実装に踏み込まない。新機能は既存関数を再利用し、基盤の署名（関数シグネチャ）を安易に変えない。
 
 ## 5. 不変条件（検証済み基準値）— これらは壊してはならない
 
-改修後、以下が変わったら**バグの疑い**。すべて Vitest（`npm test`・196件）で固定済み。
+改修後、以下が変わったら**バグの疑い**。すべて Vitest（`npm test`・201件）で固定済み。
 
 | 項目 | 基準値（出典） |
 |---|---|
@@ -105,6 +105,7 @@ UI: `app/layout.tsx`（フォント・テーマカラー）、`app/page.tsx`（�
 | 三九の秘法 | 本命宿=昴：栄={畢近,女中,軫遠}・親={胃近,張中,箕遠}（近中遠=最小円距離） |
 | 六星占術 運気2026 | 6sei.net公式の**全12星人±と一致**（水+達成/火+停止/火−陰影/天王−減退＝大殺界） |
 | 六星占術 ±の境界 | **立春**。1990-02-03=天王星人−／02-04=天王星人＋（同一星人で±のみ反転）。1985-01-20=水星人＋で大殺界2031〜2033（暦年基準だと−になり2032〜2034へ1年ずれる）。**流派差あり・一次資料未確認**＝暦年説の対抗値（2032〜2034）もテストで固定済み（§6・§10） |
+| 厄年の年境界 | **元日基準の数え年**。`macro.currentYakudoshi` は今日タブの `data.yakudoshi` と**常に一致**。タイムラインの `isNow` は立春年・`isCurrentGregorian` は暦年で、**1/1〜立春の間だけ食い違う（仕様）**。`nextYakudoshi` は今年が厄年なら翌年以降を返す。1985-05-01男・2026-01-15 → 立春年2025／暦年2026・大厄、次は2027後厄 |
 | バイオリズム | 誕生日当日=3リズムとも0（周期23/28/33） |
 | 水星逆行の留2026 | 順行転換 **2026-07-24**ごろ（他 3/21・11/14。地心±12h法で留を前方探索） |
 
@@ -163,11 +164,13 @@ UI: `app/layout.tsx`（フォント・テーマカラー）、`app/page.tsx`（�
 
 ### cycles.ts / transits.ts（運気サイクル）
 - 厄年: 数え年×性別の表（前厄/本厄/後厄/大厄）。バイオリズム: 周期23/28/33の正弦。
+- **厄年の年基準は元日**（`kazoedoshi` は `toJstParts(birthDate).year` との差＋1）。`yakudoshi` の第3引数は `gregorianYear` であり、**立春基準年を渡してはならない**。
 - transits: 外惑星の**日心回帰**でサターン/ジュピターリターン年、`tenchusatsuYears`（日柱空亡の年支に当たる年）。
 
 ### profile.ts / flow.ts（統合）
 - `buildProfile(BirthProfile)`→ 出生インスタント（時刻無しは正午）・太陽星座・本命星・干支・日柱。
 - `computeTodayFlow`→ フロースコア(0-100)＋ハイライト/注意＋各データ。`computeMacroFlow`→ 数年テーマ・回座・タイムライン・次の転機・運気/大殺界・回帰・天中殺年。`currentPhasePeriod`＝今年の運気の期間（立春(currentYear)〜次の立春(currentYear+1)）の表示用派生値（占術値には非関与）。UI「次の転機」は `year` 昇順で表示。
+- **`computeMacroFlow` は年基準を2つ持つ（PR #39）**：`currentYear`＝立春基準（九星・六星の運気/大殺界・年天中殺・`isNow`）、`gregorianYear`＝元日基準（厄年・`isCurrentGregorian`）。**1/1〜立春の間だけ両者が1年ずれ**、「今」ノードの ⚠厄年 が今年のものではなくなる。これを画面上で解消するため ①`currentYakudoshi`（暦年基準・今日タブの `data.yakudoshi` と同一計算）を持たせて大きな流れにも注記で出す ②タイムラインの年ラベルを3値（`isNow`＝primary／`isCurrentGregorian`＝text／他＝text-dim）にする。タイムラインの `yakudoshiKind` は**ノードのラベル年＝暦年**で引いており正しいので変えない。`nextYakudoshi` は今年が厄年なら翌年以降から探す（でないと今を「次」として出す）。
 - **今日タブの期間表示**（#18 の年運パターンの横展開・表示用派生値）：冒頭に**二十四節気の期間**（`data.term.current.instant`〜`next.instant` を `jstMonthDay` で整形）を専用ラインで表示。時限イベントは終了日を文言に添える＝水星逆行の留（`mercuryRetrogradeEnd`）・ボイド終了（`voidOfCourse.signChange`）・スーパームーン満月日（`nextSupermoon.fullMoon`）。いずれも既存インスタント／`isRetrograde` からの導出で §5 基準値には非抵触。
 - **注意**：スコアの重み付けは意図的なヒューリスティック。表示文言は `copy.ts`／各ドメインの note。
 - **開運レイヤー**（今日の色・ひとこと・開運アクション・祝祭・ストリーク）は **UI 層の表示派生**（§7）。`lucky.ts` が `dayKanshi().stem` を、`Hitokoto`/`LuckyActions` が `computeTodayFlow` の出力と `todayShuku` を読むだけで、スコア・占術値には非関与（lib 追加は `copy.ts`/`provenance.ts` の文言・メタのみ）。
@@ -250,7 +253,7 @@ BirthProfile { date:'YYYY-MM-DD'(必須); time?:'HH:mm'; place?:{lat,lng,name}; 
 
 ## 9. 品質保証（テスト対応表）
 
-`npm test`（Vitest・196件）。**参照値テスト＝§5の不変条件を固定**。改修時は必ず緑を維持。
+`npm test`（Vitest・201件）。**参照値テスト＝§5の不変条件を固定**。改修時は必ず緑を維持。
 
 | テスト | 守っている対象 |
 |---|---|
@@ -266,7 +269,7 @@ BirthProfile { date:'YYYY-MM-DD'(必須); time?:'HH:mm'; place?:{lat,lng,name}; 
 | seiyo.test | 日月食・スーパームーン・ボイド・月黄経 |
 | transits.test | 回帰・年天中殺 |
 | astro.test | 太陽星座・月・**水星逆行の妥当性(年40〜90日)**・**逆行の留日(2026-07-24)** |
-| cycles-flow.test | 数え年・厄年・バイオ・profile・今日/大きな流れ |
+| cycles-flow.test | 数え年・厄年・バイオ・profile・今日/大きな流れ・**厄年(元日)と九星(立春)の年基準の食い違い**（1/1〜立春窓・タブ間一致） |
 | **design-tokens.test**（`__tests__/`） | **デザイントークンの構造**＝§12.6 の同期を機械的に固定。節気24組が `-l`/`-d` 両方を持ち重複・余剰が無い／五行5色が6変数そろう／`--primary` と `--accent-soft` が明暗の両ブロックで定義され、生成り地の `accent-soft` が `gold-500` 側である（AA 4.5:1 の担保）／曜日色が `--primary`・`--caution` を参照しない／`@property` の syntax が `<color>`・`<number>`／11px未満は許可リストの箇所のみ／スケールトークンが欠けていない／**reduced-motion が animation と transition の両方を（疑似要素まで）止めている**／デスクトップのブレークポイント3段と `--rail-w` の 0px・88px、`.skyzone` が既定 none で 1280 ブロックでのみ block に戻ること。**`app/globals.css` をテキストとして読むだけで `lib/` には非依存** |
 
 その他ゲート: `tsc --noEmit`（型）、`eslint`（react-hooks の effect 内同期 setState 禁止等。意図的な localStorage マウントゲートは理由付き disable コメント＝`useProfile` 方式）、`next build`（静的プリレンダー）、pre-push フック＝`npm test` 自動実行、GitHub Actions CI（verify）、Claude Preview 実機確認。
@@ -295,7 +298,7 @@ BirthProfile { date:'YYYY-MM-DD'(必須); time?:'HH:mm'; place?:{lat,lng,name}; 
 1. **影響範囲を§4で確認**。基盤（time/koyomi/astro/profile/flow）ほど広く波及する。
 2. `git checkout -b feat/...` で**ブランチを切る**（main直接編集しない）。
 3. 変更したドメイン関数に**参照値テストを追加/更新**（§5の値を壊さない）。
-4. `npm test`（196件）→ `tsc --noEmit` → `eslint .` → `npm run build` を**すべて緑**に。
+4. `npm test`（201件）→ `tsc --noEmit` → `eslint .` → `npm run build` を**すべて緑**に。
 5. 表示に関わるなら **Claude Preview で実機確認**。見る軸は4つ：
    - **空4状態**＝`data-sky` を dawn/day/dusk/night に強制（`SkyField` が60秒ごとに実時刻で上書きするので、`data-theme="dark"/"light"` を立てて `resolveSky` の override を効かせるのが確実）
    - **幅** 320 / 375 / **1024 / 1280 / 1440 / 1920**（デスクトップ3ゾーンは §7 のとおり境界が3段ある）
