@@ -203,7 +203,7 @@ UI: `app/layout.tsx`（フォント・テーマカラー）、`app/page.tsx`（�
   - `lenis`（慣性スクロール）：**有効時は `scrollY` が動いても `window` の `scroll` イベントが一度も発火しない**（実測）。本アプリは流れ線の `stroke-dashoffset` 描画・星図の視差・入口の節気24色巡回が**すべて scroll イベント駆動**のため両立しない（実際に節気の巡回が止まった）。スクロール駆動の設計にスクロールハイジャッカーを足さないこと。
   - タブ遷移は本文列を `key` で貼り替えて `.tab-enter`（`transform`/`opacity` のみ）で立ち上げる。
 - **AppHeader シェアボタン**: ヘッダー右端の丸ボタン（`'use client'`）。`navigator.share()` 対応ブラウザ（モバイル等）はネイティブシェートを表示。非対応（デスクトップ等）は URL をクリップボードにコピーし「リンクをコピーしました」トーストをナビバー上に表示（1800ms）。Clipboard API 権限エラー時は `execCommand('copy')` にフォールバック。シェアはUI派生処理で占術値には非関与。
-- **タイポグラフィ**: 本文/UI＝Noto Sans JP（400/500/600/700）、ワードマーク・大きな漢字値・数字（スコア/日付/暦）＝Shippori Mincho（和の要所）。**文字サイズ下限 11px**、text-faint は装飾専用。10px の例外は2系統だけで、`__tests__/design-tokens.test.ts` の許可リストで固定している＝①暦セル内（7列×6段に日付・六曜・節気・選日印を収めるため）②`.sf-retro small`（星図の逆行ラベル・背景装飾で読ませる情報ではない）。**これ以外に 11px 未満を増やさない**（PR #27 で `.rokusei-badge` の 9.6px を下限へ戻した。運気の冬/ゆらぎの年のバッジは装飾ではなく読ませるラベル。呼び名は §12.7）。
+- **タイポグラフィ**: 本文/UI＝Noto Sans JP（400/500/600/700）、ワードマーク・大きな漢字値・数字（スコア/日付/暦）＝Shippori Mincho（和の要所）。**文字サイズ下限 11px**、text-faint は装飾専用。10px の例外は2系統だけで、`__tests__/design-tokens.test.ts` の許可リストで固定している＝①暦セル内（7列×6段に日付・六曜・節気・選日印を収めるため）②`.sf-retro small`（星図の逆行ラベル・背景装飾で読ませる情報ではない）。**これ以外に 11px 未満を増やさない**（PR #27 で `.rokusei-badge` の 9.6px を下限へ戻した。運気の冬/ゆらぎの年のバッジは装飾ではなく読ませるラベル。呼び名は §10）。
 - **フォント読込**（`layout.tsx`）: `next/font/google` の `subsets` は**プリロード対象の選択であって字形の間引きではない**ため、`["latin"]` でも CJK の `@font-face` は全て配信される（日本語がフォールバックしている、という読みは誤り）。実際の欠陥は入れ替わり（FOUT）側で、既定の `adjustFontFallback` がラテン参照字形からメトリクスを合成するため CJK では上書き値が合わず、ワードマークとスコア数字がガタつく。**両フォントとも `fallback` に CJK 実体を持つ端末フォントを明示し `adjustFontFallback: false`** とする（PR #27）。`preload: false` と `display: 'swap'` は維持。
 - **スケール（トークン体系）**: 余白 `--sp-3xs..5xl`（4px基数11段）＋ `--gutter` `--flow-rhythm`／文字 `--fs-micro..hero`（流体は `clamp()`）＋ 行間 `--lh-*` ・字送り `--tr-*`／層 `--elev-0..3` `--blur-sm..xl` `--veil-*`（カード・クローム・ナビ等の半透明レシピ）`--hairline-*`／レイアウト `--shell-max` `--column-max(-wide)` `--rail-w` `--appbar-max` `--nav-h`。**新規CSSは必ずトークンで書く**（リテラルを使う場合は PR 本文に理由を記す）。`--fs-score` はフローメーター＝金の聖域なので安易に動かさない。
   既存CSSは PR #33 で**完全同値のリテラルのみ**トークンへ置換済み（106箇所。ヴェール／髪の毛線／ぼかし／elevation の重複レシピ19、余白84、レイアウト幅3）。**残っている px リテラル約263個は意図的に残したもの**＝①枠線幅（1px/2px）②SVGの寸法・ストローク③既にトークン化済みの文字サイズ④スケールに乗らない値（`.flowcard` の 15px、`.card` の 18px、`.lucky-action` の 13px 等）。④を丸めると見た目が動くので、**変えるなら「揃える」というデザイン判断として別途行う**こと（機械的な置換で混ぜない）。
@@ -282,6 +282,30 @@ BirthProfile { date:'YYYY-MM-DD'(必須); time?:'HH:mm'; place?:{lat,lng,name}; 
 - 流派: 六星=6sei.net公式／宿曜本命宿=27宿旧暦表(起点昴)／三九=標準宿曜経(近中遠=最小円距離)／二十八宿=角起点。すべて `provenance` で明示。
 - **六星の±の年境界は「立春説」を採用（未確定）**：一次資料が非公開のため確定できず、二次資料は暦年説と立春説に割れている。他命術がすべて立春であることと実チャート報告1件を根拠に立春を採る。対抗する暦年説の値も参照値テストで固定してあり、差し戻し手順は §6。**新しい一次資料が出たら再検討すること。**
 
+### 注意期間の呼び名（原語と表示語）
+
+流派の原語（「殺」「塞」を含む語）は**事典タブでだけ**出す。他の画面は `lib/copy.ts` の `CAUTION_COPY` を参照する。`lib/copy.ts` 冒頭の「前向きで不安を煽らない言い回しに統一」を、説明文だけでなく**見出しの語にも**適用したもの（判定・スコア・年の境界は一切変えていない）。
+
+| 原語 | `title`（通常表示） | `short`（バッジ） | 出どころ |
+|---|---|---|---|
+| 大殺界 | 運気の冬 | 冬 | `CAUTION_COPY.daisakkai` |
+| 中殺界（乱気） | ゆらぎの年 | ゆらぎ | `CAUTION_COPY.chusakkai` |
+| 小殺界（健弱） | 養生の年 | 養生 | `CAUTION_COPY.shosakkai` |
+| 天中殺（空亡） | 余白の年 | 余白 | `CAUTION_COPY.tenchusatsu` |
+| 八方塞がり | 内を固める年 | 内固め | `CAUTION_COPY.happou` |
+| 厄年 | 節目の年 | 節目 | `CAUTION_COPY.yakudoshi` |
+
+厄年の種別（`YakudoshiKind`）は `YAKUDOSHI_KIND_LABEL` で読み替える（前厄→節目の前／本厄→節目／大厄→大きな節目／後厄→節目のあと）。**ドメイン値 `kind` は判定の識別子なので変えない**（`lib/__tests__/cycles-flow.test.ts` が固定）。
+
+規約上の注意：
+
+- `Tenchusatsu.name`（`午未天中殺`）は**内部識別名**で、参照値テスト `lib/__tests__/shichu.test.ts` が固定している。画面に出すのは `branchLabel`（`午未`）＋ `CAUTION_COPY.tenchusatsu.title`。
+- `NENUN_THEME[5].phase` は `CAUTION_COPY.happou.title` を参照する（`lib/kyusei.ts`）。base:1 が既に「冬」を使うので、base:5 に冬系の語は充てない。
+- 厄年の note にだけ、原語への橋を一文残している（「暦の上では、この年を「厄年」と呼びます。」）。厄年は占いの判定ではなく神社の実務語で、「厄払いに行く」という現実の行動に接続しているため。他の5語には適用しない。
+- 年表（`LifeTimeline.tsx`）に**漢字一字のマークを置かない**。「殺」の一字は §7 FlowCard と同じ理由（絵文字は読み飛ばされるが漢字は文になる）で外し、余白の年は中空の菱形にした。厄年の「⚠」は年の下のラベルと重複していたので削除。
+- `lib/provenance.ts` の出典メタ（「空亡」等）は**変えない**。出典は原語で記録する。
+- `__tests__/caution-terms.test.ts` が「原語が `components/Jiten.tsx` 以外に直接書かれていないこと」を機械的に固定している。
+
 ## 11. 既知の制約・保留（改修の落とし穴）
 
 - **逆行は必ず地心黄経で**。`EclipticLongitude`(日心)へ戻すと逆行が常に順行になる（過去の実バグ）。
@@ -313,30 +337,6 @@ BirthProfile { date:'YYYY-MM-DD'(必須); time?:'HH:mm'; place?:{lat,lng,name}; 
 7. 占術の方式・流派・文言を変えたら **`provenance` の version を更新**し、本書§5/§10も更新。
 8. PR作成→検証結果を本文に記載→**squashマージ→Vercel自動デプロイ**。
 9. 既存の署名（公開API）を変える場合は、`index.ts` バレルと全呼び出し元を横断確認。
-
-## 12.7 注意期間の呼び名（原語と表示語）
-
-流派の原語（「殺」「塞」を含む語）は**事典タブでだけ**出す。他の画面は `lib/copy.ts` の `CAUTION_COPY` を参照する。`lib/copy.ts:4` の「前向きで不安を煽らない言い回しに統一」を、説明文だけでなく**見出しの語にも**適用したもの（判定・スコア・年の境界は一切変えていない）。
-
-| 原語 | `title`（通常表示） | `short`（バッジ） | 出どころ |
-|---|---|---|---|
-| 大殺界 | 運気の冬 | 冬 | `CAUTION_COPY.daisakkai` |
-| 中殺界（乱気） | ゆらぎの年 | ゆらぎ | `CAUTION_COPY.chusakkai` |
-| 小殺界（健弱） | 養生の年 | 養生 | `CAUTION_COPY.shosakkai` |
-| 天中殺（空亡） | 余白の年 | 余白 | `CAUTION_COPY.tenchusatsu` |
-| 八方塞がり | 内を固める年 | 内固め | `CAUTION_COPY.happou` |
-| 厄年 | 節目の年 | 節目 | `CAUTION_COPY.yakudoshi` |
-
-厄年の種別（`YakudoshiKind`）は `YAKUDOSHI_KIND_LABEL` で読み替える（前厄→節目の前／本厄→節目／大厄→大きな節目／後厄→節目のあと）。**ドメイン値 `kind` は判定の識別子なので変えない**（`lib/__tests__/cycles-flow.test.ts` が固定）。
-
-規約上の注意：
-
-- `Tenchusatsu.name`（`午未天中殺`）は**内部識別名**で、参照値テスト `lib/__tests__/shichu.test.ts` が固定している。画面に出すのは `branchLabel`（`午未`）＋ `CAUTION_COPY.tenchusatsu.title`。
-- `NENUN_THEME[5].phase` は `CAUTION_COPY.happou.title` を参照する（`lib/kyusei.ts`）。base:1 が既に「冬」を使うので、base:5 に冬系の語は充てない。
-- 厄年の note にだけ、原語への橋を一文残している（「暦の上では、この年を「厄年」と呼びます。」）。厄年は占いの判定ではなく神社の実務語で、「厄払いに行く」という現実の行動に接続しているため。他の5語には適用しない。
-- 年表（`LifeTimeline.tsx`）に**漢字一字のマークを置かない**。「殺」の一字は §7 FlowCard と同じ理由（絵文字は読み飛ばされるが漢字は文になる）で外し、余白の年は中空の菱形にした。厄年の「⚠」は年の下のラベルと重複していたので削除。
-- `lib/provenance.ts` の出典メタ（「空亡」等）は**変えない**。出典は原語で記録する。
-- `__tests__/caution-terms.test.ts` が「原語が `components/Jiten.tsx` 以外に直接書かれていないこと」を機械的に固定している。
 
 ## 13. 用語集（抜粋）
 
