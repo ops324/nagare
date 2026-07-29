@@ -1,5 +1,6 @@
 import type { HouiResult, Dir8 } from '@/lib/houi';
 import { KYUSEI } from '@/lib/constants';
+import { CAUTION_COPY } from '@/lib/copy';
 
 const KANSU = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
 // 南を上にした 3×3 配置（中央は中宮）
@@ -44,7 +45,7 @@ export function KyuseiBan({ houi }: { houi: HouiResult }) {
       </div>
       <div className="kyuseiban-note">
         {houi.happouFusagari
-          ? 'あなたは今年、本命星が中宮に入る「八方塞がり」。大きな移動や新規は控えめに。'
+          ? `あなたは今年、本命星が中宮に入る「${CAUTION_COPY.happou.title}」。大きな移動や新規は控えめに。`
           : houi.kichi.length > 0
             ? `今年の吉方位は ${houi.kichi.map((c) => c.direction).join('・')}。`
             : '今年は年盤上の吉方位がありません。'}

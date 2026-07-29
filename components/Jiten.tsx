@@ -79,9 +79,16 @@ export function Jiten() {
           { name: '水 — 浅葱', yomi: 'あさぎ', desc: '澄んだ水色。知恵・流れ・浄化の気。' },
         ]}
       />
+      {/* 流派の原語（大殺界・天中殺・八方塞がり…）を出してよいのはこの一箇所だけ。
+          他所で見かけた語をここで引けるようにするための対応表を兼ねる。 */}
       <JitenSection
         label="注意期間の見かた"
-        items={Object.values(CAUTION_COPY).map((c) => ({ name: c.title, desc: c.note, tone: 'caution' as const }))}
+        note="※ 流れでは前向きな呼び名で表示しています。括弧内が一般的な呼び名です。"
+        items={Object.values(CAUTION_COPY).map((c) => ({
+          name: `${c.title}（${c.term}）`,
+          desc: c.note,
+          tone: 'caution' as const,
+        }))}
       />
 
       <p className="soft-note" style={{ marginTop: 18 }}>

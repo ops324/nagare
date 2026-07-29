@@ -38,15 +38,20 @@ function hourStem(dayStem: number, hourBranch: number): number {
 
 export interface Tenchusatsu {
   branches: [number, number];
-  name: string; // 例: 午未天中殺
+  /** 流派の原語を含む内部識別名。例: 午未天中殺。
+   *  画面に出すのは branchLabel と CAUTION_COPY.tenchusatsu 側の表示語。 */
+  name: string;
+  /** 表示用の支だけの札。例: 午未 */
+  branchLabel: string;
 }
 
-/** 日柱の干支 index → 空亡（天中殺） */
+/** 日柱の干支 index → 空亡（天中殺・表示は「余白の年」） */
 export function tenchusatsuOf(dayIndex: number): Tenchusatsu {
   const jun = Math.floor(((dayIndex % 60) + 60) % 60 / 10); // 旬 0-5
   const first = (((10 - 2 * jun) % 12) + 12) % 12;
   const second = (first + 1) % 12;
-  return { branches: [first, second], name: `${JUNISHI[first]}${JUNISHI[second]}天中殺` };
+  const branchLabel = `${JUNISHI[first]}${JUNISHI[second]}`;
+  return { branches: [first, second], name: `${branchLabel}天中殺`, branchLabel };
 }
 
 export interface Meishiki {

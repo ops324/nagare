@@ -36,6 +36,7 @@ import {
   type SupermoonInfo,
 } from './seiyo';
 import { biorhythm, biorhythmSeries, yakudoshi, type Biorhythm, type YakudoshiResult } from './cycles';
+import { CAUTION_COPY, YAKUDOSHI_KIND_LABEL } from './copy';
 import { honmeiNumberForYear, risshunYear, risshunInstant, nenun, type Nenun } from './kyusei';
 import { majorTransits, tenchusatsuYears, type TransitEvent, type TenchusatsuYear } from './transits';
 import { unmeisei, runkiForYear, daisakkaiYears, type Unmeisei, type Runki } from './rokusei';
@@ -207,11 +208,11 @@ export function computeTodayFlow(profile: Profile, now: Date): TodayFlow {
     score += avg * 15;
   }
 
-  // ── 個人：厄年 ──
+  // ── 個人：節目の年（厄年） ──
   if (yaku.isYakudoshi) {
     cautions.push({
       system: '運気',
-      title: `${yaku.kind}（数え${yaku.kazoe}歳）`,
+      title: `${YAKUDOSHI_KIND_LABEL[yaku.kind!] ?? CAUTION_COPY.yakudoshi.title}（数え${yaku.kazoe}歳）`,
       description: yaku.note,
       tone: 'caution',
       severity: yaku.kind === '本厄' || yaku.kind === '大厄' ? 'medium' : 'low',
@@ -220,11 +221,11 @@ export function computeTodayFlow(profile: Profile, now: Date): TodayFlow {
     score += yaku.kind === '大厄' || yaku.kind === '本厄' ? -6 : -3;
   }
 
-  // ── 個人：八方塞がり（年運） ──
+  // ── 個人：内を固める年（八方塞がり・年運） ──
   if (nen.happouFusagari) {
     cautions.push({
       system: '九星',
-      title: '八方塞がり（今年）',
+      title: `${CAUTION_COPY.happou.title}（今年）`,
       description: nen.note,
       tone: 'caution',
       severity: 'medium',
