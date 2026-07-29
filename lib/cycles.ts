@@ -1,6 +1,5 @@
 /**
- * 運気サイクル：厄年・バイオリズム
- * （大殺界／天中殺は Phase 2 で追加）
+ * 運気サイクル：厄年（表示は「節目の年」）・バイオリズム
  */
 import type { Gender } from './types';
 import { toJstParts, jstJdn } from './time';
@@ -43,17 +42,18 @@ export function yakudoshi(birthDate: Date, gender: Gender, gregorianYear: number
   else if (honyaku.includes(kazoe + 1)) kind = '前厄';
   else if (honyaku.includes(kazoe - 1)) kind = '後厄';
 
+  // 表示ラベルは lib/copy.ts の YAKUDOSHI_KIND_LABEL が正本。kind の値は判定の識別子なので変えない。
   const notes: Record<string, string> = {
-    前厄: '本厄の前ぶれの年。無理をせず、慎重に過ごすとよい時期。',
+    前厄: '節目の前ぶれの年。無理をせず、慎重に過ごすとよい時期。',
     本厄: '人生の節目とされる年。健康や環境の変化に気を配りたい。',
-    大厄: '厄年の中でも特に大きな節目。心身のケアと現状維持を大切に。',
-    後厄: '厄が薄れていく年。油断せず穏やかに過ごすとよい。',
+    大厄: '節目のなかでも特に大きな年。心身のケアと現状維持を大切に。',
+    後厄: '節目が過ぎてゆく年。油断せず穏やかに過ごすとよい。',
   };
   return {
     kazoe,
     kind,
     isYakudoshi: kind !== null,
-    note: kind ? notes[kind] : '厄年ではありません。',
+    note: kind ? notes[kind] : '今年は節目の年ではありません。',
   };
 }
 

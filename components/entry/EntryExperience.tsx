@@ -254,7 +254,7 @@ export function EntryExperience({
             </li>
             <li>
               <b>大きな流れ</b>
-              <span>九星の回座・天中殺・厄年・大殺界・木星土星の回帰でみる人生の周期</span>
+              <span>九星の回座・余白の年・節目の年・運気の冬・木星土星の回帰でみる人生の周期</span>
             </li>
             <li>
               <b>生まれ</b>

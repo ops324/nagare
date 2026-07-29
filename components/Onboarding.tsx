@@ -57,7 +57,7 @@ export function Onboarding({
             )}
 
             <div className="field">
-              <span className="field-label">性別（厄年の判定に使用・任意）</span>
+              <span className="field-label">性別（節目の年の判定に使用・任意）</span>
               <div className="seg">
                 {GENDERS.map((g) => (
                   <button

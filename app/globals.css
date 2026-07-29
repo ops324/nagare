@@ -1182,6 +1182,12 @@ body::after {
 .tl-legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 .tl-legend i.ring { background: transparent; border: 2px solid var(--gold-400); }
 .tl-legend i.ring-caution { background: transparent; border: 2px solid var(--caution); }
+/* 余白の年。環は上の2つで埋まっているので菱形で区別する */
+.tl-legend i.lozenge {
+  width: 8px; height: 8px; border-radius: 0;
+  background: transparent; border: 1.4px solid var(--caution);
+  transform: rotate(45deg);
+}
 
 /* ─────────────── バイオリズム凡例 ─────────────── */
 .bio-legend { display: flex; justify-content: center; gap: 18px; margin-top: var(--sp-xs); font-size: 0.76rem; color: var(--text-dim); }

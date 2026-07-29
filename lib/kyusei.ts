@@ -1,11 +1,12 @@
 /**
- * 九星気学：本命星・年運（回座）・八方塞がり
+ * 九星気学：本命星・年運（回座）・八方塞がり（表示は「内を固める年」）
  *
  * 年の区切りは立春。本命星番号は 11 − 生年の数字根（>9 は −9）で求める。
  * （1994=六白, 1995=五黄, 2000=九紫, 2025=二黒 で検証済み）
  */
 import { SearchSunLongitude } from 'astronomy-engine';
 import { kyusei, type Kyusei } from './constants';
+import { CAUTION_COPY } from './copy';
 import { jstToInstant, jstJdn, toJstParts } from './time';
 
 /** 数字根 (1-9) */
@@ -58,7 +59,8 @@ const PALACES: Palace[] = [
 
 // 回座（base宮）ごとの運気テーマ
 const NENUN_THEME: Record<number, { phase: string; theme: string; note: string; tone: 'good' | 'caution' | 'neutral' }> = {
-  5: { phase: '八方塞がり', theme: '停滞・充電', note: '新しい挑戦や大きな移動は控えめに。足元を固め、力を蓄える一年。', tone: 'caution' },
+  // 表示語は lib/copy.ts が正本。base:1 が既に「冬」を使うので、ここに冬系の語は充てない。
+  5: { phase: CAUTION_COPY.happou.title, theme: '守り・充電', note: '新しい挑戦や大きな移動は控えめに。足元を固め、力を蓄える一年。', tone: 'caution' },
   1: { phase: '冬・雌伏の時', theme: '内省・準備', note: '表立った動きより、静かに整え備える時期。健康と睡眠を大切に。', tone: 'caution' },
   2: { phase: '準備・地固め', theme: '着実・育成', note: '派手さより堅実さ。地道な努力がのちの実りにつながる年。', tone: 'neutral' },
   3: { phase: '発展の始まり', theme: '始動・挑戦', note: '物事が動き出す芽吹きの年。新しいことを始めるのに向く。', tone: 'good' },

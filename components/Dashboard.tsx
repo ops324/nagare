@@ -31,7 +31,7 @@ import { KyuseiBan } from './KyuseiBan';
 import { CalendarMonth } from './CalendarMonth';
 import { Aisho } from './Aisho';
 import { Jiten } from './Jiten';
-import { SHUKU_TRAIT, RUNKI_DESC, CAUTION_COPY } from '@/lib/copy';
+import { SHUKU_TRAIT, RUNKI_DESC, CAUTION_COPY, YAKUDOSHI_KIND_LABEL } from '@/lib/copy';
 
 type Tab = NavKey;
 
@@ -269,15 +269,16 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
               <span><i style={{ background: 'var(--good)' }} />上り調子</span>
               <span><i style={{ background: 'var(--silver)' }} />準備・転換</span>
               <span><i style={{ background: 'var(--caution)' }} />慎重に</span>
-              <span><i className="ring" />八方塞がり</span>
-              <span><i className="ring-caution" />大殺界</span>
-              <span>⚠ 厄年</span>
-              <span style={{ color: 'var(--caution)' }}>殺 天中殺</span>
+              <span><i className="ring" />{CAUTION_COPY.happou.title}</span>
+              <span><i className="ring-caution" />{CAUTION_COPY.daisakkai.title}</span>
+              <span><i className="lozenge" />{CAUTION_COPY.tenchusatsu.title}</span>
+              <span style={{ color: 'var(--caution)' }}>{CAUTION_COPY.yakudoshi.title}（年の下に表示）</span>
             </div>
             {macro.currentYakudoshi.isYakudoshi && (
               <p className="soft-note">
-                ※ 今年（{macro.gregorianYear}年）は{macro.currentYakudoshi.kind}（数え
-                {macro.currentYakudoshi.kazoe}歳）。厄年は数え年＝元日区切りで、流れの「今」（立春区切り）とは年の変わり目が異なります。
+                ※ 今年（{macro.gregorianYear}年）は
+                {YAKUDOSHI_KIND_LABEL[macro.currentYakudoshi.kind!] ?? CAUTION_COPY.yakudoshi.title}（数え
+                {macro.currentYakudoshi.kazoe}歳）。節目の年は数え年＝元日区切りで、流れの「今」（立春区切り）とは年の変わり目が異なります。
               </p>
             )}
 
@@ -293,7 +294,7 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
         {tab === 'birth' && (
           <section aria-label="あなたの生まれ">
             <SectionHead label="生まれのしるし" />
-            <BirthChips profile={profile} tenchusatsu={meishikiData.tenchusatsu.name} />
+            <BirthChips profile={profile} tenchusatsu={meishikiData.tenchusatsu.branchLabel} />
 
             <SectionHead label="四柱推命の命式" />
             <Meishiki meishiki={meishikiData} />
@@ -328,9 +329,9 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
                   >
                     {macro.currentRunki.name}
                   </div>
-                  {macro.currentRunki.daisakkai && <div className="rokusei-badge">大殺界</div>}
-                  {macro.currentRunki.chusakkai && <div className="rokusei-badge chu">中殺界</div>}
-                  {macro.currentRunki.shosakkai && <div className="rokusei-badge chu">小殺界</div>}
+                  {macro.currentRunki.daisakkai && <div className="rokusei-badge">{CAUTION_COPY.daisakkai.short}</div>}
+                  {macro.currentRunki.chusakkai && <div className="rokusei-badge chu">{CAUTION_COPY.chusakkai.short}</div>}
+                  {macro.currentRunki.shosakkai && <div className="rokusei-badge chu">{CAUTION_COPY.shosakkai.short}</div>}
                 </div>
               </div>
               <p className="flowcard-desc" style={{ marginTop: 10 }}>{RUNKI_DESC[macro.currentRunki.name]}</p>
@@ -445,9 +446,9 @@ function BirthChips({
         <div className="chip-sub">{profile.yearKanshi.animal}年</div>
       </div>
       <div className="card chip">
-        <div className="chip-label">天中殺</div>
-        <div className="chip-value">{tenchusatsu.replace('天中殺', '')}</div>
-        <div className="chip-sub">天中殺</div>
+        <div className="chip-label">{CAUTION_COPY.tenchusatsu.title}</div>
+        <div className="chip-value">{tenchusatsu}</div>
+        <div className="chip-sub">四柱推命</div>
       </div>
     </div>
   );
@@ -509,16 +510,17 @@ function buildTurningPoints(macro: MacroFlow): TurningItem[] {
     });
   }
   if (macro.nextHappou) {
-    items.push({ year: macro.nextHappou, tone: 'caution', title: '八方塞がり', note: CAUTION_COPY.happou.note });
+    items.push({ year: macro.nextHappou, tone: 'caution', title: CAUTION_COPY.happou.title, note: CAUTION_COPY.happou.note });
   }
   if (macro.nextDaisakkai) {
-    items.push({ year: macro.nextDaisakkai.year, tone: 'caution', title: `大殺界（${macro.nextDaisakkai.name}）`, note: CAUTION_COPY.daisakkai.note });
+    items.push({ year: macro.nextDaisakkai.year, tone: 'caution', title: `${CAUTION_COPY.daisakkai.title}（${macro.nextDaisakkai.name}）`, note: CAUTION_COPY.daisakkai.note });
   }
   if (macro.tenchusatsuYears[0]) {
-    items.push({ year: macro.tenchusatsuYears[0].year, tone: 'caution', title: `天中殺（${macro.tenchusatsuYears[0].branchName}年）`, note: CAUTION_COPY.tenchusatsu.note });
+    items.push({ year: macro.tenchusatsuYears[0].year, tone: 'caution', title: `${CAUTION_COPY.tenchusatsu.title}（${macro.tenchusatsuYears[0].branchName}年）`, note: CAUTION_COPY.tenchusatsu.note });
   }
   if (macro.nextYakudoshi) {
-    items.push({ year: macro.nextYakudoshi.year, tone: 'caution', title: `${macro.nextYakudoshi.kind}（数え${macro.nextYakudoshi.kazoe}）`, note: '心身の変化に気を配り、無理のない選択を。' });
+    const kindLabel = YAKUDOSHI_KIND_LABEL[macro.nextYakudoshi.kind] ?? CAUTION_COPY.yakudoshi.title;
+    items.push({ year: macro.nextYakudoshi.year, tone: 'caution', title: `${kindLabel}（数え${macro.nextYakudoshi.kazoe}）`, note: '心身の変化に気を配り、無理のない選択を。' });
   }
   if (macro.nextPeak && macro.nextPeak > macro.currentYear) {
     items.push({ year: macro.nextPeak, tone: 'good', title: '運気の頂点（離宮）', note: '華やかで注目を集める年。存分に前へ。見栄・別れには少し注意。' });

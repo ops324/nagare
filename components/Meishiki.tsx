@@ -1,5 +1,6 @@
 import type { Meishiki as MeishikiType } from '@/lib/shichu';
 import type { Kanshi } from '@/lib/koyomi';
+import { CAUTION_COPY } from '@/lib/copy';
 
 function Pillar({ label, kanshi }: { label: string; kanshi: Kanshi | null }) {
   return (
@@ -37,7 +38,7 @@ export function Meishiki({ meishiki }: { meishiki: MeishikiType }) {
           日主 <b className="font-display">{meishiki.dayMaster}</b>
         </span>
         <span>
-          天中殺 <b className="font-display">{meishiki.tenchusatsu.name}</b>
+          {CAUTION_COPY.tenchusatsu.title} <b className="font-display">{meishiki.tenchusatsu.branchLabel}</b>
         </span>
       </div>
     </div>

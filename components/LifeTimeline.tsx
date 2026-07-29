@@ -1,4 +1,5 @@
 import type { TimelineYear } from '@/lib/flow';
+import { CAUTION_COPY, YAKUDOSHI_KIND_LABEL } from '@/lib/copy';
 
 const STEP = 96;
 const PAD = 54;
@@ -76,17 +77,20 @@ export function LifeTimeline({ timeline }: { timeline: TimelineYear[] }) {
                   strokeWidth="2"
                 />
               )}
-              {/* 厄年マーク */}
-              {t.yakudoshiKind && (
-                <text x={x + 9} y={y - 7} fontSize="9" fill="var(--caution)">
-                  ⚠
-                </text>
-              )}
-              {/* 天中殺マーク */}
+              {/* 余白の年（天中殺）の菱形。環は大殺界・八方塞がり・「今」で埋まっているので形を変える。
+                  漢字一字は絵ではなく文として読まれるため使わない（SPEC §7・FlowCard の却下記録と同じ理屈）。 */}
               {t.isTenchusatsu && (
-                <text x={x - 15} y={y - 7} fontSize="9" fill="var(--caution)" opacity="0.85">
-                  殺
-                </text>
+                <rect
+                  x={x - 15}
+                  y={y - 3.5}
+                  width="7"
+                  height="7"
+                  fill="none"
+                  stroke="var(--caution)"
+                  strokeWidth="1.2"
+                  opacity="0.85"
+                  transform={`rotate(45 ${x - 11.5} ${y})`}
+                />
               )}
               {/* 年（「今」は立春基準。1/1〜立春の間だけ暦年の今が隣のノードになるので中間色で示す） */}
               <text
@@ -103,7 +107,7 @@ export function LifeTimeline({ timeline }: { timeline: TimelineYear[] }) {
               </text>
               {t.yakudoshiKind && (
                 <text x={x} y={H - 2} textAnchor="middle" fontSize="8.5" fill="var(--caution)">
-                  {t.yakudoshiKind}
+                  {YAKUDOSHI_KIND_LABEL[t.yakudoshiKind] ?? CAUTION_COPY.yakudoshi.title}
                 </text>
               )}
             </g>
