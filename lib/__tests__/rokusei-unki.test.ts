@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { jstNoon } from '../time';
-import { runkiIndex, RUNKI_CYCLE, unmeisei, unmeiseiRunki, daisakkaiYears } from '../rokusei';
+import {
+  runkiIndex,
+  runkiForYear,
+  RUNKI_CYCLE,
+  unmeisei,
+  unmeiseiRunki,
+  daisakkaiYears,
+  type Unmeisei,
+} from '../rokusei';
 
 // 2026年（午年）の 6sei.net 公式ランキング全12星人±
 // seijinIndex: 0=土,1=金,2=火,3=天王,4=木,5=水
@@ -71,5 +79,25 @@ describe('立春前生まれの大殺界が1年ずれない（±の年境界＝�
   it('立春当日生まれ(1990-02-04＝天王星人＋)の大殺界は 2035〜2037', () => {
     const ys = daisakkaiYears(jstNoon(1990, 2, 4), 2026, 3);
     expect(ys.map((y) => y.year)).toEqual([2035, 2036, 2037]);
+  });
+});
+
+describe('±の年境界は流派差：立春説を採用（暦年説の対抗値も固定）', () => {
+  // 一次資料（6sei.net）は運命数・±の算出手順を公開しておらず、二次資料は暦年説と立春説に割れている。
+  // 差し戻しに備え、採用していない暦年説での正解値もここで固定しておく（手順は docs/SPEC.md §6）。
+  const b = jstNoon(1985, 1, 20); // 立春年1984(甲子＝陽支) / 暦年1985(乙丑＝陰支)
+
+  it('採用＝立春基準：水星人＋、大殺界は 2031〜2033', () => {
+    expect(unmeisei(b).label).toBe('水星人＋');
+    expect(daisakkaiYears(b, 2026, 3).map((y) => y.year)).toEqual([2031, 2032, 2033]);
+  });
+
+  it('対抗＝暦年基準：水星人−なら大殺界は 2032〜2034（差し戻し時はこちらが正）', () => {
+    const alt: Unmeisei = { ...unmeisei(b), plus: false, sign: '−', label: '水星人−' };
+    expect(runkiForYear(alt, 2031).daisakkai).toBe(false);
+    expect(runkiForYear(alt, 2032).name).toBe('陰影');
+    expect(runkiForYear(alt, 2033).name).toBe('停止');
+    expect(runkiForYear(alt, 2034).name).toBe('減退');
+    for (const y of [2032, 2033, 2034]) expect(runkiForYear(alt, y).daisakkai).toBe(true);
   });
 });
