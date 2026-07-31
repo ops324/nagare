@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { jstNoon, toJstParts } from '../time';
-import { kazoedoshi, yakudoshi, biorhythm } from '../cycles';
+import { kazoedoshi, yakudoshi, upcomingYakudoshi, biorhythm } from '../cycles';
 import { buildProfile } from '../profile';
 import { computeTodayFlow, computeMacroFlow, buildTurningPoints } from '../flow';
 import { CAUTION_COPY } from '../copy';
@@ -19,6 +19,52 @@ describe('数え年・厄年', () => {
   });
   it('女性・数え33（1994生）は大厄', () => {
     expect(yakudoshi(jstNoon(1994, 5, 1), '女', 2026).kind).toBe('大厄');
+  });
+});
+
+// 厄年は男女で年が異なる（男 25/42/61・女 19/33/37/61）。
+// 未回答を男性表へ倒すと、女性には偽陰性・男性でない人には偽陽性を断言することになる。
+describe('性別未回答の厄年は判定を保留する', () => {
+  it('男女で答えが割れる実例（数え19と数え25）', () => {
+    // 数え19 は女性だけが本厄
+    expect(yakudoshi(jstNoon(2008, 5, 1), '女', 2026).kind).toBe('本厄');
+    expect(yakudoshi(jstNoon(2008, 5, 1), '男', 2026).kind).toBeNull();
+    // 数え25 は男性だけが本厄
+    expect(yakudoshi(jstNoon(2002, 5, 1), '男', 2026).kind).toBe('本厄');
+    expect(yakudoshi(jstNoon(2002, 5, 1), '女', 2026).kind).toBeNull();
+  });
+
+  it('未回答なら kind=null・genderKnown=false・数え年は返す', () => {
+    for (const [birth, kazoe] of [
+      ['2008-05-01', 19], // 修正前は「今年は節目の年ではありません」と断言（偽陰性）
+      ['2002-05-01', 25], // 修正前は男性表で「本厄」（偽陽性）
+    ] as const) {
+      const r = yakudoshi(jstNoon(...(birth.split('-').map(Number) as [number, number, number])), '未回答', 2026);
+      expect(r).toMatchObject({ kazoe, kind: null, isYakudoshi: false, genderKnown: false });
+      expect(r.note).not.toBe('今年は節目の年ではありません。');
+    }
+  });
+
+  it('性別ありなら genderKnown=true', () => {
+    expect(yakudoshi(jstNoon(2008, 5, 1), '女', 2026).genderKnown).toBe(true);
+  });
+
+  it('未回答でも今日タブと大きな流れは一致し、年表・次の転機に厄年が出ない', () => {
+    const p = buildProfile({ date: '2002-05-01' }); // gender 未指定 → '未回答'
+    const now = jstNoon(2026, 7, 13);
+    const macro = computeMacroFlow(p, now);
+    expect(macro.currentYakudoshi.genderKnown).toBe(false);
+    expect(macro.currentYakudoshi).toEqual(computeTodayFlow(p, now).data.yakudoshi); // §5 のタブ間一致
+    expect(macro.nextYakudoshi).toBeNull();
+    for (const t of buildTurningPoints(macro)) {
+      expect(t.title).not.toContain(CAUTION_COPY.yakudoshi.title); // 「次の転機」にも出ない
+    }
+    for (const t of macro.timeline) expect(t.yakudoshiKind).toBeNull();
+  });
+
+  it('upcomingYakudoshi は性別未回答なら空', () => {
+    expect(upcomingYakudoshi(jstNoon(2002, 5, 1), '未回答', 2026)).toEqual([]);
+    expect(upcomingYakudoshi(jstNoon(2002, 5, 1), '男', 2026).length).toBeGreaterThan(0);
   });
 });
 

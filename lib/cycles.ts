@@ -14,9 +14,11 @@ const TAIYAKU_FEMALE = [33];
 export type YakudoshiKind = '前厄' | '本厄' | '後厄' | '大厄' | null;
 
 export interface YakudoshiResult {
-  kazoe: number; // 数え年
+  kazoe: number; // 数え年（性別に依存しない）
   kind: YakudoshiKind;
   isYakudoshi: boolean;
+  /** 性別が確定しているか。false のとき判定は保留され kind は常に null（Daiun.genderKnown と対の作法） */
+  genderKnown: boolean;
   note: string;
 }
 
@@ -26,15 +28,35 @@ function honyakuList(gender: Gender): number[] {
 function taiyakuList(gender: Gender): number[] {
   return gender === '女' ? TAIYAKU_FEMALE : TAIYAKU_MALE;
 }
+function isGenderKnown(gender: Gender): boolean {
+  return gender === '男' || gender === '女';
+}
 
 /** 生年 → 指定西暦年における数え年 */
 export function kazoedoshi(birthDate: Date, gregorianYear: number): number {
   return gregorianYear - toJstParts(birthDate).year + 1;
 }
 
-/** 指定西暦年の厄年判定 */
+/**
+ * 指定西暦年の厄年判定。
+ *
+ * 厄年は男女で年が異なる（男 25/42/61・女 19/33/37/61）ため、**性別が未回答なら判定を保留する**。
+ * かつては男性表へ黙って倒しており、数え19の女性に「今年は節目の年ではありません」と
+ * 断言し（偽陰性）、数え25には男性表で「本厄」を出していた（偽陽性）。
+ * 厄年は「厄払いに行く」という現実の行動に接続する語なので、誤った断言の害が大きい。
+ * 大運（`Daiun.genderKnown`）と同じ作法で、値を出さず注記で促す。
+ */
 export function yakudoshi(birthDate: Date, gender: Gender, gregorianYear: number): YakudoshiResult {
   const kazoe = kazoedoshi(birthDate, gregorianYear);
+  if (!isGenderKnown(gender)) {
+    return {
+      kazoe, // 数え年は性別に依存しないのでそのまま返す
+      kind: null,
+      isYakudoshi: false,
+      genderKnown: false,
+      note: '厄年は男女で年が異なります。性別を入れると節目の年が出ます。',
+    };
+  }
   const honyaku = honyakuList(gender);
   const taiyaku = taiyakuList(gender);
   let kind: YakudoshiKind = null;
@@ -53,12 +75,13 @@ export function yakudoshi(birthDate: Date, gender: Gender, gregorianYear: number
     kazoe,
     kind,
     isYakudoshi: kind !== null,
+    genderKnown: true,
     note: kind ? notes[kind] : '今年は節目の年ではありません。',
   };
 }
 
 /**
- * fromYear 以降の直近の厄年（前厄・本厄・後厄）を count 件。
+ * fromYear 以降の直近の厄年（前厄・本厄・後厄）を count 件。性別未回答なら空。
  *
  * ※「次の」を求めるときは fromYear に今年を渡さないこと。今年が既に厄年なら
  *   今年自身が先頭に来る（`flow.computeMacroFlow` の `nextYakudoshi` は
@@ -70,6 +93,7 @@ export function upcomingYakudoshi(
   fromYear: number,
   count = 6,
 ): { year: number; kazoe: number; kind: YakudoshiKind }[] {
+  if (!isGenderKnown(gender)) return [];
   const out: { year: number; kazoe: number; kind: YakudoshiKind }[] = [];
   for (let y = fromYear; y < fromYear + 90 && out.length < count; y++) {
     const r = yakudoshi(birthDate, gender, y);

@@ -48,6 +48,11 @@ export function daiun(birthInstant: Date, gender: Gender, hasTime: boolean, coun
   const m = meishiki(birthInstant, hasTime);
   const yearStemYang = m.year.stem % 2 === 0; // 甲丙戊庚壬=陽(偶数)
   const genderKnown = gender === '男' || gender === '女';
+  // 性別未回答なら向きは定まらないが、ここでは値を出して genderKnown で注記する
+  // （UI が「性別を入れると運の向きが定まります」を添える）。
+  // 一方 cycles.yakudoshi は未回答なら判定そのものを保留する — 厄年は男女で年が異なり、
+  // 「厄払いに行く」という現実の行動に接続するため、誤った断言の害が大きい。
+  // この非対称は意図的（docs/SPEC.md §6・§8）。
   const male = gender === '男';
   const forward = (yearStemYang && male) || (!yearStemYang && !male);
 
