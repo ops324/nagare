@@ -7,7 +7,7 @@
 import { SearchSunLongitude } from 'astronomy-engine';
 import { kyusei, type Kyusei } from './constants';
 import { CAUTION_COPY } from './copy';
-import { jstToInstant, jstJdn, toJstParts } from './time';
+import { jstToInstant, toJstParts } from './time';
 
 /** 数字根 (1-9) */
 function digitalRoot(y: number): number {
@@ -27,11 +27,19 @@ export function risshunInstant(year: number): Date {
   return t!.date;
 }
 
-/** 生年月日が属する「立春基準の年」 */
+/**
+ * 生年月日が属する「立春基準の年」。
+ *
+ * **境界は立春の瞬間**（暦日ではない）。立春が正午過ぎに起きる年（例：立春2000 = 2/4 21:40 JST）は
+ * その日の大半が前年に属するため、暦日で切ると本命星・年柱・六星の± が丸ごと1年ずれる。
+ * ※ `koyomi.setsugetsuBranchAt`（命式の月支）と同じ粒度に必ず揃えること。年干（ここ）と月支で
+ *   粒度が違うと五虎遁がどちらの流派にも存在しない月柱を作る（docs/SPEC.md §6）。
+ * ※ 出生時刻が未入力のときは `profile.birthToInstant` が正午を代表点に置く。
+ */
 export function risshunYear(birthDate: Date): number {
   const p = toJstParts(birthDate);
   const risshun = risshunInstant(p.year);
-  return jstJdn(birthDate) < jstJdn(risshun) ? p.year - 1 : p.year;
+  return birthDate.getTime() < risshun.getTime() ? p.year - 1 : p.year;
 }
 
 /** 生年月日 → 本命星 */

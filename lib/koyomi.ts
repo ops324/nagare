@@ -117,13 +117,27 @@ export function setsugetsuBranchOfLongitude(lon: number): number {
 }
 
 /**
- * ある暦日の節月の地支 index。
- * 節入り日はその日全体を新しい節月とするため、JST 23:59 の太陽黄経で判定する。
+ * ある**暦日**の節月の地支 index（選日用）。
+ * 選日（一粒万倍日・天赦日）は暦日の暦注なので、節入り日はその日全体を新しい節月とする。
+ * そのため JST 23:59 の太陽黄経で判定する。
+ *
+ * ※ **命式（四柱推命）には使わないこと** — 月柱は節入りの瞬間で切る（`setsugetsuBranchAt`）。
+ *   逆にこちらを瞬間基準へ動かすと §5 の一粒万倍日の基準値が壊れる
+ *   （2026-03-05 は戊寅。啓蟄が 22:58 なので暦日なら卯月で寅が当たるが、瞬間だと寅月で外れる）。
  */
-export function setsugetsuBranch(instant: Date): number {
+export function setsugetsuBranchOfDay(instant: Date): number {
   const p = toJstParts(instant);
   const eod = jstToInstant(p.year, p.month, p.day, 23, 59);
   return setsugetsuBranchOfLongitude(sunLongitude(eod));
+}
+
+/**
+ * ある**瞬間**の節月の地支 index（命式用）。
+ * 四柱推命の月柱は節入りの瞬間で切る。節入り日でも節入り時刻より前は前の節月。
+ * ※ `kyusei.risshunYear`（年干）と必ず同じ粒度に揃えること（docs/SPEC.md §6）。
+ */
+export function setsugetsuBranchAt(instant: Date): number {
+  return setsugetsuBranchOfLongitude(sunLongitude(instant));
 }
 
 // ─────────────────────────── 干支 ───────────────────────────
@@ -310,7 +324,7 @@ export interface Senjitsu {
 /** その暦日に該当する選日（吉日・特異日）の一覧 */
 export function senjitsu(instant: Date): Senjitsu[] {
   const k = dayKanshi(instant);
-  const setsu = setsugetsuBranch(instant);
+  const setsu = setsugetsuBranchOfDay(instant); // 選日は暦日の暦注（節入り日はその日全体が新節月）
   const p = toJstParts(instant);
   const eod = jstToInstant(p.year, p.month, p.day, 23, 59);
   const lon = sunLongitude(eod);

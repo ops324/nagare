@@ -3,13 +3,15 @@
  *
  * 年柱は立春基準、月柱は節入り＋五虎遁、日柱は日干支、時柱は五鼠遁。
  * 実例（1987-06-10 01:00 → 丁卯・丙午・庚寅・丁丑）で全4柱を検証済み。
+ * ※ 年柱・月柱の境界はいずれも**節入りの瞬間**（暦日ではない）。年干と月支で粒度が違うと
+ *   五虎遁が両基準を混ぜて不整合な月柱を作るため、必ず揃えること（docs/SPEC.md §6）。
  * ※ 経度・均時差の補正は行わない（JSTの時計時刻を使用）。子刻の日跨ぎも正子基準。
  */
 import {
   yearKanshi,
   dayKanshi,
   dayKanshiIndex,
-  setsugetsuBranch,
+  setsugetsuBranchAt,
   kanshiFromIndex,
   kanshiIndexFromStemBranch,
   type Kanshi,
@@ -66,7 +68,9 @@ export interface Meishiki {
 /** 生年月日時 → 命式 */
 export function meishiki(birthInstant: Date, hasTime: boolean): Meishiki {
   const year = yearKanshi(risshunYear(birthInstant));
-  const monthBranch = setsugetsuBranch(birthInstant);
+  // 月支は節入りの「瞬間」で切る。年干（risshunYear）と同じ粒度でなければ、
+  // 五虎遁が両基準を混ぜてどちらの流派にも存在しない月柱を作る（docs/SPEC.md §6）。
+  const monthBranch = setsugetsuBranchAt(birthInstant);
   const mStem = monthStem(year.stem, monthBranch);
   const month = kanshiFromIndex(kanshiIndexFromStemBranch(mStem, monthBranch));
   const day = dayKanshi(birthInstant);
