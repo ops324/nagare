@@ -352,7 +352,11 @@ export function computeMacroFlow(profile: Profile, now: Date): MacroFlow {
   const nextTransit = transits[0] ?? null;
   const upcomingTenchusatsu = tenchusatsuYears(profile.birthInstant, nineYear, 4);
   const currentRunki = runkiForYear(rokusei, nineYear);
-  const nextDaisakkai = daisakkaiYears(profile.birthInstant, nineYear, 1)[0] ?? null;
+  // 大殺界は陰影→停止→減退の連続3年。今その中にいるなら、次の「組」の頭（陰影）を返す。
+  // +1 にすると今いる組の2年目を「次」として出してしまう。
+  const nextDaisakkai =
+    daisakkaiYears(profile.birthInstant, currentRunki.daisakkai ? nineYear + 3 : nineYear, 1)[0] ??
+    null;
 
   // 「次の転機」なので、今年が既に厄年なら翌年以降から探す（でないと今を「次」として出してしまう）
   let nextYakudoshi: { year: number; kazoe: number; kind: string } | null = null;
@@ -394,4 +398,51 @@ export function computeMacroFlow(profile: Profile, now: Date): MacroFlow {
     currentRunki,
     nextDaisakkai,
   };
+}
+
+// ─────────────────────────── 次の転機（表示用の集約） ───────────────────────────
+
+export interface TurningItem {
+  year: number;
+  title: string;
+  note: string;
+  tone: 'good' | 'caution' | 'neutral';
+}
+
+/**
+ * 「次の転機」を各種占術から集約し、年の昇順に並べて返す（同年は挿入順を維持）。
+ *
+ * **今年は出さない**。`nextHappou` / `tenchusatsuYears` / `nextDaisakkai` の元関数は
+ * 今年を含む仕様のまま（年運テーマ・年天中殺の巡り一覧では今年を含むのが正しく、
+ * `nextHappou === 立春年` は参照値テストが固定している）なので、ここで除外する。
+ * 比較の基準年に注意：`nextYakudoshi` は**暦年**、他は**立春年**（§6 の2基準設計）。
+ */
+export function buildTurningPoints(macro: MacroFlow): TurningItem[] {
+  const items: TurningItem[] = [];
+  if (macro.nextTransit) {
+    items.push({
+      year: macro.nextTransit.year,
+      tone: 'good',
+      title: `${macro.nextTransit.label}（${macro.nextTransit.age}歳ごろ）`,
+      note: '人生の大きな節目。これまでを見直し、次のステージへ舵を切る時期。',
+    });
+  }
+  if (macro.nextHappou && macro.nextHappou !== macro.currentYear) {
+    items.push({ year: macro.nextHappou, tone: 'caution', title: CAUTION_COPY.happou.title, note: CAUTION_COPY.happou.note });
+  }
+  if (macro.nextDaisakkai) {
+    items.push({ year: macro.nextDaisakkai.year, tone: 'caution', title: `${CAUTION_COPY.daisakkai.title}（${macro.nextDaisakkai.name}）`, note: CAUTION_COPY.daisakkai.note });
+  }
+  const nextTenchusatsu = macro.tenchusatsuYears.find((t) => t.year !== macro.currentYear);
+  if (nextTenchusatsu) {
+    items.push({ year: nextTenchusatsu.year, tone: 'caution', title: `${CAUTION_COPY.tenchusatsu.title}（${nextTenchusatsu.branchName}年）`, note: CAUTION_COPY.tenchusatsu.note });
+  }
+  if (macro.nextYakudoshi) {
+    const kindLabel = YAKUDOSHI_KIND_LABEL[macro.nextYakudoshi.kind] ?? CAUTION_COPY.yakudoshi.title;
+    items.push({ year: macro.nextYakudoshi.year, tone: 'caution', title: `${kindLabel}（数え${macro.nextYakudoshi.kazoe}）`, note: '心身の変化に気を配り、無理のない選択を。' });
+  }
+  if (macro.nextPeak && macro.nextPeak > macro.currentYear) {
+    items.push({ year: macro.nextPeak, tone: 'good', title: '運気の頂点（離宮）', note: '華やかで注目を集める年。存分に前へ。見栄・別れには少し注意。' });
+  }
+  return items.sort((a, b) => a.year - b.year);
 }
