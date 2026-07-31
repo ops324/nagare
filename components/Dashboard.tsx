@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { BirthProfile } from '@/lib/types';
 import { buildProfile } from '@/lib/profile';
-import { computeTodayFlow, computeMacroFlow, type MacroFlow } from '@/lib/flow';
+import { computeTodayFlow, computeMacroFlow, buildTurningPoints } from '@/lib/flow';
 import { meishiki } from '@/lib/shichu';
 import { houi } from '@/lib/houi';
 import { honmeishuku, todayShuku } from '@/lib/sukuyo';
@@ -501,38 +501,6 @@ function DaiunList({
       </p>
     </>
   );
-}
-
-type TurningItem = { year: number; title: string; note: string; tone: 'good' | 'caution' | 'neutral' };
-
-/** 「次の転機」を各種占術から集約し、年の昇順に並べて返す（同年は挿入順を維持） */
-function buildTurningPoints(macro: MacroFlow): TurningItem[] {
-  const items: TurningItem[] = [];
-  if (macro.nextTransit) {
-    items.push({
-      year: macro.nextTransit.year,
-      tone: 'good',
-      title: `${macro.nextTransit.label}（${macro.nextTransit.age}歳ごろ）`,
-      note: '人生の大きな節目。これまでを見直し、次のステージへ舵を切る時期。',
-    });
-  }
-  if (macro.nextHappou) {
-    items.push({ year: macro.nextHappou, tone: 'caution', title: CAUTION_COPY.happou.title, note: CAUTION_COPY.happou.note });
-  }
-  if (macro.nextDaisakkai) {
-    items.push({ year: macro.nextDaisakkai.year, tone: 'caution', title: `${CAUTION_COPY.daisakkai.title}（${macro.nextDaisakkai.name}）`, note: CAUTION_COPY.daisakkai.note });
-  }
-  if (macro.tenchusatsuYears[0]) {
-    items.push({ year: macro.tenchusatsuYears[0].year, tone: 'caution', title: `${CAUTION_COPY.tenchusatsu.title}（${macro.tenchusatsuYears[0].branchName}年）`, note: CAUTION_COPY.tenchusatsu.note });
-  }
-  if (macro.nextYakudoshi) {
-    const kindLabel = YAKUDOSHI_KIND_LABEL[macro.nextYakudoshi.kind] ?? CAUTION_COPY.yakudoshi.title;
-    items.push({ year: macro.nextYakudoshi.year, tone: 'caution', title: `${kindLabel}（数え${macro.nextYakudoshi.kazoe}）`, note: '心身の変化に気を配り、無理のない選択を。' });
-  }
-  if (macro.nextPeak && macro.nextPeak > macro.currentYear) {
-    items.push({ year: macro.nextPeak, tone: 'good', title: '運気の頂点（離宮）', note: '華やかで注目を集める年。存分に前へ。見栄・別れには少し注意。' });
-  }
-  return items.sort((a, b) => a.year - b.year);
 }
 
 function TurningPoint({

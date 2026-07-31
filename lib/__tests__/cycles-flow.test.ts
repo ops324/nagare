@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { jstNoon, toJstParts } from '../time';
 import { kazoedoshi, yakudoshi, upcomingYakudoshi, biorhythm } from '../cycles';
 import { buildProfile } from '../profile';
-import { computeTodayFlow, computeMacroFlow } from '../flow';
+import { computeTodayFlow, computeMacroFlow, buildTurningPoints } from '../flow';
+import { CAUTION_COPY } from '../copy';
 
 describe('数え年・厄年', () => {
   it('2000-05-01 生まれの 2026 の数え年は 27', () => {
@@ -54,7 +55,10 @@ describe('性別未回答の厄年は判定を保留する', () => {
     const macro = computeMacroFlow(p, now);
     expect(macro.currentYakudoshi.genderKnown).toBe(false);
     expect(macro.currentYakudoshi).toEqual(computeTodayFlow(p, now).data.yakudoshi); // §5 のタブ間一致
-    expect(macro.nextYakudoshi).toBeNull(); // 「次の転機」に厄年が出ない
+    expect(macro.nextYakudoshi).toBeNull();
+    for (const t of buildTurningPoints(macro)) {
+      expect(t.title).not.toContain(CAUTION_COPY.yakudoshi.title); // 「次の転機」にも出ない
+    }
     for (const t of macro.timeline) expect(t.yakudoshiKind).toBeNull();
   });
 
@@ -132,6 +136,46 @@ describe('大きな流れ', () => {
     const days = (end.getTime() - start.getTime()) / 86_400_000;
     expect(days).toBeGreaterThan(360);
     expect(days).toBeLessThan(370);
+  });
+});
+
+// 「次の転機」なので今年は出さない。元の関数（nextHappou・tenchusatsuYears）は
+// 今年を含む仕様のままにし、集約側で除外する。
+describe('「次の転機」に今年を出さない', () => {
+  const now = jstNoon(2026, 7, 13);
+
+  it('すでに大殺界なら nextDaisakkai は次の「組」の頭（1985-08-15男は2038年の陰影）', () => {
+    const p = buildProfile({ date: '1985-08-15', gender: '男' });
+    const macro = computeMacroFlow(p, now);
+    expect(macro.currentRunki.name).toBe('陰影');
+    expect(macro.currentRunki.daisakkai).toBe(true);
+    // 修正前は今年 2026 を「次の大殺界」として出していた。+1 だと今いる組の2年目 2027 になる。
+    expect(macro.nextDaisakkai).toEqual({ year: 2038, name: '陰影' });
+  });
+
+  it('どの転機も今年（立春年）ではない', () => {
+    for (const birth of ['1985-08-15', '1999-06-01', '1987-06-10']) {
+      const macro = computeMacroFlow(buildProfile({ date: birth, gender: '男' }), now);
+      for (const t of buildTurningPoints(macro)) {
+        expect(t.year, `${birth}: ${t.title}`).not.toBe(macro.currentYear);
+      }
+    }
+  });
+
+  it('八方塞がりが今年でも nextHappou は今年のまま（テーマ用）／転機一覧には出さない', () => {
+    const p = buildProfile({ date: '1999-06-01', gender: '女' });
+    const macro = computeMacroFlow(p, now);
+    expect(macro.nextHappou).toBe(2026); // 元の値は変えない
+    expect(macro.current.happouFusagari).toBe(true);
+    expect(buildTurningPoints(macro).find((t) => t.title === CAUTION_COPY.happou.title)).toBeUndefined();
+  });
+
+  it('年天中殺が今年でも一覧は今年を含み、転機は翌年から', () => {
+    const p = buildProfile({ date: '1987-06-10', gender: '男' });
+    const macro = computeMacroFlow(p, now);
+    expect(macro.tenchusatsuYears[0].year).toBe(2026); // 巡り一覧は今年を含むのが正しい
+    const item = buildTurningPoints(macro).find((t) => t.title.startsWith(CAUTION_COPY.tenchusatsu.title));
+    expect(item?.year).toBe(2027);
   });
 });
 

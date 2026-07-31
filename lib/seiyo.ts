@@ -66,7 +66,12 @@ export function nextSupermoon(now: Date): SupermoonInfo {
 }
 
 // ─────────────── ボイドタイム（月のボイド・オブ・コース） ───────────────
-const ASPECTS = [0, 60, 90, 120, 180];
+// アスペクトは「有向離角 norm360(月黄経 − 天体黄経)」（0..360）と突き合わせるため、
+// 同じアスペクトが2つの値に立つ（六分=60/300・矩=90/270・三分=120/240）。
+// 240/270/300 を落とすと星座内の最後のアスペクトを取り逃し、ボイドが実際より早く始まる。
+// ※ 無向の |angleDelta| へ変えてはならない — 合(0)と衝(180)が符号交差でなくV字の極小になり、
+//   下の符号反転による検出ループが成立しなくなる。
+const ASPECTS = [0, 60, 90, 120, 180, 240, 270, 300];
 const VOC_BODIES: Body[] = [Body.Sun, Body.Mercury, Body.Venus, Body.Mars, Body.Jupiter, Body.Saturn];
 
 function moonLon(t: Date): number {
@@ -88,9 +93,29 @@ export function searchMoonLongitude(target: number, start: Date): Date {
   return new Date(hi);
 }
 
+/**
+ * 月が現在の星座に入った時刻（入宮）。signChange から遡って求める。
+ * 月黄経は単調増加なので、signChange からの後退量 norm360(境界黄経 − 月黄経) は
+ * 時刻を遡るほど単調に増え、それが 30° に達した点が入宮。
+ */
+function signIngress(signChange: Date, nextBoundary: number): Date {
+  const back = (t: number) => norm360(nextBoundary - moonLon(new Date(t)));
+  let lo = signChange.getTime() - 3.2 * 86400000; // 1星座は最長でも約2.6日なので必ず前の星座
+  let hi = signChange.getTime();
+  for (let i = 0; i < 44; i++) {
+    const mid = (lo + hi) / 2;
+    if (back(mid) > 30) lo = mid;
+    else hi = mid;
+  }
+  return new Date(hi);
+}
+
 export interface VoidOfCourse {
   isVoid: boolean;
-  voidStart: Date | null; // 最後のアスペクト時刻＝ボイド開始
+  /** ボイド開始＝星座内で最後に結んだアスペクトの時刻。星座内に1つも無ければ入宮時刻 */
+  voidStart: Date;
+  /** 月が現在の星座に入った時刻 */
+  signIngress: Date;
   signChange: Date; // 次に星座を移る時刻＝ボイド終了
   currentSign: string;
   nextSign: string;
@@ -102,9 +127,12 @@ export function voidOfCourse(now: Date): VoidOfCourse {
   const curIdx = signIndexOfLongitude(L);
   const nextBoundary = norm360((curIdx + 1) * 30);
   const signChange = searchMoonLongitude(nextBoundary, now);
+  const ingress = signIngress(signChange, nextBoundary);
 
-  // 現在の星座に入ってから星座を移るまで（最大~2.5日）を細かくサンプルし、最後のアスペクトを求める
-  const windowStart = new Date(signChange.getTime() - 2.7 * 86400000);
+  // 入宮から星座を移るまで（最大~2.6日）を細かくサンプルし、最後のアスペクトを求める。
+  // 窓は入宮でクランプする（signChange − 2.7日 固定にすると、月が速い時期に
+  // 前の星座で結んだアスペクトを voidStart として拾ってしまう）。
+  const windowStart = ingress;
   const stepMs = 12 * 60 * 1000;
   const times: number[] = [];
   for (let t = windowStart.getTime(); t <= signChange.getTime(); t += stepMs) times.push(t);
@@ -127,11 +155,14 @@ export function voidOfCourse(now: Date): VoidOfCourse {
     }
   }
 
-  const voidStart = lastAspect !== null ? new Date(lastAspect) : null;
-  const isVoid = voidStart !== null && now.getTime() >= voidStart.getTime() && now.getTime() < signChange.getTime();
+  // 星座内に1つもアスペクトが無ければ、入宮の瞬間からずっとボイド（古典的な扱い）。
+  // ここを null のままにすると isVoid が黙って false に落ち、ボイドが一度も出ない日が生まれる。
+  const voidStart = lastAspect !== null ? new Date(lastAspect) : ingress;
+  const isVoid = now.getTime() >= voidStart.getTime() && now.getTime() < signChange.getTime();
   return {
     isVoid,
     voidStart,
+    signIngress: ingress,
     signChange,
     currentSign: ZODIAC[curIdx].name,
     nextSign: ZODIAC[(curIdx + 1) % 12].name,

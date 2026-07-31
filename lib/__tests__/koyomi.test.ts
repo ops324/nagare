@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { jstNoon } from '../time';
+import { jstNoon, jstToInstant } from '../time';
 import {
   solarTermsInYear,
   solarTermAround,
@@ -108,5 +108,15 @@ describe('選日', () => {
 
   it('2026-01-03（丁丑）は選日なし', () => {
     expect(senjitsu(d(2026, 1, 3))).toHaveLength(0);
+  });
+
+  // 選日は暦日の暦注なので、節入り日はその日全体が新しい節月（setsugetsuBranchOfDay）。
+  // ここを命式と同じ「瞬間」基準へ動かすと 2026-03-05 が一粒万倍日でなくなる
+  // （3/5 は戊寅。啓蟄が 22:58 なので、暦日なら卯月で寅が当たるが、瞬間だと寅月で外れる）。
+  it('節入り日の選日は時刻によらず暦日で決まる（2026-03-05・啓蟄22:58）', () => {
+    for (const hour of [0, 10, 23]) {
+      const s = names(senjitsu(jstToInstant(2026, 3, 5, hour, 0)));
+      expect(s, `${hour}時`).toEqual(expect.arrayContaining(['天赦日', '一粒万倍日', '寅の日']));
+    }
   });
 });

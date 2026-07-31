@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { jstNoon } from '../time';
+import { Body } from 'astronomy-engine';
+import { jstNoon, addDays, norm360, angleDelta } from '../time';
 import {
   nextSolarEclipse,
   nextLunarEclipse,
@@ -8,7 +9,7 @@ import {
   searchMoonLongitude,
   voidOfCourse,
 } from '../seiyo';
-import { moonLongitude } from '../astro';
+import { moonLongitude, geoEclipticLongitude } from '../astro';
 
 const utc = (y: number, m: number, d: number) => new Date(Date.UTC(y, m - 1, d));
 const ud = (dt: Date) => ({ m: dt.getUTCMonth() + 1, d: dt.getUTCDate() });
@@ -74,5 +75,57 @@ describe('ボイドタイム', () => {
   it('ボイド開始があれば星座移動より前、isVoid は boolean', () => {
     expect(typeof v.isVoid).toBe('boolean');
     if (v.voidStart) expect(v.voidStart.getTime()).toBeLessThanOrEqual(v.signChange.getTime());
+  });
+
+  it('2026-07-13 のボイド開始は 7/14 09:43Z（アスペクト集合の修正で動かないこと）', () => {
+    expect(v.voidStart.getTime()).toBeCloseTo(Date.parse('2026-07-14T09:43:29Z'), -5);
+  });
+});
+
+// 有向離角 norm360(月 − 天体) と突き合わせるため、六分=60/300・矩=90/270・三分=120/240 の
+// 両方を列挙しないと星座内の最後のアスペクトを取り逃す。
+// 修正前は 2026年の60日サンプル中20日で voidStart が最大26.9時間早く、
+// うち一定数は voidStart が null になり isVoid が黙って false に落ちていた。
+describe('ボイドタイム：アスペクト集合と入宮クランプ', () => {
+  const VOC_BODIES = [Body.Sun, Body.Mercury, Body.Venus, Body.Mars, Body.Jupiter, Body.Saturn];
+  const sweep = Array.from({ length: 60 }, (_, d) => voidOfCourse(addDays(jstNoon(2026, 1, 2), d * 6)));
+
+  it('2026-07-08 のボイド開始は 7/8 18:41Z（修正前は 25.4時間早い 7/7 17:14Z）', () => {
+    const w = voidOfCourse(jstNoon(2026, 7, 8));
+    expect(w.voidStart.getTime()).toBeCloseTo(Date.parse('2026-07-08T18:41:33Z'), -5);
+    expect(w.signChange.getTime()).toBeCloseTo(Date.parse('2026-07-08T20:30:37Z'), -5);
+  });
+
+  it('voidStart が null にならない（60日掃引）', () => {
+    for (const w of sweep) expect(w.voidStart).toBeInstanceOf(Date);
+  });
+
+  it('voidStart は必ず入宮以降・星座移動より前（60日掃引）', () => {
+    for (const w of sweep) {
+      expect(w.voidStart.getTime()).toBeGreaterThanOrEqual(w.signIngress.getTime() - 1000);
+      expect(w.voidStart.getTime()).toBeLessThanOrEqual(w.signChange.getTime());
+      expect(w.signIngress.getTime()).toBeLessThan(w.signChange.getTime());
+    }
+  });
+
+  // 数値を固定しない本命のガード：voidStart の時刻に本当にアスペクトが立っているか。
+  // 240/270/300 を落とすと、ここで拾えない時刻が voidStart になる。
+  it('voidStart の時刻には実際に主要アスペクトが立っている（入宮フォールバックを除く）', () => {
+    for (const w of sweep) {
+      if (Math.abs(w.voidStart.getTime() - w.signIngress.getTime()) < 1000) continue; // 星座内にアスペクト無し
+      const ml = moonLongitude(w.voidStart);
+      let best = Infinity;
+      for (const body of VOC_BODIES) {
+        const sep = Math.abs(angleDelta(0, norm360(ml - geoEclipticLongitude(body, w.voidStart))));
+        for (const a of [0, 60, 90, 120, 180]) best = Math.min(best, Math.abs(sep - a));
+      }
+      expect(best, `no aspect at ${w.voidStart.toISOString()}`).toBeLessThan(0.05);
+    }
+  });
+
+  it('星座内にアスペクトが無ければ入宮時刻から（2026-01-06）', () => {
+    const w = voidOfCourse(jstNoon(2026, 1, 6));
+    expect(w.voidStart.getTime()).toBe(w.signIngress.getTime());
+    expect(w.signIngress.getTime()).toBeCloseTo(Date.parse('2026-01-04T13:43:20Z'), -5);
   });
 });
