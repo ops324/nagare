@@ -9,7 +9,7 @@ import { houi } from '@/lib/houi';
 import { honmeishuku, todayShuku } from '@/lib/sukuyo';
 import { nijuhasshuku } from '@/lib/koyomi';
 import { unmeisei } from '@/lib/rokusei';
-import { daiun, type Daiun } from '@/lib/daiun';
+import { daiun, daiunIndexAt, type Daiun } from '@/lib/daiun';
 import { honmeiNumberForYear, risshunYear } from '@/lib/kyusei';
 import { pct, jstMonthDay, jstYmd, jstYearMonth } from '@/lib/format';
 import { toJstParts } from '@/lib/time';
@@ -66,7 +66,12 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
   const nijuu = useMemo(() => nijuhasshuku(now), [now]);
   const rokusei = useMemo(() => unmeisei(profile.birthInstant), [profile]);
   const daiunData = useMemo(() => daiun(profile.birthInstant, profile.gender, profile.hasTime), [profile]);
-  const currentAge = toJstParts(now).year - toJstParts(profile.birthInstant).year;
+  // 「何期目か」は年に丸めず月で比べる（lib 側の純関数）。
+  // 暦年の差を満年齢と取り違えると、強調が最大1年3ヶ月ほど先走る。
+  const daiunIndex = useMemo(
+    () => daiunIndexAt(daiunData, profile.birthInstant, now),
+    [daiunData, profile, now],
+  );
 
   const m = today.data.moon;
   const sub = `${today.data.term.current?.name ?? ''}・${today.data.rokuyo.name}`;
@@ -345,7 +350,7 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
             </div>
 
             <SectionHead label="大運（四柱推命・10年区切り）" />
-            <DaiunList data={daiunData} currentAge={currentAge} genderKnown={daiunData.genderKnown} />
+            <DaiunList data={daiunData} currentIndex={daiunIndex} genderKnown={daiunData.genderKnown} />
 
             <SectionHead label={`九星の吉方位（${houiData.year}年）`} />
             <KyuseiBan houi={houiData} />
@@ -472,23 +477,23 @@ function SectionHead({ label }: { label: string }) {
 
 function DaiunList({
   data,
-  currentAge,
+  currentIndex,
   genderKnown,
 }: {
   data: Daiun;
-  currentAge: number;
+  /** 今いる期（0始まり）。まだ立運に達していなければ -1 で、どのセルも光らない */
+  currentIndex: number;
   genderKnown: boolean;
 }) {
-  const curIdx = data.periods.findIndex((p, i) => {
-    const next = data.periods[i + 1];
-    return currentAge >= p.ageStart && (!next || currentAge < next.ageStart);
-  });
   return (
     <>
       <div className="daiun-scroll">
         {data.periods.map((p, i) => (
-          <div key={i} className="daiun-cell" data-cur={i === curIdx}>
-            <div className="daiun-age">{p.ageStart}歳〜</div>
+          <div key={i} className="daiun-cell" data-cur={i === currentIndex}>
+            {/* 立運に端数があると各期も端数から始まる。年だけ出すと下の「立運◯歳◯ヶ月から」と食い違う */}
+            <div className="daiun-age">
+              {p.ageStart}歳{p.ageStartMonths > 0 ? `${p.ageStartMonths}ヶ月` : ''}〜
+            </div>
             <div className="daiun-kanshi font-display">{p.kanshi.name}</div>
             <div className="daiun-yomi">{p.kanshi.yomi}</div>
           </div>
