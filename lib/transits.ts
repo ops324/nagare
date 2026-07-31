@@ -22,22 +22,44 @@ function helioLon(body: Body, t: Date): number {
   return norm360(EclipticLongitude(body, t));
 }
 
-/** after より後で、body の日心黄経が natalLon に戻る最初の時刻 */
+/**
+ * after より後で、body の日心黄経が natalLon に戻る最初の時刻。
+ *
+ * ※ ここが日心でなければならない理由（§11 の「逆行は必ず地心黄経で」を適用しないこと）：
+ *   地心黄経は逆行するため回帰の交差が1周につき3回になり（三重通過）、解が一意に定まらない。
+ *   日心黄経は単調増加なので根がちょうど1つで、下の補正・二分探索が成立する。
+ *   §11 は逆行判定とアスペクトの話であり、この関数には当たらない。
+ *
+ * 平均周期による見積もり est は、after が出生時（advance≒360＝ちょうど1周）なら厳密だが、
+ * 部分弧（majorTransits が after=now で呼ぶ経路）では中心差により最大 ~190日(土星)ずれる。
+ * かつて est±45日 を二分探索していたため根を挟めず「est+45日」を黙って返していた。
+ * 黄経の残差から時間へ戻す不動点補正で寄せてから、狭い二分探索で仕上げる。
+ */
 export function nextHelioReturn(body: Body, natalLon: number, after: Date): Date {
   const period = PERIOD_DAYS[body]!;
   const cur = helioLon(body, after);
   let advance = norm360(natalLon - cur);
   if (advance < 1e-6) advance = 360; // 出生直後などの自明解を避け、次の1周へ
-  const est = after.getTime() + (advance / 360) * period * 86400000;
-  let lo = est - 45 * 86400000;
-  let hi = est + 45 * 86400000;
-  for (let i = 0; i < 52; i++) {
-    const mid = (lo + hi) / 2;
-    // 日心黄経は単調増加。natalLon を境に angleDelta が負→正へ。
-    if (angleDelta(natalLon, helioLon(body, new Date(mid))) < 0) lo = mid;
-    else hi = mid;
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    let t = after.getTime() + (advance / 360) * period * 86400000;
+    // 残りの黄経差を平均角速度で時間へ換算して寄せる（日心黄経は単調なので収束する）
+    for (let i = 0; i < 6; i++) {
+      t += (angleDelta(helioLon(body, new Date(t)), natalLon) / 360) * period * 86400000;
+    }
+    // 仕上げの二分探索。補正で既に秒未満まで寄っているので窓は暴走防止のガードレール。
+    let lo = t - 10 * 86400000;
+    let hi = t + 10 * 86400000;
+    for (let i = 0; i < 52; i++) {
+      const mid = (lo + hi) / 2;
+      if (angleDelta(natalLon, helioLon(body, new Date(mid))) < 0) lo = mid;
+      else hi = mid;
+    }
+    // after ちょうどが解になった場合だけ、次の1周へ送ってやり直す
+    if (hi > after.getTime()) return new Date(hi);
+    advance += 360;
   }
-  return new Date(hi);
+  return new Date(after.getTime() + (advance / 360) * period * 86400000);
 }
 
 export interface TransitEvent {
