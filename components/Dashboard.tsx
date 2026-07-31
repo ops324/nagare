@@ -281,6 +281,13 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
                 {macro.currentYakudoshi.kazoe}歳）。節目の年は数え年＝元日区切りで、流れの「今」（立春区切り）とは年の変わり目が異なります。
               </p>
             )}
+            {/* 大運の「性別を入れると運の向きが定まります」と同じ作法。
+                厄年は男女で年が異なるので、未回答のまま片方の表で断言しない。 */}
+            {!macro.currentYakudoshi.genderKnown && (
+              <p className="soft-note">
+                ※ {CAUTION_COPY.yakudoshi.title}は男女で年が異なります。性別を入れると年表に表示されます。
+              </p>
+            )}
 
             <SectionHead label="次の転機" />
             <div className="cards">
