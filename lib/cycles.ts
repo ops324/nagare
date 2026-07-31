@@ -57,7 +57,13 @@ export function yakudoshi(birthDate: Date, gender: Gender, gregorianYear: number
   };
 }
 
-/** fromYear 以降の直近の厄年（前厄・本厄・後厄）を count 件 */
+/**
+ * fromYear 以降の直近の厄年（前厄・本厄・後厄）を count 件。
+ *
+ * ※「次の」を求めるときは fromYear に今年を渡さないこと。今年が既に厄年なら
+ *   今年自身が先頭に来る（`flow.computeMacroFlow` の `nextYakudoshi` は
+ *   そのために今年を明示的に飛ばしている）。
+ */
 export function upcomingYakudoshi(
   birthDate: Date,
   gender: Gender,
