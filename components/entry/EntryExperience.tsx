@@ -258,7 +258,7 @@ export function EntryExperience({
             </li>
             <li>
               <b>生まれ</b>
-              <span>四柱推命の命式、宿曜の本命宿、六星占術、九星の吉方位</span>
+              <span>四柱推命の命式、宿曜の本命宿、九星の吉方位</span>
             </li>
             <li>
               <b>暦</b>

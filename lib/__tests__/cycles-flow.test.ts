@@ -144,15 +144,6 @@ describe('大きな流れ', () => {
 describe('「次の転機」に今年を出さない', () => {
   const now = jstNoon(2026, 7, 13);
 
-  it('すでに大殺界なら nextDaisakkai は次の「組」の頭（1985-08-15男は2038年の陰影）', () => {
-    const p = buildProfile({ date: '1985-08-15', gender: '男' });
-    const macro = computeMacroFlow(p, now);
-    expect(macro.currentRunki.name).toBe('陰影');
-    expect(macro.currentRunki.daisakkai).toBe(true);
-    // 修正前は今年 2026 を「次の大殺界」として出していた。+1 だと今いる組の2年目 2027 になる。
-    expect(macro.nextDaisakkai).toEqual({ year: 2038, name: '陰影' });
-  });
-
   it('どの転機も今年（立春年）ではない', () => {
     for (const birth of ['1985-08-15', '1999-06-01', '1987-06-10']) {
       const macro = computeMacroFlow(buildProfile({ date: birth, gender: '男' }), now);

@@ -10,7 +10,6 @@ export * from './kyusei';
 export * from './houi';
 export * from './shichu';
 export * from './sukuyo';
-export * from './rokusei';
 export * from './daiun';
 export * from './cycles';
 export * from './profile';
