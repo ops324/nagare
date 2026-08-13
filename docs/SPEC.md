@@ -12,6 +12,7 @@
 |---|---|
 | #41 | 回帰（サターン/ジュピターリターン）の探索が根を挟めず暦年ごと外れる（残差 11.1°→7e-10°） |
 | #42 | ボイドがアスペクトの半分を見落として早く始まる（60日中20日・最大26.9時間） |
+| #49 | `SITE_URL` が削除済みデプロイ（410）を指し OGP画像・canonical が死んでいた／`sitemap.xml` の `<loc>` が相対パスで無効だった |
 | #48 | 六星占術（星人±・運気・大殺界）をアプリから削除。登録商標かつ算出手順が非公開の体系のため。表示語の「運気の冬／ゆらぎの年／養生の年」も併せて撤去 |
 | #43 | 「次の転機」に今年が並ぶ（大殺界中の人の「次」が今年） |
 | #44 | 立春・節入りの年/月境界を**瞬間**で切る（＋立運の10年ズレが同時に解消） |
@@ -43,7 +44,7 @@
 
 **PWA**: `app/manifest.ts`（`MetadataRoute.Manifest`）で `/manifest.webmanifest` を生成。`display:standalone` によりホーム画面起動時 URL バーを非表示。**`start_url: '/'` は変更してはならない** — インストール済みのPWAは導入時のマニフェストをキャッシュしており、変えると既存ユーザーがアプリではなく入口に着地する（入口を常設の別ルートにしているのはこのため・§7）。`app/icon.png`（favicon自動認識・1254px の絵柄原本）・`public/icon-192.png`／`public/icon-512.png`（マニフェスト用・宣言サイズ通りの 192/512px）・`public/apple-touch-icon.png`（iOS用・180px）を配置。配布用の3枚は **`node scripts/make-icons.mjs`** が `app/icon.png` から生成する成果物（ビルド時には走らない）。絵柄を差し替えたら再生成すること。**寸法は `app/manifest.ts` の `icons[].sizes` と一致させる**（かつては原本の丸ごとコピー＝2MB×3枚が 192/512 と偽って配信されていた）。`layout.tsx` の `viewport.viewportFit:'cover'` と `.appbar` の `env(safe-area-inset-top)` パディングで全画面時のノッチ被りを回避。
 
-**OGP**: SNS カード画像は **`public/og.png`（1200×630）** ＝ `app/icon.png` を和紙の地に据え、明朝の題と一文を添えたもの。`scripts/make-og.mjs`（sharp・要 macOS の Hiragino Mincho ProN）で生成し、**成果物をリポジトリに含める**（ビルド時には走らない）。共有定数は `lib/site.ts`（`SITE_URL` / `SITE_NAME` / `SITE_TITLE` / `OG_IMAGE`）。`layout.tsx` の **`metadataBase`（既定は本番ドメイン・`NEXT_PUBLIC_SITE_URL` で上書き可）** が無いと相対パスが絶対URLに解決されずクローラが画像を読めない。`openGraph` は**親子でマージされず丸ごと差し替わる**ため、`app/welcome/layout.tsx` にも `images` を明示している（片方を直したらもう片方も見ること）。X の大判カードには `twitter.card:'summary_large_image'` が必須。
+**OGP**: SNS カード画像は **`public/og.png`（1200×630）** ＝ `app/icon.png` を和紙の地に据え、明朝の題と一文を添えたもの。`scripts/make-og.mjs`（sharp・要 macOS の Hiragino Mincho ProN）で生成し、**成果物をリポジトリに含める**（ビルド時には走らない）。共有定数は `lib/site.ts`（`SITE_URL` / `SITE_NAME` / `SITE_TITLE` / `OG_IMAGE`）。`layout.tsx` の **`metadataBase`（既定は本番ドメイン・`NEXT_PUBLIC_SITE_URL` で上書き可）** が無いと相対パスが絶対URLに解決されずクローラが画像を読めない。**`SITE_URL` の既定値に Vercel のデプロイURL（`nagare-<hash>-<team>.vercel.app`）を置いてはいけない（PR #49）**：デプロイを消すと 410 になり OGP画像・canonical・sitemap がまとめて死ぬうえ、プロジェクト名つきURLは Deployment Protection の対象でクローラが SSO へ飛ばされる。**本番エイリアス**（`https://nagare-eta.vercel.app`・末尾スラッシュ無し）を既定にする。**そして `metadataBase` は `sitemap.ts` には効かない** — OGP と違って Next が絶対化しないため、`app/sitemap.ts` の `url` と `app/robots.ts` の `sitemap` は `SITE_URL` を使って**自分で絶対URLにする**。相対パスで書くと `<loc>/</loc>` が配信され検索エンジンに弾かれる（`__tests__/site-url.test.ts` が固定）。`openGraph` は**親子でマージされず丸ごと差し替わる**ため、`app/welcome/layout.tsx` にも `images` を明示している（片方を直したらもう片方も見ること）。X の大判カードには `twitter.card:'summary_large_image'` が必須。
 
 ## 3. ファイル構成（`lib/`）
 
@@ -270,7 +271,7 @@ BirthProfile { date:'YYYY-MM-DD'(必須); time?:'HH:mm'; place?:{lat,lng,name}; 
 
 ## 9. 品質保証（テスト対応表）
 
-`npm test`（Vitest・213件）。**参照値テスト＝§5の不変条件を固定**。改修時は必ず緑を維持。
+`npm test`（Vitest・222件）。**参照値テスト＝§5の不変条件を固定**。改修時は必ず緑を維持。
 
 | テスト | 守っている対象 |
 |---|---|
@@ -286,6 +287,7 @@ BirthProfile { date:'YYYY-MM-DD'(必須); time?:'HH:mm'; place?:{lat,lng,name}; 
 | transits.test | 回帰・年天中殺・**部分弧（after=now）での回帰の残差 < 0.01°**（見積もり窓が根を挟めない回帰テスト） |
 | astro.test | 太陽星座・月・**水星逆行の妥当性(年40〜90日)**・**逆行の留日(2026-07-24)** |
 | cycles-flow.test | 数え年・厄年・バイオ・profile・今日/大きな流れ・**厄年(元日)と九星(立春)の年基準の食い違い**（1/1〜立春窓・タブ間一致）・**性別未回答の厄年は保留**（男女で割れる実例＋未回答でもタブ間一致・年表と次の転機に出ない） |
+| **site-url.test**（`__tests__/`） | **外から見つけてもらう経路**＝`SITE_URL` が https 絶対URL・末尾スラッシュ無し・パス無し・**消えうる Vercel デプロイURLでない**／`sitemap()` の全エントリが `SITE_URL` 始まりの絶対URLで重複なし・常設2ルートを含む／`robots().sitemap` が絶対URL／`OG_IMAGE.url` が `SITE_URL` から解決できる。**占術ロジックには非依存** |
 | **design-tokens.test**（`__tests__/`） | **デザイントークンの構造**＝§12.6 の同期を機械的に固定。節気24組が `-l`/`-d` 両方を持ち重複・余剰が無い／五行5色が6変数そろう／`--primary` と `--accent-soft` が明暗の両ブロックで定義され、生成り地の `accent-soft` が `gold-500` 側である（AA 4.5:1 の担保）／曜日色が `--primary`・`--caution` を参照しない／`@property` の syntax が `<color>`・`<number>`／11px未満は許可リストの箇所のみ／スケールトークンが欠けていない／**reduced-motion が animation と transition の両方を（疑似要素まで）止めている**／デスクトップのブレークポイント3段と `--rail-w` の 0px・88px、`.skyzone` が既定 none で 1280 ブロックでのみ block に戻ること。**`app/globals.css` をテキストとして読むだけで `lib/` には非依存** |
 
 その他ゲート: `tsc --noEmit`（型）、`eslint`（react-hooks の effect 内同期 setState 禁止等。意図的な localStorage マウントゲートは理由付き disable コメント＝`useProfile` 方式）、`next build`（静的プリレンダー）、pre-push フック＝`npm test` 自動実行、GitHub Actions CI（verify）、Claude Preview 実機確認。
@@ -353,7 +355,7 @@ BirthProfile { date:'YYYY-MM-DD'(必須); time?:'HH:mm'; place?:{lat,lng,name}; 
 1. **影響範囲を§4で確認**。基盤（time/koyomi/astro/profile/flow）ほど広く波及する。
 2. `git checkout -b feat/...` で**ブランチを切る**（main直接編集しない）。
 3. 変更したドメイン関数に**参照値テストを追加/更新**（§5の値を壊さない）。**§11「精査で分かった落とし穴」の7項目に照らすこと** — 特に ①テストの引数が本番の呼び出しと同じ形か ②幅のアサーションだけで守っていないか ③時刻・年・干支を返すなら参照値を1つ置いたか ④年境界を触るなら**時刻付きの生年月日**を入れたか。**新しいテストは、修正前のコードで実際に落ちることを確認してから出す**（落ちないなら守れていない）。
-4. `npm test`（213件）→ `tsc --noEmit` → `eslint .` → `npm run build` を**すべて緑**に。
+4. `npm test`（222件）→ `tsc --noEmit` → `eslint .` → `npm run build` を**すべて緑**に。
 5. 表示に関わるなら **Claude Preview で実機確認**。見る軸は4つ：
    - **空4状態**＝`data-sky` を dawn/day/dusk/night に強制（`SkyField` が60秒ごとに実時刻で上書きするので、`data-theme="dark"/"light"` を立てて `resolveSky` の override を効かせるのが確実）
    - **幅** 320 / 375 / **1024 / 1280 / 1440 / 1920**（デスクトップ3ゾーンは §7 のとおり境界が3段ある）
