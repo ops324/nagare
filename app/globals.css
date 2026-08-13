@@ -1181,7 +1181,6 @@ body::after {
 .tl-legend span { display: inline-flex; align-items: center; gap: var(--sp-xs); }
 .tl-legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 .tl-legend i.ring { background: transparent; border: 2px solid var(--gold-400); }
-.tl-legend i.ring-caution { background: transparent; border: 2px solid var(--caution); }
 /* 余白の年。環は上の2つで埋まっているので菱形で区別する */
 .tl-legend i.lozenge {
   width: 8px; height: 8px; border-radius: 0;
@@ -1241,8 +1240,6 @@ body::after {
 .jiten-row[data-tone='caution'] .jiten-name { color: var(--caution); }
 @media (max-width: 400px) { .jiten-row { grid-template-columns: 92px 1fr; gap: 11px; padding: 11px 13px; } }
 
-/* 六星カードの上段 */
-.rokusei-top { display: flex; align-items: flex-start; justify-content: space-between; }
 
 /* ─────────────── 命式（四柱推命） ─────────────── */
 .meishiki { padding: var(--sp-lg); }
@@ -1459,33 +1456,6 @@ body::after {
 .twin-label { font-size: 11px; font-weight: 500; letter-spacing: 0.5px; color: var(--primary); }
 .twin-sub { font-size: 0.6875rem; color: var(--text-dim); margin-top: var(--sp-2xs); }
 
-/* ─────────────── 六星占術 ─────────────── */
-.rokusei-card {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  padding: var(--sp-lg) 18px;
-}
-.rokusei-name { font-size: 1.7rem; color: var(--text); margin-top: var(--sp-3xs); }
-.rokusei-num { font-size: 0.8rem; color: var(--text-dim); }
-.rokusei-num b { color: var(--on-surface); font-size: 1.15rem; margin-left: var(--sp-2xs); }
-.rokusei-runki { font-size: 1.5rem; color: var(--primary); margin-top: var(--sp-3xs); }
-.rokusei-runki[data-sakkai='dai'] { color: var(--caution); }
-.rokusei-runki[data-sakkai='chu'] { color: var(--tertiary); }
-.rokusei-badge {
-  display: inline-block;
-  margin-top: var(--sp-2xs);
-  /* 0.6rem(9.6px) は 10px 例外にすら満たなかった。大殺界/中殺界は装飾ではなく
-     読ませるラベルなので、SPEC §7 の下限 11px へ戻す（PR1 唯一の意図的な見た目変更）*/
-  font-size: var(--fs-caption);
-  font-weight: 500;
-  letter-spacing: normal;
-  color: var(--on-caution);
-  background: var(--caution);
-  border-radius: var(--shape-2xs);
-  padding: 1px var(--sp-sm);
-}
-.rokusei-badge.chu { background: var(--tertiary-container); color: var(--on-tertiary-container); }
 
 /* ─────────────── 大運 ─────────────── */
 .daiun-scroll {

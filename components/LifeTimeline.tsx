@@ -54,10 +54,6 @@ export function LifeTimeline({ timeline }: { timeline: TimelineYear[] }) {
               >
                 {t.phase}
               </text>
-              {/* 大殺界（六星占術）の環 */}
-              {t.isDaisakkai && (
-                <circle cx={x} cy={y} r="10" fill="none" stroke="var(--caution)" strokeWidth="1.3" opacity="0.7" />
-              )}
               {/* ノード */}
               {t.isNow ? (
                 <>
@@ -77,7 +73,7 @@ export function LifeTimeline({ timeline }: { timeline: TimelineYear[] }) {
                   strokeWidth="2"
                 />
               )}
-              {/* 余白の年（天中殺）の菱形。環は大殺界・八方塞がり・「今」で埋まっているので形を変える。
+              {/* 余白の年（天中殺）の菱形。環は八方塞がり・「今」で埋まっているので形を変える。
                   漢字一字は絵ではなく文として読まれるため使わない（SPEC §7・FlowCard の却下記録と同じ理屈）。 */}
               {t.isTenchusatsu && (
                 <rect

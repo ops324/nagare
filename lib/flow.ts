@@ -39,7 +39,6 @@ import { biorhythm, biorhythmSeries, yakudoshi, type Biorhythm, type YakudoshiRe
 import { CAUTION_COPY, YAKUDOSHI_KIND_LABEL } from './copy';
 import { honmeiNumberForYear, risshunYear, risshunInstant, nenun, type Nenun } from './kyusei';
 import { majorTransits, tenchusatsuYears, type TransitEvent, type TenchusatsuYear } from './transits';
-import { unmeisei, runkiForYear, daisakkaiYears, type Unmeisei, type Runki } from './rokusei';
 import { kyusei } from './constants';
 import type { Profile } from './profile';
 
@@ -284,7 +283,6 @@ export interface TimelineYear {
   isHappou: boolean;
   yakudoshiKind: string | null;
   isTenchusatsu: boolean;
-  isDaisakkai: boolean; // 六星占術の大殺界
 }
 
 export interface MacroFlow {
@@ -303,13 +301,10 @@ export interface MacroFlow {
   transits: TransitEvent[]; // 外惑星の回帰（サターン/ジュピターリターン）
   nextTransit: TransitEvent | null;
   tenchusatsuYears: TenchusatsuYear[]; // 年天中殺の巡り
-  rokusei: Unmeisei; // 六星占術の運命星（星人±）
-  currentRunki: Runki; // 今年の運気
-  nextDaisakkai: { year: number; name: string } | null; // 次の大殺界年
 }
 
 // 大きな流れは2つの年基準を併せ持つ。
-//  - 立春基準（nineYear）: 九星の年運・六星の運気/大殺界・年天中殺。タイムラインの軸と「今」。
+//  - 立春基準（nineYear）: 九星の年運・年天中殺。タイムラインの軸と「今」。
 //  - 元日基準（gregYear）: 厄年（数え年）。今日タブと同じ基準。
 // 1/1〜立春の間だけ両者が1年ずれるため、どちらの「今」なのかを取り違えないこと。
 export function computeMacroFlow(profile: Profile, now: Date): MacroFlow {
@@ -322,7 +317,6 @@ export function computeMacroFlow(profile: Profile, now: Date): MacroFlow {
   const currentPhasePeriod = { start: risshunInstant(nineYear), end: risshunInstant(nineYear + 1) };
 
   const tcSet = new Set(tenchusatsuYears(profile.birthInstant, nineYear - 1, 8).map((t) => t.year));
-  const rokusei = unmeisei(profile.birthInstant);
   const timeline: TimelineYear[] = [];
   let nextHappou: number | null = null;
   let nextPeak: number | null = null;
@@ -344,19 +338,12 @@ export function computeMacroFlow(profile: Profile, now: Date): MacroFlow {
       isHappou: n.happouFusagari,
       yakudoshiKind: yaku.isYakudoshi ? yaku.kind : null,
       isTenchusatsu: tcSet.has(y),
-      isDaisakkai: runkiForYear(rokusei, y).daisakkai,
     });
   }
 
   const transits = majorTransits(profile.birthInstant, now, nineYear + 8);
   const nextTransit = transits[0] ?? null;
   const upcomingTenchusatsu = tenchusatsuYears(profile.birthInstant, nineYear, 4);
-  const currentRunki = runkiForYear(rokusei, nineYear);
-  // 大殺界は陰影→停止→減退の連続3年。今その中にいるなら、次の「組」の頭（陰影）を返す。
-  // +1 にすると今いる組の2年目を「次」として出してしまう。
-  const nextDaisakkai =
-    daisakkaiYears(profile.birthInstant, currentRunki.daisakkai ? nineYear + 3 : nineYear, 1)[0] ??
-    null;
 
   // 「次の転機」なので、今年が既に厄年なら翌年以降から探す（でないと今を「次」として出してしまう）
   let nextYakudoshi: { year: number; kazoe: number; kind: string } | null = null;
@@ -394,9 +381,6 @@ export function computeMacroFlow(profile: Profile, now: Date): MacroFlow {
     transits,
     nextTransit,
     tenchusatsuYears: upcomingTenchusatsu,
-    rokusei,
-    currentRunki,
-    nextDaisakkai,
   };
 }
 
@@ -412,7 +396,7 @@ export interface TurningItem {
 /**
  * 「次の転機」を各種占術から集約し、年の昇順に並べて返す（同年は挿入順を維持）。
  *
- * **今年は出さない**。`nextHappou` / `tenchusatsuYears` / `nextDaisakkai` の元関数は
+ * **今年は出さない**。`nextHappou` / `tenchusatsuYears` の元関数は
  * 今年を含む仕様のまま（年運テーマ・年天中殺の巡り一覧では今年を含むのが正しく、
  * `nextHappou === 立春年` は参照値テストが固定している）なので、ここで除外する。
  * 比較の基準年に注意：`nextYakudoshi` は**暦年**、他は**立春年**（§6 の2基準設計）。
@@ -429,9 +413,6 @@ export function buildTurningPoints(macro: MacroFlow): TurningItem[] {
   }
   if (macro.nextHappou && macro.nextHappou !== macro.currentYear) {
     items.push({ year: macro.nextHappou, tone: 'caution', title: CAUTION_COPY.happou.title, note: CAUTION_COPY.happou.note });
-  }
-  if (macro.nextDaisakkai) {
-    items.push({ year: macro.nextDaisakkai.year, tone: 'caution', title: `${CAUTION_COPY.daisakkai.title}（${macro.nextDaisakkai.name}）`, note: CAUTION_COPY.daisakkai.note });
   }
   const nextTenchusatsu = macro.tenchusatsuYears.find((t) => t.year !== macro.currentYear);
   if (nextTenchusatsu) {

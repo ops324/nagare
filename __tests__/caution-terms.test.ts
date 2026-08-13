@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 /**
  * 注意期間の呼び名の構造テスト。
  *
- * 「大殺界」「天中殺」「八方塞がり」等の流派の原語は、事典タブでだけ出す。
+ * 「天中殺」「八方塞がり」等の流派の原語は、事典タブでだけ出す。
  * 通常の画面は lib/copy.ts の CAUTION_COPY（title / short）を参照する。
  * これは散文の方針では守れないので、ファイルを走査して機械的に固定する。
  *
@@ -16,7 +16,7 @@ import { describe, expect, it } from 'vitest';
 const ROOT = process.cwd();
 
 /** 流派の原語。画面に直接書いてはいけない語 */
-const RAW_TERMS = ['大殺界', '中殺界', '小殺界', '天中殺', '八方塞がり', '厄年'];
+const RAW_TERMS = ['天中殺', '八方塞がり', '厄年'];
 
 /** 原語を出してよい唯一の場所 */
 const ALLOWED = ['components/Jiten.tsx'];

@@ -1,7 +1,6 @@
 import { ZODIAC, KYUSEI } from '@/lib/constants';
 import { SHUKU27 } from '@/lib/sukuyo';
-import { RUNKI_CYCLE } from '@/lib/rokusei';
-import { ZODIAC_TRAIT, KYUSEI_TRAIT, SHUKU_TRAIT, RUNKI_DESC, SANKU_DESC, CAUTION_COPY } from '@/lib/copy';
+import { ZODIAC_TRAIT, KYUSEI_TRAIT, SHUKU_TRAIT, SANKU_DESC, CAUTION_COPY } from '@/lib/copy';
 
 interface Item {
   name: string;
@@ -61,14 +60,6 @@ export function Jiten() {
         items={SANKU_ORDER.map((k) => ({ name: k, desc: SANKU_DESC[k], tone: SANKU_TONE[k] }))}
       />
       <JitenSection
-        label="六星占術・運気（12）"
-        items={RUNKI_CYCLE.map((n) => ({
-          name: n,
-          desc: RUNKI_DESC[n],
-          tone: ['陰影', '停止', '減退'].includes(n) ? 'caution' : undefined,
-        }))}
-      />
-      <JitenSection
         label="今日の色（五行）"
         note="日干の五行（甲乙=木・丙丁=火・戊己=土・庚辛=金・壬癸=水）を日本の伝統色に写して「今日の色」としています。"
         items={[
@@ -79,7 +70,7 @@ export function Jiten() {
           { name: '水 — 浅葱', yomi: 'あさぎ', desc: '澄んだ水色。知恵・流れ・浄化の気。' },
         ]}
       />
-      {/* 流派の原語（大殺界・天中殺・八方塞がり…）を出してよいのはこの一箇所だけ。
+      {/* 流派の原語（天中殺・八方塞がり…）を出してよいのはこの一箇所だけ。
           他所で見かけた語をここで引けるようにするための対応表を兼ねる。 */}
       <JitenSection
         label="注意期間の見かた"

@@ -8,7 +8,6 @@ import { meishiki } from '@/lib/shichu';
 import { houi } from '@/lib/houi';
 import { honmeishuku, todayShuku } from '@/lib/sukuyo';
 import { nijuhasshuku } from '@/lib/koyomi';
-import { unmeisei } from '@/lib/rokusei';
 import { daiun, daiunIndexAt, type Daiun } from '@/lib/daiun';
 import { honmeiNumberForYear, risshunYear } from '@/lib/kyusei';
 import { pct, jstMonthDay, jstYmd, jstYearMonth } from '@/lib/format';
@@ -31,7 +30,7 @@ import { KyuseiBan } from './KyuseiBan';
 import { CalendarMonth } from './CalendarMonth';
 import { Aisho } from './Aisho';
 import { Jiten } from './Jiten';
-import { SHUKU_TRAIT, RUNKI_DESC, CAUTION_COPY, YAKUDOSHI_KIND_LABEL } from '@/lib/copy';
+import { SHUKU_TRAIT, CAUTION_COPY, YAKUDOSHI_KIND_LABEL } from '@/lib/copy';
 
 type Tab = NavKey;
 
@@ -64,7 +63,6 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
   const meinichi = useMemo(() => todayShuku(now, shuku).isMeinichi, [now, shuku]);
   const lucky = useMemo(() => luckyColorOf(now), [now]);
   const nijuu = useMemo(() => nijuhasshuku(now), [now]);
-  const rokusei = useMemo(() => unmeisei(profile.birthInstant), [profile]);
   const daiunData = useMemo(() => daiun(profile.birthInstant, profile.gender, profile.hasTime), [profile]);
   // 「何期目か」は年に丸めず月で比べる（lib 側の純関数）。
   // 暦年の差を満年齢と取り違えると、強調が最大1年3ヶ月ほど先走る。
@@ -275,7 +273,6 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
               <span><i style={{ background: 'var(--silver)' }} />準備・転換</span>
               <span><i style={{ background: 'var(--caution)' }} />慎重に</span>
               <span><i className="ring" />{CAUTION_COPY.happou.title}</span>
-              <span><i className="ring-caution" />{CAUTION_COPY.daisakkai.title}</span>
               <span><i className="lozenge" />{CAUTION_COPY.tenchusatsu.title}</span>
               <span style={{ color: 'var(--caution)' }}>{CAUTION_COPY.yakudoshi.title}（年の下に表示）</span>
             </div>
@@ -324,30 +321,6 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
 
             <SectionHead label="相性（三九の秘法）" />
             <Aisho myHonmei={shuku.name} />
-
-            <SectionHead label="六星占術" />
-            <div className="card" style={{ padding: 16 }}>
-              <div className="rokusei-top">
-                <div>
-                  <div className="chip-label">運命星</div>
-                  <div className="rokusei-name font-display">{rokusei.label}</div>
-                  <div className="chip-sub">星数 {rokusei.seisu}</div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div className="chip-label">今年の運気</div>
-                  <div
-                    className="rokusei-runki font-display"
-                    data-sakkai={macro.currentRunki.daisakkai ? 'dai' : macro.currentRunki.chusakkai || macro.currentRunki.shosakkai ? 'chu' : ''}
-                  >
-                    {macro.currentRunki.name}
-                  </div>
-                  {macro.currentRunki.daisakkai && <div className="rokusei-badge">{CAUTION_COPY.daisakkai.short}</div>}
-                  {macro.currentRunki.chusakkai && <div className="rokusei-badge chu">{CAUTION_COPY.chusakkai.short}</div>}
-                  {macro.currentRunki.shosakkai && <div className="rokusei-badge chu">{CAUTION_COPY.shosakkai.short}</div>}
-                </div>
-              </div>
-              <p className="flowcard-desc" style={{ marginTop: 10 }}>{RUNKI_DESC[macro.currentRunki.name]}</p>
-            </div>
 
             <SectionHead label="大運（四柱推命・10年区切り）" />
             <DaiunList data={daiunData} currentIndex={daiunIndex} genderKnown={daiunData.genderKnown} />
