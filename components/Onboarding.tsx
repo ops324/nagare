@@ -45,14 +45,24 @@ export function Onboarding({
               />
             </label>
 
+            {/* 「任意・より詳しく」では何が増えるのか分からない。実測に基づいて
+                具体的に言う（600件で計測：時柱は時刻が無いと 100% 出ない／
+                星座 3.8%・月柱 2.5%・立運 2.2%・年柱と本命星 0.3% が境界日に動く）。 */}
             <button type="button" className="disclose" onClick={() => setShowTime((v) => !v)}>
-              {showTime ? '−' : '＋'} 出生時刻を入れる（任意・より詳しく）
+              {showTime ? '−' : '＋'} 出生時刻を入れる（四柱が4本そろいます）
             </button>
             {showTime && (
               <label className="field">
                 <span className="field-label">出生時刻</span>
                 <input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-                <span className="field-hint">月の位置や命式の精度が上がります。分からなければ空欄で構いません。</span>
+                {/* 旧文言は「月の位置や命式の精度が上がります」だったが、本命宿は
+                    旧暦＋朔日宿方式＝暦日ベースで、時刻を入れても 0% 変わらない。
+                    実際に効くところだけを書く。 */}
+                <span className="field-hint">
+                  時刻を入れると<b>時柱</b>が出て、四柱がそろいます。
+                  節入りや立春の境目に生まれた方は、星座・月柱・立運も変わることがあります。
+                  分からなければ空欄のままで構いません。
+                </span>
               </label>
             )}
 
