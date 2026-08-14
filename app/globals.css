@@ -1407,7 +1407,14 @@ body::after {
 }
 /* 箔の上を渡る反射。発光ではなく**反射**なので金の禁則には触れない
    （design.md「祝祭 — 発光ではなく箔」の shimmer をそのまま借りる）。
-   使ってよいのはここと .hitokoto-shimmer だけ＝design-tokens.test.ts が固定する。 */
+   使ってよいのはここと .hitokoto-shimmer だけ＝design-tokens.test.ts が固定する。
+
+   帯は「細く強く」ではなく**広く弱く**取る。細い帯は縁が立って
+   スキャン線に見え、強い帯は箔ではなく発光に見える。幅を 16% → 40% に
+   広げて 0.30 → 0.13 まで落とすと、通ったことは分かるが何が通ったかは
+   言えない、という濃さになる。祝祭（.hitokoto-shimmer 0.30）より必ず弱く
+   保つこと — 主CTAは毎回触れる場所で、祝祭は年に数度の合図なので、
+   ここが同じ強さだと祝祭の側が意味を失う。 */
 .cta::after {
   content: "";
   position: absolute;
@@ -1416,18 +1423,19 @@ body::after {
   pointer-events: none;
   background: linear-gradient(
     105deg,
-    transparent 42%,
-    rgb(255 250 235 / 0.3) 50%,
-    transparent 58%
+    transparent 30%,
+    rgb(255 250 235 / 0.13) 50%,
+    transparent 70%
   );
   background-size: 240% 100%;
   background-position: 120% 0;
 }
 @media (hover: hover) and (pointer: fine) {
   /* 応えるのは縁（design.md「触れると静かに応える」）。地の塗りは動かさない */
+  /* 稜も上げすぎない。0.45 → 0.72 は「点いた」に見えたので 0.58 に留める */
   .cta:hover:not(:disabled) {
     box-shadow:
-      inset 0 1px 0 rgb(255 250 235 / 0.72),
+      inset 0 1px 0 rgb(255 250 235 / 0.58),
       inset 0 -1px 0 rgb(40 30 0 / 0.46);
   }
   .cta:hover:not(:disabled)::after {
