@@ -111,22 +111,58 @@ export function SkyField({
     };
   }, []);
 
-  // 視差 — 星はゆっくり、スクロールと逆へ（transform のみ・reduced-motion で無効）
+  /**
+   * 視差 — 星はゆっくり、スクロールと逆へ（transform のみ・reduced-motion で無効）。
+   *
+   * **動かせるのは「逃げ」の分だけ**。星図は視野の上下へ 6% ずつしか伸びていない
+   * （`.skyfield-drift` の inset: -6%）ので、`scrollY * 0.05` のように送った量へ
+   * 直に比例させると、少し下るだけで逃げを使い切り、**下端に星の無い帯**が残る。
+   * 実測：デスクトップ 1280×720 の今日タブ（全高 3045px）で末尾 73px が空。
+   * モバイルの暦タブのように本文が長いほど広がる（3〜4倍）。
+   *
+   * 直し方は倍率を下げることではなく、**尺度をページの進度へ移すこと**。
+   * 進度 0→1 に逃げ 0→max を配分すれば、本文がどれだけ長くても端は空かず、
+   * 短いタブでは視差がゆっくりになる（＝本文が短い日は空も静か、で理屈も合う）。
+   *
+   * 進度の分母（送れる総量）は本文の高さで変わるので、タブの切替や折返しの
+   * 変化を ResizeObserver で拾って測り直す。毎フレームは読まない
+   * （送りのたびにレイアウトを起こすのは、この製品で最も避けたい負荷）。
+   */
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const el = innerRef.current;
+    if (!el) return;
+
+    let max = 0; // 逃げの実寸（px）
+    let range = 0; // 送れる総量（px）
+    const measure = () => {
+      max = window.innerHeight * 0.06;
+      range = document.documentElement.scrollHeight - window.innerHeight;
+      apply();
+    };
+
     let raf = 0;
+    const apply = () => {
+      const prog = range > 0 ? Math.min(Math.max(window.scrollY / range, 0), 1) : 0;
+      el.style.transform = `translateY(${(-max * prog).toFixed(2)}px)`;
+    };
     const onScroll = () => {
       if (raf) return;
       raf = requestAnimationFrame(() => {
         raf = 0;
-        if (innerRef.current) {
-          innerRef.current.style.transform = `translateY(${window.scrollY * -0.05}px)`;
-        }
+        apply();
       });
     };
+
+    // observe した時点で一度発火するので、初回計測もここを通る
+    const ro = new ResizeObserver(measure);
+    ro.observe(document.documentElement);
     window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', measure, { passive: true });
     return () => {
+      ro.disconnect();
       window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', measure);
       if (raf) cancelAnimationFrame(raf);
     };
   }, []);
@@ -138,7 +174,7 @@ export function SkyField({
 
   return (
     <div className="skyfield" aria-hidden="true">
-      <div ref={innerRef} style={{ position: 'absolute', inset: '-6% 0' }}>
+      <div ref={innerRef} className="skyfield-drift">
         <svg className="sf-stars">
           {STARS.slice(0, starCount).map((s, i) => (
             <circle
