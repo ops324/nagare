@@ -27,8 +27,12 @@ const LINES = CSS.split('\n');
 
 /** その行が属するセレクタ（直前の `{` を持つ行）を遡って探す。
     複数行の linear-gradient() を挟むと宣言はセレクタから 20 行近く離れるので、
-    遡り幅は広めに取る（`{` を含む行は事実上セレクタ／アットルールの開きだけ）。 */
+    遡り幅は広めに取る（`{` を含む行は事実上セレクタ／アットルールの開きだけ）。
+    `.x { … }` の**一行規則**は自分の行にセレクタがあるので先に見る
+    （遡ると直前の別規則を拾い、検査がすり抜ける）。 */
 function selectorOf(i: number): string {
+  const self = LINES[i].indexOf('{');
+  if (self >= 0) return LINES[i].slice(0, self).trim();
   for (let j = i - 1; j >= 0 && j > i - 40; j--) {
     if (LINES[j].includes('{')) return LINES[j].replace('{', '').trim();
   }
@@ -317,6 +321,85 @@ describe('硝子（限定素材）', () => {
     const light = block('[data-sky="day"],');
     for (const t of ['--glass-edge', '--glass-cast', '--glass-sat']) {
       expect(light, `明るい地で ${t} が上書きされていない`).toContain(`${t}:`);
+    }
+  });
+});
+
+/**
+ * ボタンは「和紙と金箔」の中で最後まで Material 3 のままだった場所で、
+ * 放っておくと元へ戻る（filled / outlined / text / segmented / icon の5型と、
+ * hover で地を 8% 洗う**ステートレイヤー**）。
+ * design.md「触れると静かに応える — 浮き上がりと発光は使わず、縁と罫だけが
+ * 反応する」を、散文ではなく破ると落ちる形にして固定する。
+ */
+const BUTTONS = ['.cta', '.reset', '.disclose', '.seg-btn', '.cal-nav', '.appbar-share', '.navbar-item'];
+
+describe('ボタンの語彙（縁と罫だけが反応する）', () => {
+  it('M3 のステートレイヤー（地を 8% 洗う）がどこにも無い', () => {
+    const offenders = LINES.map((l, i) => [l, i] as const)
+      .filter(([l]) => /color-mix\(in srgb, var\(--(on-surface|primary)\) 8%/.test(l))
+      .map(([l, i]) => `${i + 1}行目: ${selectorOf(i)} → ${l.trim()}`);
+    expect(
+      offenders,
+      `hover で地を洗うのは M3 の語彙。縁と罫で応えること:\n${offenders.join('\n')}`,
+    ).toEqual([]);
+  });
+
+  it('ボタンの :hover は地を塗らない', () => {
+    const offenders: string[] = [];
+    LINES.forEach((line, i) => {
+      if (!/background(-color|-image)?\s*:/.test(line)) return;
+      const selector = selectorOf(i);
+      if (!selector.includes(':hover')) return;
+      if (BUTTONS.some((b) => selector.includes(b))) {
+        offenders.push(`${selector} → ${line.trim()}`);
+      }
+    });
+    expect(offenders, `ボタンの hover が地を塗っている:\n${offenders.join('\n')}`).toEqual([]);
+  });
+
+  it('伸縮（scale）で押した感じを出さない — 紙は縮まず沈む', () => {
+    const offenders: string[] = [];
+    LINES.forEach((line, i) => {
+      if (!/transform:\s*scale\(/.test(line)) return;
+      const selector = selectorOf(i);
+      if (selector.includes(':active')) offenders.push(`${selector} → ${line.trim()}`);
+    });
+    expect(offenders, `押下は translateY で表す（伸縮はゴムの語彙）:\n${offenders.join('\n')}`).toEqual(
+      [],
+    );
+  });
+});
+
+/**
+ * 箔の上を渡る反射は「発光ではなく箔」（design.md §祝祭）の語彙だが、
+ * 面という面が光り出したら意味を失う。**使ってよい面の一覧**を固定する。
+ */
+const SHIMMER_SURFACES = ['.hitokoto-shimmer::after', '.cta:hover:not(:disabled)::after'];
+
+describe('反射（shimmer）は限定', () => {
+  it('shimmer を呼ぶのは許可した面だけ', () => {
+    const offenders: string[] = [];
+    LINES.forEach((line, i) => {
+      if (!/animation:\s*shimmer\b/.test(line)) return;
+      const selector = selectorOf(i);
+      if (!SHIMMER_SURFACES.some((s) => selector.includes(s))) {
+        offenders.push(`${selector} → ${line.trim()}`);
+      }
+    });
+    expect(
+      offenders,
+      `反射が許可外の面へ広がっている:\n${offenders.join('\n')}\n` +
+        '増やすなら SHIMMER_SURFACES と design.md を同時に直すこと',
+    ).toEqual([]);
+  });
+
+  it('許可した面はすべて実際に反射を持つ（一覧の腐敗防止）', () => {
+    for (const s of SHIMMER_SURFACES) {
+      const used = LINES.some(
+        (l, i) => /animation:\s*shimmer\b/.test(l) && selectorOf(i).includes(s),
+      );
+      expect(used, `${s} が SHIMMER_SURFACES にあるのに shimmer を持たない`).toBe(true);
     }
   });
 });

@@ -42,11 +42,21 @@ export function Onboarding({ onSubmit }: { onSubmit: (p: BirthProfile) => void }
       {/* 「任意・より詳しく」では何が増えるのか分からない。実測に基づいて
           具体的に言う（600件で計測：時柱は時刻が無いと 100% 出ない／
           星座 3.8%・月柱 2.5%・立運 2.2%・年柱と本命星 0.3% が境界日に動く）。 */}
-      <button type="button" className="disclose" onClick={() => setShowTime((v) => !v)}>
-        {showTime ? '−' : '＋'} 出生時刻を入れる（四柱が4本そろいます）
+      {/* ＋／− は罫で引く（.disclose-mark）。グリフだと明朝／ゴシックの
+          どちらで組んでも符として揃わず、開閉が「別の字への差し替え」に
+          なってしまう。罫なら縦画が消えるだけの**ひとつの所作**になる。 */}
+      <button
+        type="button"
+        className="disclose"
+        aria-expanded={showTime}
+        aria-controls="birth-time-field"
+        onClick={() => setShowTime((v) => !v)}
+      >
+        <span className="disclose-mark" aria-hidden="true" />
+        <span className="disclose-label">出生時刻を入れる（四柱が4本そろいます）</span>
       </button>
       {showTime && (
-        <label className="field">
+        <label className="field" id="birth-time-field">
           <span className="field-label">出生時刻</span>
           <input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
           {/* 旧文言は「月の位置や命式の精度が上がります」だったが、本命宿は
@@ -62,12 +72,27 @@ export function Onboarding({ onSubmit }: { onSubmit: (p: BirthProfile) => void }
 
       <div className="field">
         <span className="field-label">性別（節目の年の判定に使用・任意）</span>
-        <div className="seg">
+        {/* 活性は塗りではなく「席を移る線」（design.md「形」）。
+            線の位置は CSS が --seg-i / --seg-n だけで決めるので、
+            選択肢が増えてもここの style 以外は触らなくていい。 */}
+        <div
+          className="seg"
+          role="radiogroup"
+          aria-label="性別"
+          style={
+            {
+              '--seg-i': GENDERS.indexOf(gender),
+              '--seg-n': GENDERS.length,
+            } as React.CSSProperties
+          }
+        >
           {GENDERS.map((g) => (
             <button
               key={g}
               type="button"
               className="seg-btn"
+              role="radio"
+              aria-checked={gender === g}
               data-active={gender === g}
               onClick={() => setGender(g)}
             >

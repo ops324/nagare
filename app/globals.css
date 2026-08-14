@@ -785,14 +785,18 @@ body::after {
   background: var(--veil-field);
   color: var(--on-surface-variant);
   cursor: pointer;
-  transition: color 160ms ease, border-color 160ms ease, background 160ms ease, transform 120ms ease;
+  transition: color 420ms var(--ease-out), border-color 420ms var(--ease-out),
+    transform 220ms var(--ease-out);
   -webkit-tap-highlight-color: transparent;
 }
-.appbar-share:hover {
-  color: var(--primary);
-  border-color: color-mix(in srgb, var(--primary) 45%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .appbar-share:hover {
+    color: var(--primary);
+    border-color: color-mix(in srgb, var(--primary) 45%, transparent);
+  }
 }
-.appbar-share:active { transform: scale(0.92); }
+/* 縮むのではなく沈む。伸縮はゴムの語彙で、紙は押されて下がる */
+.appbar-share:active { transform: translateY(1px); }
 .appbar-toast {
   position: fixed;
   left: 50%;
@@ -872,8 +876,10 @@ body::after {
   place-items: center;
   transition: background 0.2s;
 }
+/* 活性は線が担うので、hover も塗らずに字と図の色だけを動かす
+   （M3 の 8% ステートレイヤーはこのアプリに残った最後の一箇所だった） */
 .navbar-item:hover .navbar-ind {
-  background: color-mix(in srgb, var(--on-surface) 8%, transparent);
+  color: var(--primary);
 }
 /* 活性は線（1本）が担うので、ここでは文字色だけを変える */
 .navbar-item[aria-current="page"] .navbar-ind {
@@ -1229,70 +1235,228 @@ body::after {
   box-shadow: inset 0 0 0 1px var(--primary);
 }
 
-/* M3 text button */
+/* ── 開示 — 文字と符 ──
+   ＋／− は文字（グリフ）ではなく**罫で引く**。開くと縦画だけが消える＝
+   ひとつの所作になり、明朝の縦横と語彙が揃う。
+   hover の text-decoration: underline はブラウザのリンクの語彙なのでやめ、
+   ラベルの下に罫を左から引く（幅だけが動き、組版は 1px も動かない）。 */
 .disclose {
   appearance: none;
   background: transparent;
   border: 0;
-  color: var(--primary);
-  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  color: var(--on-surface-variant);
+  font-family: var(--font-body);
+  font-size: var(--fs-body-s);
   font-weight: 500;
   text-align: left;
   cursor: pointer;
-  padding: 0;
-  letter-spacing: normal;
+  padding: var(--sp-2xs) 0;
+  letter-spacing: var(--tr-tight);
+  transition: color 420ms var(--ease-out);
 }
-.disclose:hover { text-decoration: underline; }
+.disclose-mark {
+  position: relative;
+  flex: 0 0 auto;
+  width: 11px;
+  height: 11px;
+}
+.disclose-mark::before,
+.disclose-mark::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: currentColor;
+  transition: transform 420ms var(--ease-out);
+}
+.disclose-mark::after { transform: rotate(90deg); }
+.disclose[aria-expanded="true"] .disclose-mark::after { transform: rotate(90deg) scaleX(0); }
+.disclose-label { position: relative; }
+.disclose-label::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 420ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .disclose:hover { color: var(--primary); }
+  .disclose:hover .disclose-label::after { transform: scaleX(1); }
+}
 
-/* M3 segmented buttons（連結） */
+/* ── 選択 — 席を移る線 ──
+   M3 の連結ボタン（活性を --secondary-container の塗りで示す）は、
+   このアプリのパレットに無い青灰を1箇所だけ持ち込んでいた。
+   ナビの活性表示と同じ語彙にする＝**ピルの塗りをやめ、細い線が席を移る**
+   （design.md「形」）。列数に依存しないよう grid-auto-columns で組み、
+   線の位置は --seg-i（選択中の索引）だけで決まる。動くのは transform のみ。 */
 .seg {
+  position: relative;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  --seg-n: 3;
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+}
+.seg::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: calc(100% / var(--seg-n));
+  height: 1.5px;
+  background: var(--primary);
+  transform: translateX(calc(100% * var(--seg-i, 0)));
+  transition: transform 460ms var(--ease-out);
 }
 .seg-btn {
   appearance: none;
   background: transparent;
-  border: 1px solid var(--outline);
-  color: var(--on-surface);
-  padding: 10px;
+  border: 0;
+  color: var(--on-surface-variant);
+  padding: var(--sp-md) var(--sp-sm);
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: background 0.2s, color 0.2s;
+  font-family: var(--font-display);
+  font-size: var(--fs-body-l);
+  letter-spacing: var(--tr-wide);
+  transition: color 420ms var(--ease-out);
 }
-.seg-btn + .seg-btn { margin-left: -1px; }
-.seg-btn:first-child { border-radius: var(--shape-sm) 0 0 var(--shape-sm); }
-.seg-btn:last-child { border-radius: 0 var(--shape-sm) var(--shape-sm) 0; }
-.seg-btn:hover { background: color-mix(in srgb, var(--on-surface) 8%, transparent); }
-.seg-btn[data-active='true'] {
-  color: var(--on-secondary-container);
-  background: var(--secondary-container);
+.seg-btn[data-active='true'] { color: var(--on-surface); }
+@media (hover: hover) and (pointer: fine) {
+  .seg-btn:hover { color: var(--primary); }
 }
 
-/* M3 filled button */
+/* ── 主CTA — 箔押し ──
+   M3 の filled button（平らな塗り＋8%のステートレイヤー）が、このアプリに
+   残った最後の「一般的な SaaS」だった。塗りを**素材**へ置き換える：
+   紙に金箔を圧す。押した痕は外へ落ちる影ではなく、面の内側に立つ 1px の稜
+   （上＝光を拾う／下＝圧の影）で表す。design.md「金は塗りと細い縁で表す。
+   発光（glow / text-shadow）では表さない」に沿う。
+
+   箔そのものは ::before が持つ（要素の背景は透明）。理由は disabled で、
+   background-image は補間されないが opacity は補間されるため。
+   「日付を入れると箔が置かれる」を 420ms の実体にできる。 */
 .cta {
   appearance: none;
+  position: relative;
+  /* 地合いの blend を面の中で閉じる（背後の本文まで巻き込まない） */
+  isolation: isolate;
   margin-top: var(--sp-xs);
   border: 0;
   border-radius: var(--shape-sm);
   padding: var(--sp-lg);
-  font-family: var(--font-body);
+  /* 主CTAは「送信」ではなく、このアプリで最も大きな一語。明朝で組む
+     （design.md「書体の対比 — 同じ書体でウェイトだけ変えても差は出ない」）。
+     字送りは右側に余りを作るので、text-indent で視覚的な中央を取り戻す。 */
+  font-family: var(--font-display);
   font-size: var(--fs-body-l);
   font-weight: 500;
-  /* design.md「CTA の声 — 主は字送り --tr-wide」。normal のままで文書と食い違っていた。 */
-  letter-spacing: var(--tr-wide);
+  letter-spacing: var(--tr-wider);
+  text-indent: var(--tr-wider);
   color: var(--on-primary);
-  background: var(--primary);
+  background: transparent;
   cursor: pointer;
-  transition: background 420ms var(--ease-out), transform 0.15s ease;
+  overflow: hidden;
+  transition: box-shadow 420ms var(--ease-out), color 420ms var(--ease-out),
+    transform 220ms var(--ease-out);
+  /* 押し込んだ痕。外へ落ちる影は使わない（浮遊はガラスの語彙）。
+     稜の色に色トークンではなく素の alpha を使うのは意図的で、理由は2つ：
+       ① 光の反射（温白）と光の欠落（墨）は物理としては地の色に依らない
+       ② color-mix は Lightning CSS が「非対応ブラウザ用の不透明な代替」を
+          必ず前置きする。1px の罫なら代替でも無害だが、**箔の身**（下の
+          ::before のグラデ）で同じことをすると代替側が var(--gold-100) の
+          べた塗り＝生成り地で白文字が読めない面になる。主CTAで踏む賭けではない。
+     結果として4つの空すべてで同じ1本のレシピになる（per-theme の写しが増えない）。 */
+  box-shadow:
+    inset 0 1px 0 rgb(255 250 235 / 0.45),
+    inset 0 -1px 0 rgb(40 30 0 / 0.4);
 }
-.cta:hover:not(:disabled) { background: color-mix(in srgb, var(--on-primary) 8%, var(--primary)); }
-.cta:active:not(:disabled) { transform: scale(0.985); }
+/* 箔の身。上から当たる光は極浅く振る — 最も明るい上端でも
+   白文字とのコントラストは 4.89:1（生成り地）で AA を維持する。
+   紙の目は soft-light で乗せる（overlay だと金の彩度が飛ぶ）。
+   負の z-index は「要素の背景の上・内容（文字）の下」に描かれるので、
+   文字にノイズは掛からない。 */
+.cta::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--primary);
+  background-image: var(--paper-grain),
+    linear-gradient(
+      180deg,
+      rgb(255 250 235 / 0.11) 0%,
+      rgb(255 250 235 / 0) 38%,
+      rgb(40 30 0 / 0.13) 100%
+    );
+  background-size: 190px 190px, auto;
+  background-blend-mode: soft-light, normal;
+  transition: opacity 420ms var(--ease-out);
+}
+/* 箔の上を渡る反射。発光ではなく**反射**なので金の禁則には触れない
+   （design.md「祝祭 — 発光ではなく箔」の shimmer をそのまま借りる）。
+   使ってよいのはここと .hitokoto-shimmer だけ＝design-tokens.test.ts が固定する。
+
+   帯は「細く強く」ではなく**広く弱く**取る。細い帯は縁が立って
+   スキャン線に見え、強い帯は箔ではなく発光に見える。幅を 16% → 40% に
+   広げて 0.30 → 0.13 まで落とすと、通ったことは分かるが何が通ったかは
+   言えない、という濃さになる。祝祭（.hitokoto-shimmer 0.30）より必ず弱く
+   保つこと — 主CTAは毎回触れる場所で、祝祭は年に数度の合図なので、
+   ここが同じ強さだと祝祭の側が意味を失う。 */
+.cta::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgb(255 250 235 / 0.13) 50%,
+    transparent 70%
+  );
+  background-size: 240% 100%;
+  background-position: 120% 0;
+}
+@media (hover: hover) and (pointer: fine) {
+  /* 応えるのは縁（design.md「触れると静かに応える」）。地の塗りは動かさない */
+  /* 稜も上げすぎない。0.45 → 0.72 は「点いた」に見えたので 0.58 に留める */
+  .cta:hover:not(:disabled) {
+    box-shadow:
+      inset 0 1px 0 rgb(255 250 235 / 0.58),
+      inset 0 -1px 0 rgb(40 30 0 / 0.46);
+  }
+  .cta:hover:not(:disabled)::after {
+    animation: shimmer 2.4s var(--ease-out) 1 both;
+  }
+}
+/* 押すと稜が反転する — 凹んだ面は光を**下**から拾う。scale の伸縮はゴムの語彙 */
+.cta:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 2px 3px rgb(40 30 0 / 0.42),
+    inset 0 -1px 0 rgb(255 250 235 / 0.28);
+}
+/* 無効は「壊れた灰色の箱」ではなく、**まだ箔が置かれていない版**。
+   38% の幽霊文字（AA 未達）をやめ、本文と同じ実在の色で組む。 */
 .cta:disabled {
-  background: color-mix(in srgb, var(--on-surface) 12%, transparent);
-  color: color-mix(in srgb, var(--on-surface) 38%, transparent);
+  color: var(--text-dim);
+  box-shadow: inset 0 0 0 1px var(--hairline-strong);
   cursor: not-allowed;
 }
+.cta:disabled::before { opacity: 0; }
 .onboard-note { font-size: 0.6875rem; color: var(--on-surface-variant); text-align: center; line-height: 1.7; margin-top: var(--sp-2xs); }
 
 /* ─────────────── 大きな流れ ─────────────── */
@@ -1349,21 +1513,27 @@ body::after {
 /* ─────────────── フッター ─────────────── */
 .footer { text-align: center; position: relative; z-index: 1; }
 .footer p { font-size: 0.6875rem; color: var(--on-surface-variant); margin-top: var(--sp-md); }
-/* M3 outlined button */
+/* ── 副CTA — 罫だけ ──
+   hover で地を 8% 洗う（M3 のステートレイヤー）のをやめる。
+   design.md「触れると静かに応える — 浮き上がりと発光は使わず、縁と罫だけが
+   反応する」。ここは縁の一本が金へ寄るだけで足りる。 */
 .reset {
   appearance: none;
   background: transparent;
-  border: 1px solid var(--outline);
-  color: var(--primary);
+  border: 1px solid color-mix(in srgb, var(--outline) 42%, transparent);
+  color: var(--on-surface-variant);
   border-radius: var(--shape-sm);
   padding: 9px 22px;
-  font-size: 0.82rem;
+  font-family: var(--font-display);
+  font-size: var(--fs-body-s);
   font-weight: 500;
   cursor: pointer;
-  letter-spacing: normal;
-  transition: background 0.2s;
+  letter-spacing: var(--tr-wide);
+  transition: border-color 420ms var(--ease-out), color 420ms var(--ease-out);
 }
-.reset:hover { background: color-mix(in srgb, var(--primary) 8%, transparent); }
+@media (hover: hover) and (pointer: fine) {
+  .reset:hover { border-color: var(--primary); color: var(--primary); }
+}
 
 .soft-note {
   font-size: 0.75rem;
@@ -1492,11 +1662,11 @@ body::after {
   margin-bottom: var(--sp-md);
 }
 .cal-title { font-size: 1.1rem; color: var(--text); letter-spacing: 0.06em; }
-/* M3 icon button */
+/* 月送り — 応えるのは縁だけ（M3 の 8% ステートレイヤーをやめる） */
 .cal-nav {
   appearance: none;
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   color: var(--on-surface-variant);
   width: 40px;
   height: 40px;
@@ -1504,9 +1674,14 @@ body::after {
   font-size: 1.2rem;
   cursor: pointer;
   line-height: 1;
-  transition: background 0.2s;
+  transition: color 420ms var(--ease-out), border-color 420ms var(--ease-out);
 }
-.cal-nav:hover { background: color-mix(in srgb, var(--on-surface) 8%, transparent); }
+@media (hover: hover) and (pointer: fine) {
+  .cal-nav:hover {
+    color: var(--primary);
+    border-color: color-mix(in srgb, var(--primary) 34%, transparent);
+  }
+}
 .cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -1749,7 +1924,7 @@ body::after {
   position: relative;
   z-index: 1;
 }
-.lucky-action:active { transform: scale(0.99); }
+.lucky-action:active { transform: translateY(1px); }
 .lucky-action.lucky-first {
   background: var(--lucky-wash);
   border-left: 2px solid var(--lucky);
@@ -1793,7 +1968,8 @@ body::after {
 }
 
 /* ナビ活性ピルのスプリングモーフ */
-.navbar-item:active .navbar-ind { transform: scale(0.92); transition: transform 120ms ease; }
+/* 押下は縮むのではなく沈む（ボタン全体で語彙を1本にする） */
+.navbar-item:active .navbar-ind { transform: translateY(1px); transition: transform 120ms var(--ease-out); }
 
 /* 祝祭キーフレーム */
 @keyframes badge-in {
