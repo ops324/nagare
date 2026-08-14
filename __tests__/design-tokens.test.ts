@@ -23,6 +23,31 @@ function block(selector: string): string {
   return CSS.slice(open + 1, close);
 }
 
+const LINES = CSS.split('\n');
+
+/** その行が属するセレクタ（直前の `{` を持つ行）を遡って探す。
+    複数行の linear-gradient() を挟むと宣言はセレクタから 20 行近く離れるので、
+    遡り幅は広めに取る（`{` を含む行は事実上セレクタ／アットルールの開きだけ）。 */
+function selectorOf(i: number): string {
+  for (let j = i - 1; j >= 0 && j > i - 40; j--) {
+    if (LINES[j].includes('{')) return LINES[j].replace('{', '').trim();
+  }
+  return '(不明)';
+}
+
+/** `@media (...) {` 等の**アットルール本体**を波括弧の対応で切り出す（入れ子可） */
+function atRuleBody(header: string): string {
+  const at = CSS.indexOf(header);
+  expect(at, `アットルールが見つからない: ${header}`).toBeGreaterThanOrEqual(0);
+  const open = CSS.indexOf('{', at);
+  let depth = 0;
+  for (let i = open; i < CSS.length; i++) {
+    if (CSS[i] === '{') depth++;
+    else if (CSS[i] === '}' && --depth === 0) return CSS.slice(open + 1, i);
+  }
+  throw new Error(`閉じ括弧が見つからない: ${header}`);
+}
+
 const SEKKI_KEYS = [
   'risshun', 'usui', 'keichitsu', 'shunbun', 'seimei', 'kokuu',
   'rikka', 'shouman', 'boushu', 'geshi', 'shousho', 'taisho',
@@ -219,6 +244,121 @@ describe('prefers-reduced-motion の担保', () => {
     const b = at();
     expect(b).toContain('*::before');
     expect(b).toContain('*::after');
+  });
+});
+
+/**
+ * 硝子は「読み手と本文のあいだに割り込む層」＋ひとことカードだけに許す素材で、
+ * 面の既定は紙のまま（design.md）。散文で「限定的に使う」と書いても守れないので、
+ * **許可した面の一覧そのもの**をここで固定する。増やすときはこの配列を編集する
+ * ＝ PR の差分に必ず現れる、という運用にする。
+ */
+const GLASS_SURFACES = ['.appbar', '.navbar-inner', '.appbar-toast', '.hitokoto'];
+
+describe('硝子（限定素材）', () => {
+  it('backdrop-filter は許可した面にしか無い（全面ガラス化の防止）', () => {
+    const offenders: string[] = [];
+    LINES.forEach((line, i) => {
+      if (!/^\s*backdrop-filter\s*:/.test(line)) return;
+      const selector = selectorOf(i);
+      if (!GLASS_SURFACES.some((s) => selector.includes(s))) {
+        offenders.push(`${selector} → ${line.trim()}`);
+      }
+    });
+    expect(
+      offenders,
+      `硝子が許可外の面へ広がっている:\n${offenders.join('\n')}\n` +
+        '意図的に増やすなら GLASS_SURFACES と design.md を同時に直すこと',
+    ).toEqual([]);
+  });
+
+  it('許可した面はすべて実際に硝子になっている（一覧の腐敗防止）', () => {
+    for (const s of GLASS_SURFACES) {
+      const used = LINES.some(
+        (l, i) => /^\s*backdrop-filter\s*:/.test(l) && selectorOf(i).includes(s),
+      );
+      expect(used, `${s} が GLASS_SURFACES にあるのに backdrop-filter を持たない`).toBe(true);
+    }
+  });
+
+  it('-webkit-backdrop-filter を宣言として手書きしない', () => {
+    // 標準プロパティを先・-webkit- を後に書くと Lightning CSS は標準側を落とす。
+    // その結果 unprefixed しか解さない Firefox で「ぼかし無しの半透明」になる。
+    // 前置はビルドに任せるのが正しく、手書きは事故の再発そのもの。
+    const offenders = LINES.map((l, i) => [l, i] as const)
+      .filter(([l]) => /^\s*-webkit-backdrop-filter\s*:/.test(l))
+      .map(([l, i]) => `${i + 1}行目: ${l.trim()}`);
+    expect(
+      offenders,
+      `-webkit-backdrop-filter は手で書かない（ビルドが前置する）:\n${offenders.join('\n')}`,
+    ).toEqual([]);
+    // ただし @supports の**条件**側は Safari 17 以前を拾うため両方必要
+    expect(CSS, '@supports の条件から -webkit- が消えると Safari 17 以前で退避が誤発火する').toContain(
+      '(-webkit-backdrop-filter: blur(1px))',
+    );
+  });
+
+  it('backdrop-filter 非対応ブラウザ向けに不透明の退避がある（可読性の担保）', () => {
+    const at = CSS.indexOf('@supports not (');
+    expect(at, '硝子の退避ブロックが無い').toBeGreaterThanOrEqual(0);
+    const body = atRuleBody('@supports not (');
+    for (const s of GLASS_SURFACES) {
+      expect(body, `${s} の退避が無い（半透明のまま本文が下を走る）`).toContain(s);
+    }
+    // 退避先は必ず不透明。透過を含むトークンへ逃がしたら意味がない
+    expect(body).toMatch(/--glass-solid-hi|--lucky-wash/);
+  });
+
+  it('硝子トークンが夜と昼の両方で定義されている（片方だけだと地の明暗で破綻する）', () => {
+    for (const t of ['--glass-blur', '--glass-sat', '--glass-edge', '--glass-rim', '--glass-cast']) {
+      expect(CSS, `${t} が無い`).toContain(`${t}:`);
+    }
+    // 空の明暗をまたぐと「縁が拾う光」と「落ち影」は反転する必要がある
+    const light = block('[data-sky="day"],');
+    for (const t of ['--glass-edge', '--glass-cast', '--glass-sat']) {
+      expect(light, `明るい地で ${t} が上書きされていない`).toContain(`${t}:`);
+    }
+  });
+});
+
+describe('スクロール連動のリビール', () => {
+  it('animation-timeline は reduced-motion の外（no-preference）にしか無い', () => {
+    // タイムライン駆動の animation は、全域のキルスイッチ（animation-duration: 0.001ms）
+    // では終端へ飛ばず**進度0の姿＝透明で固まりうる**。規則ごと出さないのが唯一安全。
+    const uses = LINES.map((l, i) => [l, i] as const).filter(([l]) =>
+      /^\s*animation-timeline\s*:/.test(l),
+    );
+    expect(uses.length, 'animation-timeline の使用が見つからない').toBeGreaterThan(0);
+
+    const guarded = atRuleBody('@media (prefers-reduced-motion: no-preference)');
+    for (const [line, i] of uses) {
+      expect(
+        guarded,
+        `${i + 1}行目の animation-timeline が no-preference の外にある: ${line.trim()}`,
+      ).toContain(line.trim());
+    }
+  });
+
+  it('view() を使う規則は @supports で囲ってある（未対応ブラウザでは「何も起きない」）', () => {
+    const guarded = atRuleBody('@media (prefers-reduced-motion: no-preference)');
+    expect(guarded, 'view() が機能クエリで囲われていない').toContain(
+      '@supports (animation-timeline: view())',
+    );
+  });
+
+  it('リビールは .rise（マウント時の立ち上がり）と二重掛けにならない', () => {
+    // 面のクラスをリビール対象にするなら必ず :not(.rise) を伴う。
+    // クラス名を直書きせず「面らしいセレクタ」を拾うので、面の呼び名が変わっても効く。
+    const guarded = atRuleBody('@media (prefers-reduced-motion: no-preference)');
+    const surfaces = (guarded.match(/^\s*\.(card|flowcard|chip)[\w-]*[^,{\n]*/gm) ?? []).map((s) =>
+      s.trim(),
+    );
+    expect(surfaces.length, 'リビール対象に面のセレクタが見つからない').toBeGreaterThan(0);
+    for (const s of surfaces) {
+      expect(s, `${s} が :not(.rise) を伴っていない（マウント時の立ち上がりと二重に掛かる）`).toContain(
+        ':not(.rise)',
+      );
+    }
   });
 });
 
