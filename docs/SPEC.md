@@ -4,7 +4,7 @@
 > 特に「**§4 依存関係・影響範囲**」「**§5 不変条件（検証済み基準値）**」「**§12 改修時チェックリスト**」を、コード変更前に必ず確認してください。
 > 実装と乖離したら本書を更新すること（本書はコードと同じリポジトリで管理する生きたドキュメント）。
 
-最終更新: 2026-08-01 / 対象: `main`（PR #1〜#47 反映済み）
+最終更新: 2026-08-15 / 対象: `main`（PR #1〜#50 反映済み）
 
 **直近：占術ロジックの全面精査（#41〜#45）**。`lib/` を全ファイル精読し、疑わしい箇所は astronomy-engine を直接叩いて実測で裏を取った。5件の欠陥を修正。**「テストが緑であること」は健全性の証明にならなかった** — 5件のうち4件は、参照値テストが構造だけを見て値を見ていないか、本番が通る経路をテストが通っていないために素通りしていた（詳細は §11 の「精査で分かった落とし穴」）。
 
@@ -100,7 +100,7 @@ UI: `app/layout.tsx`（フォント・テーマカラー）、`app/page.tsx`（�
 
 ## 5. 不変条件（検証済み基準値）— これらは壊してはならない
 
-改修後、以下が変わったら**バグの疑い**。すべて Vitest（`npm test`・247件）で固定済み。
+改修後、以下が変わったら**バグの疑い**。すべて Vitest（`npm test`・230件）で固定済み。
 
 | 項目 | 基準値（出典） |
 |---|---|
@@ -282,7 +282,7 @@ BirthProfile { date:'YYYY-MM-DD'(必須); time?:'HH:mm'; place?:{lat,lng,name}; 
 
 ## 9. 品質保証（テスト対応表）
 
-`npm test`（Vitest・222件）。**参照値テスト＝§5の不変条件を固定**。改修時は必ず緑を維持。
+`npm test`（Vitest・230件）。**参照値テスト＝§5の不変条件を固定**。改修時は必ず緑を維持。
 
 | テスト | 守っている対象 |
 |---|---|
@@ -299,7 +299,7 @@ BirthProfile { date:'YYYY-MM-DD'(必須); time?:'HH:mm'; place?:{lat,lng,name}; 
 | astro.test | 太陽星座・月・**水星逆行の妥当性(年40〜90日)**・**逆行の留日(2026-07-24)** |
 | cycles-flow.test | 数え年・厄年・バイオ・profile・今日/大きな流れ・**厄年(元日)と九星(立春)の年基準の食い違い**（1/1〜立春窓・タブ間一致）・**性別未回答の厄年は保留**（男女で割れる実例＋未回答でもタブ間一致・年表と次の転機に出ない） |
 | **site-url.test**（`__tests__/`） | **外から見つけてもらう経路**＝`SITE_URL` が https 絶対URL・末尾スラッシュ無し・パス無し・**消えうる Vercel デプロイURLでない**／`sitemap()` の全エントリが `SITE_URL` 始まりの絶対URLで重複なし・常設2ルートを含む／`robots().sitemap` が絶対URL／`OG_IMAGE.url` が `SITE_URL` から解決できる。**占術ロジックには非依存** |
-| **design-tokens.test**（`__tests__/`） | **デザイントークンの構造**＝§12.6 の同期を機械的に固定。節気24組が `-l`/`-d` 両方を持ち重複・余剰が無い／五行5色が6変数そろう／`--primary` と `--accent-soft` が明暗の両ブロックで定義され、生成り地の `accent-soft` が `gold-500` 側である（AA 4.5:1 の担保）／曜日色が `--primary`・`--caution` を参照しない／`@property` の syntax が `<color>`・`<number>`／11px未満は許可リストの箇所のみ／スケールトークンが欠けていない／**reduced-motion が animation と transition の両方を（疑似要素まで）止めている**／デスクトップのブレークポイント3段と `--rail-w` の 0px・88px、`.skyzone` が既定 none で 1280 ブロックでのみ block に戻ること。**`app/globals.css` をテキストとして読むだけで `lib/` には非依存** |
+| **design-tokens.test**（`__tests__/`） | **デザイントークンの構造**＝§12.6 の同期を機械的に固定。節気24組が `-l`/`-d` 両方を持ち重複・余剰が無い／五行5色が6変数そろう／`--primary` と `--accent-soft` が明暗の両ブロックで定義され、生成り地の `accent-soft` が `gold-500` 側である（AA 4.5:1 の担保）／曜日色が `--primary`・`--caution` を参照しない／`@property` の syntax が `<color>`・`<number>`／11px未満は許可リストの箇所のみ／スケールトークンが欠けていない／**reduced-motion が animation と transition の両方を（疑似要素まで）止めている**／デスクトップのブレークポイント3段と `--rail-w` の 0px・88px、`.skyzone` が既定 none で 1280 ブロックでのみ block に戻ること。**PR #50 追加**＝硝子面の許可リスト（`GLASS_SURFACES` 以外に `backdrop-filter` が現れない／リストの面が実際に硝子である）・`-webkit-backdrop-filter` を宣言として手書きしない（Lightning CSS が標準側を落とす欠陥の再発検出）・非対応ブラウザ向けの不透明退避に硝子面が漏れなく入っている・`animation-timeline` が `prefers-reduced-motion: no-preference` の内側にしか無い・`view()` が `@supports` で囲われている・リビール対象の面セレクタが必ず `:not(.rise)` を伴う。**`app/globals.css` をテキストとして読むだけで `lib/` には非依存** |
 
 その他ゲート: `tsc --noEmit`（型）、`eslint`（react-hooks の effect 内同期 setState 禁止等。意図的な localStorage マウントゲートは理由付き disable コメント＝`useProfile` 方式）、`next build`（静的プリレンダー）、pre-push フック＝`npm test` 自動実行、GitHub Actions CI（verify）、Claude Preview 実機確認。
 
@@ -366,7 +366,7 @@ BirthProfile { date:'YYYY-MM-DD'(必須); time?:'HH:mm'; place?:{lat,lng,name}; 
 1. **影響範囲を§4で確認**。基盤（time/koyomi/astro/profile/flow）ほど広く波及する。
 2. `git checkout -b feat/...` で**ブランチを切る**（main直接編集しない）。
 3. 変更したドメイン関数に**参照値テストを追加/更新**（§5の値を壊さない）。**§11「精査で分かった落とし穴」の7項目に照らすこと** — 特に ①テストの引数が本番の呼び出しと同じ形か ②幅のアサーションだけで守っていないか ③時刻・年・干支を返すなら参照値を1つ置いたか ④年境界を触るなら**時刻付きの生年月日**を入れたか。**新しいテストは、修正前のコードで実際に落ちることを確認してから出す**（落ちないなら守れていない）。
-4. `npm test`（222件）→ `tsc --noEmit` → `eslint .` → `npm run build` を**すべて緑**に。
+4. `npm test`（230件）→ `tsc --noEmit` → `eslint .` → `npm run build` を**すべて緑**に。
 5. 表示に関わるなら **Claude Preview で実機確認**。見る軸は4つ：
    - **空4状態**＝`data-sky` を dawn/day/dusk/night に強制（`SkyField` が60秒ごとに実時刻で上書きするので、`data-theme="dark"/"light"` を立てて `resolveSky` の override を効かせるのが確実）
    - **幅** 320 / 375 / **1024 / 1280 / 1440 / 1920**（デスクトップ3ゾーンは §7 のとおり境界が3段ある）
@@ -377,7 +377,8 @@ BirthProfile { date:'YYYY-MM-DD'(必須); time?:'HH:mm'; place?:{lat,lng,name}; 
    > **grep のパターンに注意**：出力CSSは `min-width: 1024px` のようにコロン後にスペースが入る。`min-width:1024px`（スペース無し）だけで grep すると**新鮮な CSS を stale と誤判定する**。実際に一度誤判定した。
    
    **スクロール駆動の機能を実測するときは rAF に揃える**：流れ線の描画・節気の24色巡回は rAF スロットリングされるため、`scrollTo` 直後に `setTimeout` だけで読むと更新前の値を拾う（一度これで「巡回が止まった」と誤診した）。`requestAnimationFrame` を2回挟んでから読むこと。
-6. **デザイントークンを変えたら同期を確認**（この項の大半は `__tests__/design-tokens.test.ts` が自動で守る。散文はCIで守れないため、規約を足したらテストにも足すこと）：空4状態の整合＝明るい地の共通ブロック（`[data-sky="day"], [data-sky="dawn"]`）と暁/宵の差分ブロックで `--primary`/`--accent-soft`/`--weekday-*` を揃える・`viewport.themeColor`（layout.tsx）・`--bg-hi/--bg-lo`（`@property` 登録済み＝構文は `<color>` 固定）。金の作法（操作色は金・caution に金を載せない・明るい地では金を暗い側のトーンへ振って AA 4.5:1 を確保）を崩さない。`--weekday-sat/sun` は暦の慣習用で操作色から独立（§7）。節気色（`--sekki-l/-d` 24組）は装飾アクセント専用＝本文文字には乗せない。金を別の色へ振り直す場合は**同系の金が重なる 2 グラフ**（`Biorhythm.tsx` の からだ/知性、`LifeTimeline.tsx` の帯とノード）で線が判別できるか必ず確認する。
+6. **デザイントークンを変えたら同期を確認**（この項の大半は `__tests__/design-tokens.test.ts` が自動で守る。散文はCIで守れないため、規約を足したらテストにも足すこと）：空4状態の整合＝明るい地の共通ブロック（`[data-sky="day"], [data-sky="dawn"]`）と暁/宵の差分ブロックで `--primary`/`--accent-soft`/`--weekday-*` を揃える・`viewport.themeColor`（layout.tsx）・`--bg-hi/--bg-lo`（`@property` 登録済み＝構文は `<color>` 固定）。金の作法（操作色は金・caution に金を載せない・明るい地では金を暗い側のトーンへ振って AA 4.5:1 を確保）を崩さない。`--weekday-sat/sun` は暦の慣習用で操作色から独立（§7）。節気色（`--sekki-l/-d` 24組）は装飾アクセント専用＝本文文字には乗せない。金を別の色へ振り直す場合は**同系の金が重なる 2 グラフ**（`Biorhythm.tsx` の からだ/知性、`LifeTimeline.tsx` の帯とノード）で線が判別できるか必ず確認する。**硝子面を増やすときは `GLASS_SURFACES` と `@supports not (…)` の退避を同時に足す**（片方だけだとテストが落ちる。これは仕様であって不便ではない）。
+   > **見た目の変更を「見えた」と判断する前に、何の上で見ているかを確かめる**（PR #50 の反省）。①**プレビューは本番と別オリジンなので localStorage のプロフィールが引き継がれない** — `/` は入口画面を返すため、ダッシュボードの改修は生年月日を入れるまで一切見えない ②昼の地（生成り）では硝子・ぼかし・彩度の変更は**原理的にほとんど見えない**（ぼかす対象にコントラストが無い）。夜で確認する ③**確認を依頼する側が before/after を撮って示す**。`playwright`＋`channel:'chrome'`（バイナリ追加DL不要）で main と当該ブランチをそれぞれ `next build && next start` し、`addInitScript` でプロフィールを流し込み、`reducedMotion:'reduce'`・`data-sky` 固定で撮ると同条件の比較ができる。
 7. 占術の方式・流派・文言を変えたら **`provenance` の version を更新**し、本書§5/§10も更新。
 8. PR作成→検証結果を本文に記載→**squashマージ→Vercel自動デプロイ**。
 9. 既存の署名（公開API）を変える場合は、`index.ts` バレルと全呼び出し元を横断確認。
