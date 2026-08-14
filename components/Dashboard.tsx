@@ -493,7 +493,7 @@ function TurningPoint({
   tone: 'good' | 'caution' | 'neutral';
 }) {
   return (
-    <article className="card flowcard" data-tone={tone}>
+    <article className="flowcard" data-tone={tone}>
       {/* FlowCard と同じ律動：年を眉に置き、見出し・説明と続く */}
       <span className="flowcard-sys numeral">{year}</span>
       <h3 className="flowcard-title">{title}</h3>

@@ -347,9 +347,18 @@ describe('スクロール連動のリビール', () => {
   });
 
   it('リビールは .rise（マウント時の立ち上がり）と二重掛けにならない', () => {
+    // 面のクラスをリビール対象にするなら必ず :not(.rise) を伴う。
+    // クラス名を直書きせず「面らしいセレクタ」を拾うので、面の呼び名が変わっても効く。
     const guarded = atRuleBody('@media (prefers-reduced-motion: no-preference)');
-    expect(guarded, '.card への一括適用が :not(.rise) で除外されていない').toContain('.card:not(.rise)');
-    expect(guarded).toContain('.card-filled:not(.rise)');
+    const surfaces = (guarded.match(/^\s*\.(card|flowcard|chip)[\w-]*[^,{\n]*/gm) ?? []).map((s) =>
+      s.trim(),
+    );
+    expect(surfaces.length, 'リビール対象に面のセレクタが見つからない').toBeGreaterThan(0);
+    for (const s of surfaces) {
+      expect(s, `${s} が :not(.rise) を伴っていない（マウント時の立ち上がりと二重に掛かる）`).toContain(
+        ':not(.rise)',
+      );
+    }
   });
 });
 

@@ -567,14 +567,9 @@ body::after {
   z-index: 1;
 }
 
-/* filled カード（リスト系の第2層）— 枠は .card より弱く、紙を重ねた段差を作る */
-.card-filled {
-  background: var(--veil-filled);
-  border: 1px solid color-mix(in srgb, var(--outline-variant) 30%, transparent);
-  border-radius: var(--radius-card);
-  position: relative;
-  z-index: 1;
-}
+/* かつての filled カード（.card-filled）は削除した。唯一の使用者だった FlowCard を
+   罫の記事へ変えた時点で、面を持つ第2層という段そのものが不要になっている。
+   段差は「面の濃さ」ではなく **面を持つ／持たない** で付ける（design.md 階層 三段）。*/
 
 /* 小見出しラベル（節気の眉・常に金） */
 .eyebrow {
@@ -619,17 +614,15 @@ body::after {
    (hover: hover) and (pointer: fine) で囲うのは、タッチ端末で hover 状態が
    タップ後に貼り付いたまま残るため（iOS の sticky hover）。 */
 @media (hover: hover) and (pointer: fine) {
-  .card,
-  .card-filled {
+  .card {
     transition: border-color 420ms var(--ease-out);
   }
   .card:hover { border-color: var(--hairline-strong); }
-  .card-filled:hover { border-color: var(--hairline); }
 
-  /* 兆しカード：見出し直上の色罫が、触れると少しだけ伸びる。
-     24 → 44px。動くのは幅ひとつで、周りの組版は 1px も動かない。 */
+  /* 記事：仕切りの罫に重ねた色の断片が、触れると伸びる。
+     44 → 96px。動くのは幅ひとつで、周りの組版は 1px も動かない。 */
   .flowcard::before { transition: width 420ms var(--ease-out); }
-  .flowcard:hover::before { width: 44px; }
+  .flowcard:hover::before { width: 96px; }
 
   /* 開運アクションの一字は、触れると金へ寄る */
   .lucky-ico { transition: border-color 420ms var(--ease-out), color 420ms var(--ease-out); }
@@ -668,7 +661,7 @@ body::after {
   @supports (animation-timeline: view()) {
     .section-head,
     .card:not(.rise),
-    .card-filled:not(.rise),
+    .flowcard:not(.rise),
     .daiun-scroll,
     .timeline-scroll,
     .tl-legend {
@@ -763,11 +756,14 @@ body::after {
   border-bottom: 1px solid var(--glass-rim);
   box-shadow: inset 0 1px 0 var(--glass-edge);
 }
+/* 開いて最初に目が行く一語。1.375rem は「アプリ名の置き場」であって
+   ワードマークではなかった。流体で 1.375→1.9rem まで伸ばす。 */
 .appbar-mark {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 1.375rem;
-  letter-spacing: 0.12em;
+  font-size: clamp(1.375rem, 1.15rem + 0.9vw, 1.9rem);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tr-wider);
   color: var(--text);
 }
 .appbar-mark span { color: var(--primary); }
@@ -1031,59 +1027,80 @@ body::after {
 }
 
 /* ─────────────── セクション見出し（明朝の章題＋溶ける罫） ─────────────── */
+/* 章題は**大きく**。1.02rem では本文（0.875rem）との差が 1.16 倍しかなく、
+   見出しが見出しに見えないまま画面が「同じ強さの帯」の反復になっていた。
+   --fs-headline（1.25→1.75rem）まで上げると本文との比が 1.4〜2.0 倍になり、
+   ここで初めてページに構図が生まれる。 */
 .section-head {
   display: flex;
   align-items: baseline;
   gap: var(--sp-md);
-  margin: var(--sp-2xl) var(--sp-3xs) var(--sp-md);
+  margin: var(--sp-3xl) var(--sp-3xs) var(--sp-lg);
   position: relative;
   z-index: 1;
 }
 .section-head .eyebrow {
   white-space: nowrap;
   font-family: var(--font-display);
-  font-size: 1.02rem;
+  font-size: var(--fs-headline);
+  line-height: var(--lh-tight);
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: var(--tr-wide);
   color: var(--on-surface);
 }
-/* 章の頭には節気色の短い縦罫を立てる（丸い点は装飾、縦罫は截金の欠片）*/
+/* 章の頭には節気色の短い縦罫を立てる（丸い点は装飾、縦罫は截金の欠片）。
+   高さ・間隔を em で持たせて、章題の流体サイズにそのまま追随させる。 */
 .section-head .eyebrow::before {
   content: "";
   display: inline-block;
   width: 2px;
-  height: 13px;
+  height: 0.74em;
   border-radius: 0;
   background: var(--sekki);
-  margin-right: 11px;
-  vertical-align: -1px;
+  margin-right: 0.5em;
+  vertical-align: -0.02em;
 }
-.section-head .hair { flex: 1; transform: translateY(-4px); }
+.section-head .hair { flex: 1; transform: translateY(-0.42em); }
 
-/* ─────────────── フローカード ─────────────── */
-.cards { display: flex; flex-direction: column; gap: var(--sp-lg); position: relative; z-index: 1; }
-/* 絵文字の枠を廃し、縦積みへ。系統名は眉として見出しの上に立つ。 */
+/* ─────────────── フローカード（罫で仕切った記事） ───────────────
+   「箱を縦に積む」のをやめた。同じ角丸・同じ縁の面が5個も6個も続くのは
+   このアプリで最も一般的なSaaSに見えていた場所で、**面を取ることでしか直らない**。
+   面を取ると副次的に大きいことが二つ起きる：
+     ① 背後を **流れ線が通る**。線はこのアプリの署名なのに、カードで塞いでいた
+     ② 縁と地の分だけ幅が戻り、本文が列いっぱいに組める
+   仕切りは罫（--hairline-soft）一本。その左端に色の断片を重ねて兆しの別を出す。 */
+.cards { display: flex; flex-direction: column; gap: 0; position: relative; z-index: 1; }
 .flowcard {
   display: block;
-  padding: var(--sp-lg);
+  position: relative;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--hairline-soft);
+  border-radius: 0;
+  padding: var(--sp-lg) 0 var(--sp-md);
 }
-/* 兆し／注意の別は、左の3px縁（箱の語彙）ではなく見出し直上の短い罫で示す */
+/* 兆し／注意の別は、仕切りの罫の左端に**重ねた**色の断片で示す（截金の欠片）。
+   罫の上に乗るので、色を持たない項も同じ位置に同じ長さの罫が通る＝律動が揃う。 */
 .flowcard::before {
   content: "";
-  display: block;
-  width: 24px;
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 44px;
   height: 2px;
+  margin: 0;
   background: var(--outline-variant);
-  margin-bottom: var(--sp-md);
 }
+/* 見出しは明朝、本文は Noto Sans。**書体の対比そのものが階層**になる
+   （同じ書体でウェイトだけ変えるのは差が出ない）。 */
 .flowcard-title {
-  font-size: var(--fs-body-l);
-  font-weight: 600;
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  line-height: var(--lh-snug);
+  font-weight: 700;
   color: var(--text);
-  letter-spacing: normal;
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
+  letter-spacing: var(--tr-tight);
 }
 /* 枠に囲ったタグ → 字送りを開いた眉。見出しの上に置く */
 .flowcard-sys {
@@ -1107,19 +1124,36 @@ body::after {
 .flowcard[data-tone="caution"]::before { background: var(--caution); }
 .flowcard[data-tone="neutral"]::before { background: var(--outline-variant); }
 
-/* ─────────────── 生まれ / 属性チップ ─────────────── */
-.chips { display: flex; flex-wrap: wrap; gap: 10px; position: relative; z-index: 1; }
-.chip {
-  padding: var(--sp-md) 15px;
-  min-width: 96px;
-  flex: 1 1 auto;
+/* ─────────────── 生まれ / 属性チップ ───────────────
+   「生まれのしるし」は生まれタブの主役の値なのに、96px の小箱に 1.14rem で
+   収まっていた。箱を外して**値そのものを大きく**する（面ではなく字が主役）。 */
+.chips {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 var(--sp-xl);
+  position: relative;
+  z-index: 1;
 }
-.chip-label { font-size: 11px; font-weight: 500; letter-spacing: 0.5px; color: var(--on-surface-variant); }
+.chip {
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--hairline-soft);
+  border-radius: 0;
+  padding: var(--sp-md) 0 var(--sp-lg);
+  min-width: 0;
+}
+.chip-label {
+  font-size: var(--fs-caption);
+  font-weight: 500;
+  letter-spacing: var(--tr-wider);
+  color: var(--on-surface-variant);
+}
 .chip-value {
   font-family: var(--font-display);
-  font-size: 1.14rem;
+  font-size: var(--fs-headline);
+  line-height: var(--lh-tight);
   color: var(--text);
-  margin-top: 3px;
+  margin-top: var(--sp-2xs);
 }
 .chip-sub { font-size: 0.6875rem; color: var(--text-dim); margin-top: 1px; }
 
@@ -1645,7 +1679,17 @@ body::after {
   /* 第一階層は余白でも語る（--sp-lg → --sp-xl・上下のみ） */
   padding: var(--sp-xl) 18px;
 }
-.hitokoto-text { font-size: var(--fs-body-l); line-height: var(--lh-loose); color: var(--text); }
+/* 「今日の一言」＝このアプリの感情の中心。UI の一行ではなく**引用文**として組む。
+   明朝・--fs-title・--lh-loose。ゲージの数字（明朝）と声が揃い、
+   下に続くカードの本文（Noto Sans）とは書体で切れる。 */
+.hitokoto-text {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: 500;
+  line-height: var(--lh-loose);
+  letter-spacing: var(--tr-tight);
+  color: var(--text);
+}
 .hitokoto-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
 .lucky-pill {
   display: inline-flex;
@@ -1844,16 +1888,16 @@ body::after {
     min-width: 0;
   }
 
-  /* 一覧がちのタブだけ、広い列でカードを組む */
+  /* 一覧がちのタブだけ、広い列で記事を段組みにする。
+     行間は 0（仕切りの罫が担う）で、段の間だけ大きく空ける＝新聞の段組み。 */
   .shell[data-wide] .cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: var(--sp-md);
+    gap: 0 var(--sp-2xl);
     align-items: start;
   }
   .shell[data-wide] .chips {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   /* ── 柱：ナビレール ──
