@@ -279,7 +279,7 @@ export function EntryExperience({
             必要なのは生年月日ひとつ。時刻と性別は任意です。
             入力は端末内にのみ保存され、外部には送信されません。
           </p>
-          <Onboarding onSubmit={onSubmit} embedded />
+          <Onboarding onSubmit={onSubmit} />
         </Act>
       </main>
     </>

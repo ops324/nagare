@@ -1197,36 +1197,7 @@ body::after {
   to { transform: scaleX(1); opacity: 1; }
 }
 
-/* ─────────────── オンボーディング ─────────────── */
-.onboard {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--sp-3xl) 20px;
-  position: relative;
-}
-.onboard-inner {
-  width: 100%;
-  max-width: 440px;
-  position: relative;
-  z-index: 1;
-}
-.onboard-mark {
-  font-size: 3.4rem;
-  letter-spacing: 0.24em;
-  text-align: center;
-  color: var(--text);
-  animation: rise 720ms var(--ease-out) both;
-}
-.onboard-lead {
-  margin-top: var(--sp-lg);
-  text-align: center;
-  font-size: 0.86rem;
-  color: var(--text-dim);
-  line-height: 1.9;
-  animation: rise 720ms var(--ease-out) 120ms both;
-}
+/* ─────────────── オンボーディング（入口体験の最終幕に埋め込む） ─────────────── */
 .onboard-form { display: flex; flex-direction: column; gap: 18px; animation: rise 720ms var(--ease-out) 240ms both; }
 
 .field { display: flex; flex-direction: column; gap: var(--sp-xs); }
