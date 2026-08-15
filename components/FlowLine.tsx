@@ -176,11 +176,18 @@ export function FlowLine({ amp = 0.5, seed = 1 }: { amp?: number; seed?: number 
       return;
     }
     let raf = 0;
+    let last = -1;
     const update = () => {
       raf = 0;
       const r = wrap.getBoundingClientRect();
       const prog = Math.min(Math.max((window.innerHeight - r.top) / r.height, 0), 1);
-      rect.setAttribute('height', String(full * prog));
+      // 1px 未満の差では書かない。マスクの高さを変えると金線の帯（全高 3000px 級）が
+      // 丸ごとラスタライズし直されるので、書換1回ぶんの重さが送りの滑らかさに直に出る。
+      // 端数を落としても線の伸びは 1px きざみ＝目には連続で、書換は目に見えて減る。
+      const h = Math.round(full * prog);
+      if (h === last) return;
+      last = h;
+      rect.setAttribute('height', String(h));
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(update);

@@ -18,6 +18,12 @@
 @property --bg-hi { syntax: "<color>"; inherits: true; initial-value: #10142a; }
 @property --bg-lo { syntax: "<color>"; inherits: true; initial-value: #080a18; }
 @property --stars { syntax: "<number>"; inherits: true; initial-value: 1; }
+/* 横に流れる帯（大運・年表）の端の減衰。長さとして登録してあるので補間でき、
+   スクロール進度そのものを時間軸にして「まだ続きがある側だけ」を溶かせる。
+   初期値 0 は「どちらの端も切らない＝今までと同じ姿」なので、タイムラインが
+   効かない場面（帯が溢れていない・未対応ブラウザ）でも見えは変わらない。 */
+@property --edge-l { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --edge-r { syntax: "<length>"; inherits: false; initial-value: 0px; }
 
 :root {
   color-scheme: dark;
@@ -414,8 +420,24 @@
   box-sizing: border-box;
 }
 
+/* ── 送り（スクロール）の地 ──
+   縦に読み下す一本の流れ（design.md Macrostructure）なので、**送りそのものが
+   この製品の主要な操作**になる。既定のままだと二つ安い：
+
+   ① タブを移るたび本文の高さが変わり、スクロールバーの有無で列が 15px 横へ跳ぶ。
+      毎朝10秒の確認で、縦しか動かないはずの画面が横にも動いていた。
+      ガターを常に確保して、切替を縦だけの動きにする。
+   ② OS 既定の太い灰の帯は、和紙と金箔の中で唯一の借り物の部品だった。
+      細い罫にして地へ溶かす（色は --outline 由来なので空4状態に追随する）。
+
+   `scroll-behavior` はここには置かない。プログラム移動は「同じタブをもう一度叩いた
+   ときだけ送る／タブを移るときは跳ぶ」と場合で分かれるので、Dashboard 側が
+   behavior を明示する（CSS で一律にすると内容が入れ替わる移動まで滑ってしまう）。 */
 html {
   -webkit-text-size-adjust: 100%;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--outline) 42%, transparent) transparent;
 }
 
 body {
@@ -477,6 +499,14 @@ body::after {
   z-index: -1;
   pointer-events: none;
   overflow: hidden;
+}
+/* 視差で動く中身。星が110個ぶん瞬き続けている面なので、独立した層に上げて
+   本文の描画から切り離す（上げないと、スクロールのたびに星の再描画が本文と
+   同じ層で走る）。逃げ（上下 6%）は JS 側が視差の上限として実測する。 */
+.skyfield-drift {
+  position: absolute;
+  inset: -6% 0;
+  will-change: transform;
 }
 .skyfield svg {
   width: 100%;
@@ -662,12 +692,31 @@ body::after {
     .section-head,
     .card:not(.rise),
     .flowcard:not(.rise),
-    .daiun-scroll,
-    .timeline-scroll,
     .tl-legend {
       animation: surface-in linear both;
       animation-timeline: view();
       animation-range: entry 0% cover 15%;
+    }
+
+    /* 横に流れる帯だけは、リビール（現れる）と端の減衰（溶ける）の**二本**を受ける。
+       `animation` は短縮形なので、別の規則にもう一本書くと先の一本を消す。
+       二本を一つの宣言に並べ、タイムラインと範囲もそれぞれに与える。
+       端の減衰は `scroll(self inline)` ＝帯自身の横の進度で駆動するので、
+       「どちら側にまだ続きがあるか」を測る JS は要らない。帯が溢れていなければ
+       進度域が 0 になってタイムラインが効かず、--edge-* は初期値 0 のまま
+       ＝マスクは全面不透明＝現行と同じ姿になる。 */
+    .daiun-scroll,
+    .timeline-scroll {
+      mask-image: linear-gradient(
+        90deg,
+        transparent 0,
+        #000 var(--edge-l),
+        #000 calc(100% - var(--edge-r)),
+        transparent 100%
+      );
+      animation: surface-in linear both, band-edges linear both;
+      animation-timeline: view(), scroll(self inline);
+      animation-range: entry 0% cover 15%, normal;
     }
     /* 章題の截金の縦罫は、章が現れるとき下から立つ（面より少しだけ先に） */
     .section-head .eyebrow::before {
@@ -685,6 +734,12 @@ body::after {
 @keyframes rule-rise {
   from { transform: scaleY(0); }
   to { transform: scaleY(1); }
+}
+/* 帯の端 — 続きがある側を溶かす。左端に着いているときは左を切らず、
+   右端に着いたら右を切らない。26px は罫が空へ溶ける .hair と同じ所作の寸法。 */
+@keyframes band-edges {
+  from { --edge-l: 0px; --edge-r: 26px; }
+  to { --edge-l: 26px; --edge-r: 0px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -868,13 +923,19 @@ body::after {
   color: var(--on-surface-variant);
   -webkit-tap-highlight-color: transparent;
 }
+/* 活性は線が担うので `background` は最初から動かない ── つまり
+   `transition: background .2s` は**何も繋いでいない宣言**で、実際に変わる
+   color（灰→金）と transform（押下）はどちらも瞬間で切り替わっていた。
+   線が 460ms かけて席を移る横で図だけが点滅するので、席の移動と図の点灯が
+   別々の出来事に見える。繋ぐ相手を実際に変わる二つへ移し、イージングも
+   本編の一本（--ease-out）に揃える。 */
 .navbar-ind {
   width: 52px;
   height: 28px;
   border-radius: var(--shape-sm);
   display: grid;
   place-items: center;
-  transition: background 0.2s;
+  transition: color 420ms var(--ease-out), transform 220ms var(--ease-out);
 }
 /* 活性は線が担うので、hover も塗らずに字と図の色だけを動かす
    （M3 の 8% ステートレイヤーはこのアプリに残った最後の一箇所だった） */
@@ -1474,13 +1535,21 @@ body::after {
 .nenun-phase { font-size: 1.6rem; margin-top: var(--sp-2xs); color: var(--text); }
 .nenun-meta { font-size: 0.78rem; color: var(--accent-soft); margin-top: var(--sp-2xs); letter-spacing: 0.04em; }
 
+/* ── 横に流れる帯（年表・大運）──
+   縦に読み下す本文の中で、この二つだけは横へ送る。既定のままだと三つ安かった：
+     ① 端まで払うと連鎖して**ページごと**動く（横の帯を送ったつもりが縦が飛ぶ）
+     ② 太い灰の帯（OS のスクロールバー）が和紙の上にそのまま残る
+     ③ 端で内容が断ち切られ、続きがあるのか終わったのか分からない
+   ①②はここで、③は上の band-edges（進度駆動のマスク）で直す。 */
 .timeline-scroll {
   overflow-x: auto;
   overflow-y: hidden;
   margin: 0 -20px;
   padding: var(--sp-2xs) 20px var(--sp-xs);
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
   scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--outline) 34%, transparent) transparent;
   position: relative;
   z-index: 1;
 }
@@ -1785,16 +1854,25 @@ body::after {
 
 
 /* ─────────────── 大運 ─────────────── */
+/* 大運は10年きざみの**節**の列なので、送ったあと節の頭で止まるのが正しい。
+   mandatory ではなく proximity ＝近ければ寄る。強制すると「ざっと流し見る」が
+   できなくなり、10期を俯瞰する使い方を殺す。 */
 .daiun-scroll {
   display: flex;
   gap: var(--sp-sm);
   overflow-x: auto;
   padding: var(--sp-3xs) var(--sp-3xs) var(--sp-sm);
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--outline) 34%, transparent) transparent;
+  scroll-snap-type: x proximity;
+  scroll-padding-left: var(--sp-3xs);
   position: relative;
   z-index: 1;
 }
 .daiun-cell {
+  scroll-snap-align: start;
   flex: 0 0 auto;
   min-width: 72px;
   text-align: center;
@@ -1967,9 +2045,10 @@ body::after {
   color: var(--lucky);
 }
 
-/* ナビ活性ピルのスプリングモーフ */
-/* 押下は縮むのではなく沈む（ボタン全体で語彙を1本にする） */
-.navbar-item:active .navbar-ind { transform: translateY(1px); transition: transform 120ms var(--ease-out); }
+/* 押下は縮むのではなく沈む（ボタン全体で語彙を1本にする）。
+   transition は .navbar-ind の基底が持つので、ここでは上書きしない
+   ── 上書きすると指を離した戻りだけが transition を失って跳ね返る。 */
+.navbar-item:active .navbar-ind { transform: translateY(1px); }
 
 /* 祝祭キーフレーム */
 @keyframes badge-in {
@@ -2421,12 +2500,29 @@ body::after {
   }
 }
 
-/* タブ遷移 — 本文列を淡く立ち上げる（これまではハードカットだった）。
-   transform/opacity だけなので合成のみ。reduced-motion は全域のキルスイッチが止める。 */
+/* ── タブ遷移 — 席の移動と同じ向きへ本文を送る ──
+   ナビは横に5席並んでいて、活性の線も横に席を移る。それなのに本文が**下から**
+   立ち上がると、線と本文が別々の出来事に見えて「どこが変わったのか」が一拍遅れる。
+   移った向きへ本文も送ると、5タブが一枚の横長の紙の上に並んでいることになり、
+   隣へ移っただけだと体で分かる（この向きの一致が、そのままスワイプの下地にもなる）。
+
+   向きが分からない場面（初回マウント）は従来どおり下から立ち上げる。
+   transform/opacity だけなので合成のみ。reduced-motion は全域のキルスイッチが止める。
+   横へ 24px 送っても横帯は出ない（body に overflow-x: clip）。 */
 .tab-enter {
   animation: tab-enter 420ms var(--emphasized) both;
 }
+.tab-enter[data-dir="next"] { animation-name: tab-enter-next; }
+.tab-enter[data-dir="prev"] { animation-name: tab-enter-prev; }
 @keyframes tab-enter {
   from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes tab-enter-next {
+  from { opacity: 0; transform: translateX(26px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes tab-enter-prev {
+  from { opacity: 0; transform: translateX(-26px); }
   to { opacity: 1; transform: none; }
 }

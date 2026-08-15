@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type TouchEvent } from 'react';
 import type { BirthProfile } from '@/lib/types';
 import { buildProfile } from '@/lib/profile';
 import { computeTodayFlow, computeMacroFlow, buildTurningPoints } from '@/lib/flow';
@@ -43,12 +43,28 @@ const TAB_ORDER: Tab[] = ['today', 'macro', 'birth', 'calendar', 'jiten'];
  */
 const WIDE_TABS = new Set<Tab>(['macro', 'birth', 'calendar', 'jiten']);
 
+/** 横に払ってタブを移すと判定する最小の距離。誤爆と取りこぼしの境目 */
+const SWIPE_MIN = 56;
+/** 払いの制限時間。これを超える指の移動は「払い」ではなく「なぞり」 */
+const SWIPE_MAX_MS = 700;
+/**
+ * 送りの中で横へ流れる面。ここから始まった指の動きは帯自身の送りなので、
+ * タブの移動として横取りしてはいけない（大運を右へ送ったら暦へ飛ぶ、を防ぐ）。
+ */
+const SWIPE_EXEMPT = '.daiun-scroll, .timeline-scroll, input, select, textarea, [contenteditable]';
+
+function prefersReducedMotion(): boolean {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 function eclipseWhen(instant: Date, now: Date): string {
   return toJstParts(instant).year === toJstParts(now).year ? jstMonthDay(instant) : jstYmd(instant);
 }
 
 export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: () => void }) {
   const [tab, setTab] = useState<Tab>('today');
+  /** 直前の移動の向き。本文の現れる向きを、ナビの線が席を移る向きに揃えるためだけに使う */
+  const [dir, setDir] = useState<'next' | 'prev' | null>(null);
   const [now] = useState(() => new Date());
 
   const profile = useMemo(() => buildProfile(birth), [birth]);
@@ -97,9 +113,89 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
     }
   }, [isTensha, now]);
 
-  const switchTab = (key: Tab) => {
-    setTab(key);
-    window.scrollTo({ top: 0 });
+  /**
+   * タブの移動。**移動の種類で送りかたを変える**のがここの要点。
+   *
+   * - 別のタブへ：内容が丸ごと入れ替わるので先頭へ**跳ぶ**。ここを滑らせると、
+   *   すでに消えた本文の上を延々と昇ることになる（滑らかさが遅さに化ける）。
+   *   代わりに、移った向きを本文の現れる向きへ渡して繋がりを作る。
+   * - いま居るタブをもう一度：内容は変わらないので先頭へ**送る**。
+   *   タブバーをもう一度叩いて上へ戻るのは、この形のアプリの共通の作法で、
+   *   長い暦や事典を読み下したあとに効く。
+   *
+   * reduced-motion のときは CSS の `scroll-behavior: auto !important` が
+   * 効かない（JS で behavior を明示すると JS 側が勝つ）ので、ここで自分で分ける。
+   */
+  const switchTab = useCallback(
+    (key: Tab) => {
+      if (key === tab) {
+        window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+        return;
+      }
+      setDir(TAB_ORDER.indexOf(key) > TAB_ORDER.indexOf(tab) ? 'next' : 'prev');
+      setTab(key);
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    },
+    [tab],
+  );
+
+  /** 隣のタブへ。端では動かない（環状にしない＝5席が一枚の紙に並ぶ隠喩を保つ） */
+  const stepTab = useCallback(
+    (delta: 1 | -1) => {
+      const next = TAB_ORDER.indexOf(tab) + delta;
+      if (next < 0 || next >= TAB_ORDER.length) return false;
+      switchTab(TAB_ORDER[next]);
+      return true;
+    },
+    [tab, switchTab],
+  );
+
+  /**
+   * 横に払ってタブを移す。5席が一枚の横長の紙に並ぶ、という遷移の向きの隠喩を
+   * そのまま指の操作にする（下部ナビへ親指を往復させずに隣を見られる）。
+   *
+   * 縦の送りを一切邪魔しないための決め事が三つ：
+   *   ① 最初の一動きで軸を決め、縦だと判れば以後そのタッチには関与しない
+   *   ② preventDefault しない（passive のまま）。横へのページ送りは
+   *      body の overflow-x: clip で元々起きないので、奪うものが無い
+   *   ③ 帯（大運・年表）と入力欄から始まった動きは、その面自身のものとして渡す
+   */
+  const swipe = useRef<{ x: number; y: number; t: number; axis: '?' | 'x' | 'y' } | null>(null);
+
+  const onTouchStart = (e: TouchEvent) => {
+    if (e.touches.length !== 1) {
+      swipe.current = null;
+      return;
+    }
+    const target = e.target as HTMLElement | null;
+    if (target?.closest(SWIPE_EXEMPT)) {
+      swipe.current = null;
+      return;
+    }
+    const t = e.touches[0];
+    swipe.current = { x: t.clientX, y: t.clientY, t: e.timeStamp, axis: '?' };
+  };
+
+  const onTouchMove = (e: TouchEvent) => {
+    const s = swipe.current;
+    if (!s || s.axis === 'y') return;
+    const t = e.touches[0];
+    const dx = t.clientX - s.x;
+    const dy = t.clientY - s.y;
+    if (s.axis === '?' && Math.hypot(dx, dy) > 12) {
+      // 斜めは縦に倒す。このアプリの主たる操作は縦の送りなので、疑わしきは縦。
+      s.axis = Math.abs(dx) > Math.abs(dy) * 1.4 ? 'x' : 'y';
+    }
+  };
+
+  const onTouchEnd = (e: TouchEvent) => {
+    const s = swipe.current;
+    swipe.current = null;
+    if (!s || s.axis !== 'x') return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - s.x;
+    if (Math.abs(dx) < SWIPE_MIN || e.timeStamp - s.t > SWIPE_MAX_MS) return;
+    stepTab(dx < 0 ? 1 : -1); // 左へ払う＝次の席が入ってくる
   };
 
   // キーボードでのタブ移動（1〜5 と ←→）。入力中は奪わない。
@@ -116,16 +212,12 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
         return;
       }
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-        const i = TAB_ORDER.indexOf(tab);
-        const next = e.key === 'ArrowRight' ? i + 1 : i - 1;
-        if (next < 0 || next >= TAB_ORDER.length) return;
-        e.preventDefault();
-        switchTab(TAB_ORDER[next]);
+        if (stepTab(e.key === 'ArrowRight' ? 1 : -1)) e.preventDefault();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [tab]);
+  }, [switchTab, stepTab]);
 
   // 今日の色（五行）をテーマに反映
   useEffect(() => {
@@ -142,10 +234,21 @@ export function Dashboard({ birth, onReset }: { birth: BirthProfile; onReset: ()
     <>
       <SkyField moonPhaseAngle={m.phaseAngle} retrogrades={retroNow} />
       <AppHeader now={now} sub={sub} />
-      <main className="shell" data-wide={WIDE_TABS.has(tab) ? '' : undefined}>
+      <main
+        className="shell"
+        data-wide={WIDE_TABS.has(tab) ? '' : undefined}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onTouchCancel={() => {
+          swipe.current = null;
+        }}
+      >
         {/* key でタブごとに貼り替え、CSS アニメーションで淡く立ち上げる
-            （これまではハードカットだった）。reduced-motion は全域のキルスイッチが止める。 */}
-        <div className="column tab-enter" key={tab}>
+            （これまではハードカットだった）。data-dir は移った向きで、本文が
+            現れる向きをナビの線が席を移る向きに揃えるために渡す。
+            reduced-motion は全域のキルスイッチが止める。 */}
+        <div className="column tab-enter" data-dir={dir ?? undefined} key={tab}>
         <FlowLine key={tab} amp={tab === 'today' ? today.score / 100 : 0.45} seed={1 + TAB_ORDER.indexOf(tab)} />
         {tab === 'today' && (
           <section aria-label="今日の流れ">
