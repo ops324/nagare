@@ -589,10 +589,26 @@ body::after {
 /* カード（空の上に重ねた紙・流れ線が背後を通る）
    ガラス→紙：ぼかしと影を落とし、角を立て、縁（--hairline）を主役にする。
    面は残す — 一目性を守るためであり、工芸のラグジュアリーは面を持つから。 */
+/* 本文の面も硝子にする（PR-E）。
+   design.md の「硝子には三つ要る」をそのまま通す：
+     ① saturate() … blur だけの面は灰へ寄る。ここが質の最大の差
+     ② 片側から当たる光 … 平らな塗りではなく縦のグラデ
+     ③ 縁が拾う光の線 … 板の厚みが見える内側 1px（--glass-edge が空に追随）
+   ぼかしはクローム（--glass-blur 18px）より**必ず弱く**保つ。強度そのものが階層を言う。
+   地の色は硝子側に持たず --surface-* 由来の色を混ぜる＝空4状態に自動で追随する。
+   不透明度は目分量ではなく、背後が最悪のとき（流れ線の最明部・星の最密部）でも
+   本文が AA 4.5:1 を満たす値を実測して決めてある（下の「硝子の不透明度」を参照）。 */
 .card {
-  background: var(--veil-card);
-  border: 1px solid var(--hairline);
+  background-color: transparent;
+  background-image: linear-gradient(
+    170deg,
+    color-mix(in srgb, var(--surface-container-low) 86%, transparent),
+    color-mix(in srgb, var(--surface-container) 79%, transparent)
+  );
+  backdrop-filter: blur(var(--blur-sm)) saturate(var(--glass-sat));
+  border: 1px solid var(--glass-rim);
   border-radius: var(--radius-card);
+  box-shadow: inset 0 1px 0 var(--glass-edge);
   position: relative;
   z-index: 1;
 }
@@ -1207,8 +1223,14 @@ body::after {
   position: relative;
   z-index: 1;
 }
+/* 生まれのしるしは「地＝罫だけ」の段（design.md 階層 三段）。面を持たないので
+   `.card` が着せる硝子を**明示的に脱がせる**。`background: none` だけでは
+   `backdrop-filter` と内側の稜が残り、面が無いのに背後だけぼける・
+   縁の無いところに光の線が出る、という辻褄の合わない姿になる。 */
 .chip {
   background: none;
+  backdrop-filter: none;
+  box-shadow: none;
   border: 0;
   border-top: 1px solid var(--hairline-soft);
   border-radius: 0;
@@ -2007,6 +2029,19 @@ body::after {
     background-image: none;
     background-color: var(--lucky-wash);
   }
+  /* 本文の面（PR-E で硝子にした層）。硝子にする前の不透明な地へ戻す。
+     .chip は面を持たない段なので対象外（`background: none` のまま）。 */
+  .card {
+    background-image: none;
+    background-color: var(--veil-card);
+  }
+  .lucky-action {
+    background-image: none;
+    background-color: var(--veil-filled);
+  }
+  .lucky-action.lucky-first {
+    background-color: var(--lucky-wash);
+  }
 }
 
 /* 開運アクションカード */
@@ -2014,8 +2049,15 @@ body::after {
   display: flex;
   gap: var(--sp-md);
   align-items: flex-start;
-  background: var(--veil-filled);
-  border: 1px solid color-mix(in srgb, var(--outline-variant) 30%, transparent);
+  background-color: transparent;
+  background-image: linear-gradient(
+    170deg,
+    color-mix(in srgb, var(--surface-container) 86%, transparent),
+    color-mix(in srgb, var(--surface-container-high) 79%, transparent)
+  );
+  backdrop-filter: blur(var(--blur-sm)) saturate(var(--glass-sat));
+  border: 1px solid var(--glass-rim);
+  box-shadow: inset 0 1px 0 var(--glass-edge);
   border-radius: var(--radius-card);
   padding: var(--sp-lg) 15px;
   transition: transform 160ms var(--ease-out);
@@ -2023,8 +2065,14 @@ body::after {
   z-index: 1;
 }
 .lucky-action:active { transform: translateY(1px); }
+/* 筆頭の開運アクションは今日の色を帯びる。`background` の一括指定で
+   硝子の地を消してしまわないよう、**地だけ**を差し替える（ぼかし・稜・縁は残す）。 */
 .lucky-action.lucky-first {
-  background: var(--lucky-wash);
+  background-image: linear-gradient(
+    170deg,
+    color-mix(in srgb, var(--lucky) 14%, color-mix(in srgb, var(--surface-container) 86%, transparent)),
+    color-mix(in srgb, var(--surface-container-high) 79%, transparent)
+  );
   border-left: 2px solid var(--lucky);
   border-radius: 0 var(--radius-card) var(--radius-card) 0;
 }

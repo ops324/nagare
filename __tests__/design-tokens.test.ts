@@ -257,13 +257,34 @@ describe('prefers-reduced-motion の担保', () => {
  * **許可した面の一覧そのもの**をここで固定する。増やすときはこの配列を編集する
  * ＝ PR の差分に必ず現れる、という運用にする。
  */
-const GLASS_SURFACES = ['.appbar', '.navbar-inner', '.appbar-toast', '.hitokoto'];
+/**
+ * 硝子を許した面。
+ *
+ * PR #50 では「硝子は読み手と本文のあいだに割り込む層のもの、紙は本文そのもの」として
+ * クローム3層＋ひとことの4面に限っていたが、**PR-E で本文の面（`.card` と
+ * `.lucky-action`）も硝子にした**。材料の法は design.md 側で書き換えてある。
+ *
+ * 面が増えたぶん「許可した面にしか無い」検査の締める力は落ちる。ただし対になっている
+ * 「許可した面はすべて実際に硝子」「非対応ブラウザ向けの不透明退避がある」の2本は
+ * 価値がそのまま残るので維持する（退避の漏れは可読性の事故に直結する）。
+ */
+const GLASS_SURFACES = [
+  '.appbar',
+  '.navbar-inner',
+  '.appbar-toast',
+  '.hitokoto',
+  '.card',
+  '.lucky-action',
+];
 
 describe('硝子（限定素材）', () => {
   it('backdrop-filter は許可した面にしか無い（全面ガラス化の防止）', () => {
     const offenders: string[] = [];
     LINES.forEach((line, i) => {
       if (!/^\s*backdrop-filter\s*:/.test(line)) return;
+      // `none` は硝子を**外す**宣言なので、広がりの検査の対象ではない
+      // （`.chip` のように `.card` を継いだ面が段として硝子を脱ぐために要る）。
+      if (/^\s*backdrop-filter\s*:\s*none\s*;?\s*$/.test(line)) return;
       const selector = selectorOf(i);
       if (!GLASS_SURFACES.some((s) => selector.includes(s))) {
         offenders.push(`${selector} → ${line.trim()}`);
