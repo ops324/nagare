@@ -1,9 +1,13 @@
+import type { ReactNode } from 'react';
 import { ZODIAC, KYUSEI } from '@/lib/constants';
 import { SHUKU27 } from '@/lib/sukuyo';
 import { ZODIAC_TRAIT, KYUSEI_TRAIT, SHUKU_TRAIT, SANKU_DESC, CAUTION_COPY } from '@/lib/copy';
+import { ZodiacGlyph } from './ZodiacGlyph';
 
 interface Item {
   name: string;
+  /** 名の前に置く記号。星座だけが持つ（生の絵文字を混ぜないための逃げ道） */
+  glyph?: ReactNode;
   yomi?: string;
   desc: string;
   tone?: 'good' | 'caution' | 'neutral';
@@ -21,6 +25,7 @@ function JitenSection({ label, note, items }: { label: string; note?: string; it
         {items.map((it) => (
           <div key={it.name} className="jiten-row" data-tone={it.tone ?? ''}>
             <div className="jiten-name font-display">
+              {it.glyph}
               {it.name}
               {it.yomi && <span className="jiten-yomi">{it.yomi}</span>}
             </div>
@@ -44,7 +49,12 @@ export function Jiten() {
 
       <JitenSection
         label="星座（太陽星座・12）"
-        items={ZODIAC.map((z) => ({ name: `${z.symbol} ${z.name}`, yomi: `${z.yomi}・${z.element}`, desc: ZODIAC_TRAIT[z.name] }))}
+        items={ZODIAC.map((z) => ({
+          name: z.name,
+          glyph: <ZodiacGlyph sign={z.name} />,
+          yomi: `${z.yomi}・${z.element}`,
+          desc: ZODIAC_TRAIT[z.name],
+        }))}
       />
       <JitenSection
         label="九星（本命星・9）"

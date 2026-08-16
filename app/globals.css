@@ -1224,6 +1224,20 @@ body::after {
 }
 .chip-sub { font-size: 0.6875rem; color: var(--text-dim); margin-top: 1px; }
 
+/* 星座記号 — 生の ♈〜♓ は **この12個だけ Emoji_Presentation=Yes** で、
+   明朝を指定していてもカラー絵文字に落ちる（生成りの地に紫のタイルが乗る）。
+   `components/ZodiacGlyph.tsx` が同じ字形を線で引くので、ここでは組版だけ整える。
+   1em の SVG はベースラインに乗って沈むので、字面の中心へ少し上げる。
+   `--accent-soft` は明るい地で AA を確保した側の金（gold-500）。 */
+.zodiac-glyph {
+  /* Preflight が `svg { display: block }` を当てるので、明示的に戻さないと
+     記号だけが単独行に落ちる（実測：星座チップで2行になっていた）。 */
+  display: inline-block;
+  vertical-align: -0.12em;
+  color: var(--accent-soft);
+  margin-right: 0.12em;
+}
+
 /* ─────────────── ムーン行 ─────────────── */
 .moonrow {
   display: flex;
