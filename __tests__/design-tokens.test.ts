@@ -375,20 +375,25 @@ const HALO_SURFACES = [
   '.chip-value',
   '.chip-sub',
   '.soft-note',
+  // 硝子の面も地が空になる（PR #56）。大きな明朝は割れないので小さな字だけ
+  '.hitokoto .lucky-pill',
+  '.hitokoto .lucky-gogyo',
+  '.hitokoto .streak-note',
 ];
 
 /** 地として使ってよい色トークン（＝空4状態に追随する「紙の色」） */
 const GROUND_TOKENS = ['--surface', '--bg', '--bg-hi', '--bg-lo'];
 
-/** CSS 中の text-shadow 宣言。**一行規則（`.x { text-shadow: … }`）も拾う**ため、
-    行頭固定では探さない（行頭だけ見ると一行に畳んで検査を抜けられる）。 */
-const HALO_DECLS = LINES.flatMap((line, i) =>
-  [...line.matchAll(/text-shadow\s*:\s*([^;}]+)/g)].map((m) => ({
-    line: i,
-    value: m[1].trim(),
-    parts: selectorPartsOf(i),
-  })),
-).filter((d) => d.value !== 'none');
+/** CSS 中の text-shadow 宣言。**行ではなく全文を走査する**：
+    ①一行規則（`.x { text-shadow: … }`）も拾う（行頭固定だと一行に畳んで抜けられる）
+    ②宣言が**行をまたいでも**値を切らない（層を足して折り返した瞬間に
+      検査が素通りしていた。実際 PR #56 でこれを踏んだ） */
+const HALO_DECLS = [...CSS_NO_COMMENT.matchAll(/text-shadow\s*:\s*([^;}]+)/g)]
+  .map((m) => {
+    const line = CSS_NO_COMMENT.slice(0, m.index).split('\n').length - 1;
+    return { line, value: m[1].trim().replace(/\s+/g, ' '), parts: selectorPartsOf(line) };
+  })
+  .filter((d) => d.value !== 'none');
 
 describe('隈取り（罫だけの段の字）', () => {
   it('text-shadow は許可した字にしか無い（発光への出戻り防止）', () => {

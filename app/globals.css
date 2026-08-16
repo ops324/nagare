@@ -571,6 +571,16 @@ body::after {
 :root[data-sky="dawn"] .flowline .fl-halo {
   opacity: 0.18;
 }
+/* 箔足（継ぎ目）— 金は塗料ではなく、正方形の箔を継いだもの。継ぎ目は重なった分
+   だけわずかに明るい。暈と同じ理由で濃さを地の明暗で変える：生成りの地では
+   --gold-100 が線そのものより明るく、そのまま乗せると継ぎ目だけが浮く。 */
+.flowline .fl-leaf {
+  opacity: 0.55;
+}
+:root[data-sky="day"] .flowline .fl-leaf,
+:root[data-sky="dawn"] .flowline .fl-leaf {
+  opacity: 0.3;
+}
 
 /* 明朝の見出し */
 .font-display {
@@ -1115,7 +1125,12 @@ body::after {
    影ではなく隈取りなので **offset は 0**（落ち影＝浮遊は硝子の語彙）。色は地の
    トークン（--surface）だけを使い、空4状態へ自動で追随する——夜は墨が、
    生成りの地では生成りが字の外側へ回る。金や発光の色をここへ入れないことと、
-   許可した字の外へ広がらないことは design-tokens.test.ts が落とす。 */
+   許可した字の外へ広がらないことは design-tokens.test.ts が落とす。
+
+   **硝子の面（ひとこと）の小さな字にも要る**（PR #56）。硝子は
+   「地を不透明から硝子へ移すと線がぼやけた金の帯として面の下に残る」ために
+   選んだ素材なので、**その面の地もまた空**で、罫だけの段と物理的に同じ状況になる。
+   大きな明朝は太いので割れないが、11px の眉と補助は割れる。 */
 .section-head .eyebrow,
 .flowcard-sys,
 .flowcard-title,
@@ -1123,8 +1138,14 @@ body::after {
 .chip-label,
 .chip-value,
 .chip-sub,
-.soft-note {
-  text-shadow: 0 0 2px var(--surface), 0 0 3px var(--surface), 0 0 6px var(--surface);
+.soft-note,
+.hitokoto .lucky-pill,
+.hitokoto .lucky-gogyo,
+.hitokoto .streak-note {
+  /* 四層。三層（2/3/6px）では線が動いた先で 4.30:1 まで落ちた（PR #56 実測）。
+     内側をもう一枚重ねて芯を濃くする＝広げずに濃くするのが、見えを変えない足し方。 */
+  text-shadow: 0 0 2px var(--surface), 0 0 2px var(--surface), 0 0 4px var(--surface),
+    0 0 7px var(--surface);
 }
 
 /* ─────────────── セクション見出し（明朝の章題＋溶ける罫） ─────────────── */
