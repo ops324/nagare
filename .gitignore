@@ -38,6 +38,15 @@ yarn-error.log*
 
 # claude code (personal local settings)
 .claude/settings.local.json
+# 作業用 worktree はリポジトリの複製なので、コミットもテスト収集もさせない
+# （vitest.config.ts の exclude と対。片方だけでは塞げない）
+.claude/worktrees/
+
+# playwright（実行結果。基準画像 playwright/__screenshots__/ は commit する）
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
 
 # typescript
 *.tsbuildinfo
