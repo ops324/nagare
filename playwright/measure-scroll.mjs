@@ -13,7 +13,7 @@
  */
 import { chromium } from '@playwright/test';
 
-const BASE = 'http://127.0.0.1:3100';
+const BASE = `http://127.0.0.1:${process.env.PORT ?? 3100}`;
 const PROFILE = JSON.stringify({ date: '1990-05-14', time: '09:30', gender: 'female' });
 // 夜＝星がいちばん濃く（--stars 1）、硝子の効果もいちばん出る条件
 const NIGHT = '2026-08-16T23:00:00+09:00';

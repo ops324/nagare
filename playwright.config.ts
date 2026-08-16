@@ -28,7 +28,10 @@ import { defineConfig } from '@playwright/test';
  * 直接固定する担当（`--fs-score` を凍結しているのと同じやり方）。
  * 「画像＝組版と構図」「テキスト検査＝トークンの値」の二段構えで、片方だけでは穴が開く。
  */
-const PORT = 3100;
+/** 既定 3100。**兄弟 worktree や別セッションが同じポートを使うと衝突する**ので、
+ *  `PORT=3199 npm run test:visual` のように差し替えられるようにしてある
+ *  （`reuseExistingServer: false` なので、塞がっていれば黙って誤らず起動時に失敗する）。 */
+const PORT = Number(process.env.PORT ?? 3100);
 const BASE = `http://127.0.0.1:${PORT}`;
 
 export default defineConfig({
@@ -71,7 +74,13 @@ export default defineConfig({
     // dev ではなく本番ビルドで撮る（Turbopack の stale CSS を踏まないため・SPEC §12.5）
     command: `npm run build && npx next start -p ${PORT}`,
     url: BASE,
-    reuseExistingServer: !process.env.CI,
+    // **再利用しない。** `reuseExistingServer: true` だと、他の worktree や別セッションが
+    // 同じポートを掴んでいるとき **黙ってそちらを撮る**。実際、別 worktree の main の
+    // サーバーが 3100 に居座り、意匠を変えたのにテストが通ってしまう状況が起きた。
+    // これは vitest が古い worktree を収集していたのと**同じ種類の事故**で、
+    // どちらも「緑」が何も保証しなくなる。毎回ビルドし直す 40 秒はその保険料。
+    // ポートが塞がっていれば Playwright は起動時にはっきり失敗する＝黙って誤らない。
+    reuseExistingServer: false,
     timeout: 300_000,
   },
 });

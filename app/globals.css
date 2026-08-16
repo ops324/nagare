@@ -2008,42 +2008,6 @@ body::after {
   animation: shimmer 2.4s var(--ease-out) 0.4s 1 both;
 }
 
-/* ── 硝子の退避（backdrop-filter 非対応）──
-   半透明の地だけが残ると、ヘッダー・ナビ・トーストの下を本文がそのまま流れて
-   読めなくなる。硝子は装飾だが、可読性は装飾ではない。
-   ここは硝子面の**すべて**を不透明へ戻す（新しい硝子面を足したらここにも足す。
-   __tests__/design-tokens.test.ts が対応漏れを落とす）。
-   :has() や @supports selector ではなく機能クエリで判定するので、対応した
-   ブラウザではこのブロック自体が評価されない＝コストはゼロ。 */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .appbar {
-    background-image: linear-gradient(180deg, var(--glass-solid-hi), var(--glass-solid-lo));
-  }
-  .navbar-inner,
-  .appbar-toast {
-    background-image: none;
-    background-color: var(--glass-solid-hi);
-  }
-  /* ひとことは硝子化する前の地（不透明の今日の色）へ戻す */
-  .hitokoto {
-    background-image: none;
-    background-color: var(--lucky-wash);
-  }
-  /* 本文の面（PR-E で硝子にした層）。硝子にする前の不透明な地へ戻す。
-     .chip は面を持たない段なので対象外（`background: none` のまま）。 */
-  .card {
-    background-image: none;
-    background-color: var(--veil-card);
-  }
-  .lucky-action {
-    background-image: none;
-    background-color: var(--veil-filled);
-  }
-  .lucky-action.lucky-first {
-    background-color: var(--lucky-wash);
-  }
-}
-
 /* 開運アクションカード */
 .lucky-action {
   display: flex;
@@ -2052,8 +2016,8 @@ body::after {
   background-color: transparent;
   background-image: linear-gradient(
     170deg,
-    color-mix(in srgb, var(--surface-container) 86%, transparent),
-    color-mix(in srgb, var(--surface-container-high) 79%, transparent)
+    color-mix(in srgb, var(--surface-container) 92%, transparent),
+    color-mix(in srgb, var(--surface-container-high) 87%, transparent)
   );
   backdrop-filter: blur(var(--blur-sm)) saturate(var(--glass-sat));
   border: 1px solid var(--glass-rim);
@@ -2070,8 +2034,8 @@ body::after {
 .lucky-action.lucky-first {
   background-image: linear-gradient(
     170deg,
-    color-mix(in srgb, var(--lucky) 14%, color-mix(in srgb, var(--surface-container) 86%, transparent)),
-    color-mix(in srgb, var(--surface-container-high) 79%, transparent)
+    color-mix(in srgb, var(--lucky) 9%, color-mix(in srgb, var(--surface-container) 92%, transparent)),
+    color-mix(in srgb, var(--surface-container-high) 87%, transparent)
   );
   border-left: 2px solid var(--lucky);
   border-radius: 0 var(--radius-card) var(--radius-card) 0;
@@ -2593,4 +2557,58 @@ body::after {
 @keyframes tab-enter-prev {
   from { opacity: 0; transform: translateX(-26px); }
   to { opacity: 1; transform: none; }
+}
+
+/* ── 硝子の退避（backdrop-filter 非対応）── **ファイル末尾に置くこと** ──
+   半透明の地だけが残ると、本文がクロームや流れ線・星の上をそのまま流れて
+   読めなくなる。硝子は装飾だが、可読性は装飾ではない。
+
+   **位置が仕様の一部。** 退避の規則はどれも詳細度 0,1,0 で、硝子面の規則と同じ。
+   同点なら**後に書いたほうが勝つ**ので、退避がファイルの途中にあると、
+   それより下で定義された硝子面（`.lucky-action` など）には一切効かない。
+   実際 PR-E の初版がこれで、`.lucky-action` の退避が死んでいた。
+   `__tests__/design-tokens.test.ts` が「退避は最後の硝子面より後」を検査する。
+
+   **地は不透明でなければならない。** `--veil-*` は 86〜88% の半透明なので退避には使えない
+   （退避の意味が無くなる）。`--glass-solid-*` と `--lucky-wash` と素の
+   `--surface-container-*` はいずれも不透明。
+
+   ブロック内の順序も詳細度が同じなので効く。`.hitokoto` と `.chip` は
+   `class="card hitokoto"` `class="card chip"` なので、**`.card` より後**に置く。
+
+   機能クエリなので、対応したブラウザではこのブロック自体が評価されない＝コストはゼロ。 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .appbar {
+    background-image: linear-gradient(180deg, var(--glass-solid-hi), var(--glass-solid-lo));
+  }
+  .navbar-inner,
+  .appbar-toast {
+    background-image: none;
+    background-color: var(--glass-solid-hi);
+  }
+  /* 本文の面（PR-E で硝子にした層）。硝子にする前の地へ、ただし不透明で戻す */
+  .card {
+    background-image: none;
+    background-color: var(--surface-container-low);
+  }
+  .lucky-action {
+    background-image: none;
+    background-color: var(--surface-container);
+  }
+  /* 詳細度 0,2,0。`.lucky-action`（0,1,0）の `background-image: none` では
+     勝てないので、ここでも地の画像を明示的に消す。1段でも漏らすと半透明が残る */
+  .lucky-action.lucky-first {
+    background-image: none;
+    background-color: var(--lucky-wash);
+  }
+  /* ひとことは硝子化する前の地（不透明の今日の色）へ。`.card` より後に置くこと */
+  .hitokoto {
+    background-image: none;
+    background-color: var(--lucky-wash);
+  }
+  /* 生まれのしるしは面を持たない段。`.card` の退避が着せた地を脱がせる */
+  .chip {
+    background-image: none;
+    background-color: transparent;
+  }
 }

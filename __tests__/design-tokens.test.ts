@@ -334,6 +334,46 @@ describe('硝子（限定素材）', () => {
     expect(body).toMatch(/--glass-solid-hi|--lucky-wash/);
   });
 
+  /**
+   * **退避は「存在」ではなく「勝つこと」が要る。**
+   *
+   * 退避の規則も硝子面の規則も詳細度は 0,1,0 で同点。同点なら後に書いたほうが勝つので、
+   * 退避がファイルの途中にあると、それより下で定義された硝子面には一切効かない。
+   * PR-E の初版が実際にこれで、`.lucky-action`（当時 2048 行）の退避が
+   * `@supports not`（2018 行）より後ろにあったため**死んでいた**。
+   * 非対応ブラウザで本文が流れ線と星の上を素通しで走る、という退避が防ぐはずの事故そのもの。
+   *
+   * 上の「退避がある」検査は本文に文字列が含まれるかしか見ないので、これを素通しした。
+   */
+  it('退避ブロックは最後の硝子面より後にある（同点なら後勝ちなので位置が仕様）', () => {
+    const at = CSS.indexOf('@supports not (');
+    const late: string[] = [];
+    LINES.forEach((line, i) => {
+      if (!/^\s*backdrop-filter\s*:/.test(line)) return;
+      if (/^\s*backdrop-filter\s*:\s*none\s*;?\s*$/.test(line)) return;
+      // その宣言がファイル先頭から何文字目か
+      const offset = LINES.slice(0, i).reduce((n, l) => n + l.length + 1, 0);
+      if (offset > at) late.push(`${selectorOf(i)}（${i + 1} 行目）`);
+    });
+    expect(
+      late,
+      `退避ブロックより後で硝子になっている面がある:\n${late.join('\n')}\n` +
+        '退避は同じ詳細度なので、後ろにある面には効かない。ブロックをファイル末尾へ移すこと',
+    ).toEqual([]);
+  });
+
+  /** 退避の中では `.card` を先に置く。`.hitokoto` と `.chip` は `class="card …"` なので、
+   *  `.card` が後ろにあると段の区別（面を持つ／持たない）を上書きしてしまう。 */
+  it('退避の中で .card は .hitokoto / .chip より前にある', () => {
+    const body = atRuleBody('@supports not (');
+    const card = body.indexOf('.card');
+    for (const s of ['.hitokoto', '.chip']) {
+      const i = body.indexOf(s);
+      expect(i, `${s} の退避が無い`).toBeGreaterThanOrEqual(0);
+      expect(card, `退避の中で .card が ${s} より後ろにある（段の区別を潰す）`).toBeLessThan(i);
+    }
+  });
+
   it('硝子トークンが夜と昼の両方で定義されている（片方だけだと地の明暗で破綻する）', () => {
     for (const t of ['--glass-blur', '--glass-sat', '--glass-edge', '--glass-rim', '--glass-cast']) {
       expect(CSS, `${t} が無い`).toContain(`${t}:`);

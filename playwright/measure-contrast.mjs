@@ -23,12 +23,24 @@
  *
  * **計測器は必ず改修前で校正すること。** 不透明な面で未達が出るなら測り方が誤っている。
  *
- * 使い方: node playwright/measure-contrast.mjs   （先に next start -p 3100）
+ * ■ 再現性の限界（実測して確かめた）
+ * - **地を持つ面（硝子のカード）は安定する。** 同じ値が何度でも出る
+ * - **面を持たない段（`.chip`）は実行ごとに 5〜10 件で揺れる。** 1〜2px の星が
+ *   グリフの下に来るかどうかという確率事象で、rAF を2回挟んで送りを固定しても残る。
+ *   ここの件数を「増えた／減った」で判断してはいけない。**面の変更の可否は
+ *   硝子面の行だけで判断する**（`.chip` は別途対処すべき既存の課題）
+ *
+ * ■ サーバーは必ず自分で建てたものに向けること
+ * 別 worktree や別セッションが同じポートを掴んでいると、**別ビルドを測って
+ * 気づかない**。`PORT=3199 node playwright/measure-contrast.mjs` のように
+ * 空いているポートを明示するのが安全。
+ *
+ * 使い方: PORT=3199 node playwright/measure-contrast.mjs   （先に next start -p 3199）
  */
 import { chromium } from '@playwright/test';
 import { PNG } from './png.mjs';
 
-const BASE = 'http://127.0.0.1:3100';
+const BASE = `http://127.0.0.1:${process.env.PORT ?? 3100}`;
 const PROFILE = JSON.stringify({ date: '1990-05-14', time: '09:30', gender: 'female' });
 
 const SKIES = {
@@ -110,7 +122,17 @@ async function run() {
 
     for (const [index, tab] of TABS) {
       if (index > 0) await page.locator('.navbar-item').nth(index).click();
-      await page.waitForTimeout(500);
+      // スクロール駆動（視差・流れ線のマスク）は rAF スロットリングされるので、
+      // 送りを先頭へ固定してから rAF を2回挟む（SPEC §12.5）。これが無いと
+      // 星の位置が数 px ぶれ、面を持たない `.chip` の最悪値が実行ごとに変わる。
+      await page.evaluate(
+        () =>
+          new Promise((r) => {
+            window.scrollTo(0, 0);
+            requestAnimationFrame(() => requestAnimationFrame(r));
+          }),
+      );
+      await page.waitForTimeout(400);
 
       const items = await collect(page);
 
