@@ -613,6 +613,90 @@ describe('反射（shimmer）は限定', () => {
   });
 });
 
+/**
+ * 日付・時刻のしるし（`::-webkit-calendar-picker-indicator`）。
+ *
+ * ここは「意匠のために可動部を壊す」が最も起きやすい場所で、web 上の作例の多くが
+ * `display: none` や `opacity: 0` で既定のグリフを消している。この指示子は
+ * ネイティブのピッカーを開く**唯一のボタン**なので、消すとキーボード（Alt+↓）
+ * 以外の開きかたが無くなる。**見た目は変えてよいが、押せることは変えてはならない**
+ * を、散文ではなく破ると落ちる形にしておく。
+ */
+const PICKER = '::-webkit-calendar-picker-indicator';
+
+/** 最内側の規則（セレクタ群＋本文）を列挙する。`CSS_NO_COMMENT` を見るので、
+    コメント本文に `display: none` のような**禁止例の説明**を書いても拾わない。
+    行を遡る selectorOf() ではなく波括弧の対で切り出すのは、この規則が
+    セレクタを2行に分けて書いてあるため（群の**両方**を検査したい）。 */
+function rulesFor(needle: string): Array<{ selector: string; body: string }> {
+  const out: Array<{ selector: string; body: string }> = [];
+  const re = /([^{}]+)\{([^{}]*)\}/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(CSS_NO_COMMENT)) !== null) {
+    const selector = m[1].trim().split('\n').map((s) => s.trim()).join(' ');
+    if (selector.includes(needle)) out.push({ selector, body: m[2] });
+  }
+  return out;
+}
+
+describe('日付・時刻のしるし（Chromium の指示子）', () => {
+  it('date と time の両方を引き受けている（片方だけ既製のまま残さない）', () => {
+    // 入口のフォームは date と time が隣り合って出る。片方だけ手を入れると、
+    // 「意匠のしるし」と「Material のグリフ」が同じ画面に並んで前より悪くなる。
+    const selectors = rulesFor(PICKER).map((r) => r.selector);
+    expect(selectors.length, `${PICKER} の規則が無い`).toBeGreaterThan(0);
+    for (const type of ['date', 'time']) {
+      expect(
+        selectors.some((s) => s.includes(`input[type="${type}"]`)),
+        `input[type="${type}"] のしるしが定義されていない`,
+      ).toBe(true);
+    }
+  });
+
+  it('押せなくする宣言を書かない（ピッカーを開く唯一のボタン）', () => {
+    const banned = [
+      /display\s*:\s*none/,
+      /visibility\s*:\s*hidden/,
+      /opacity\s*:\s*0(\D|$)/,
+      /pointer-events\s*:\s*none/,
+      /appearance\s*:\s*none/,
+    ];
+    const offenders: string[] = [];
+    for (const { selector, body } of rulesFor(PICKER)) {
+      for (const decl of body.split(';')) {
+        if (banned.some((b) => b.test(decl))) offenders.push(`${selector} → ${decl.trim()}`);
+      }
+    }
+    expect(
+      offenders,
+      `指示子を消すと、キーボード以外でピッカーを開けなくなる:\n${offenders.join('\n')}`,
+    ).toEqual([]);
+  });
+
+  it('しるしの色はトークンで持つ（空4状態に追随させる）', () => {
+    // 背景色＝しるしの墨。リテラルで書くと color-scheme の明暗2値へ逆戻りする。
+    const decls = rulesFor(PICKER)
+      .flatMap(({ selector, body }) => body.split(';').map((d) => ({ selector, decl: d.trim() })))
+      .filter(({ decl }) => /^background(-color)?\s*:/.test(decl));
+    expect(decls.length, 'しるしの色が指定されていない').toBeGreaterThan(0);
+    for (const { selector, decl } of decls) {
+      expect(decl, `${selector} の色がトークンでない: ${decl}`).toContain('var(--');
+    }
+  });
+
+  it('-webkit-mask-* を宣言として手書きしない', () => {
+    // backdrop-filter と同じ落とし穴。標準プロパティを先・-webkit- を後に書くと
+    // Lightning CSS は標準側を落とす。前置はビルドに任せる。
+    const offenders = LINES.map((l, i) => [l, i] as const)
+      .filter(([l]) => /^\s*-webkit-mask[\w-]*\s*:/.test(l))
+      .map(([l, i]) => `${i + 1}行目: ${l.trim()}`);
+    expect(
+      offenders,
+      `-webkit-mask-* は手で書かない（ビルドが前置する）:\n${offenders.join('\n')}`,
+    ).toEqual([]);
+  });
+});
+
 describe('スクロール連動のリビール', () => {
   it('animation-timeline は reduced-motion の外（no-preference）にしか無い', () => {
     // タイムライン駆動の animation は、全域のキルスイッチ（animation-duration: 0.001ms）

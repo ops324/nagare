@@ -1404,6 +1404,66 @@ body::after {
   box-shadow: inset 0 0 0 1px var(--primary);
 }
 
+/* ── 日付・時刻のしるし（Chromium 専用） ──
+   `<input type="date|time">` の右端に出る指示子は、Chromium が Material 風の
+   グレーのグリフで描く。周りは明朝の CTA・金の罫・髪の毛線で組んであるので、
+   入口でここだけが既製の UI として残っていた。
+
+   直しかたは PR #53 の先例に倣う ——「開示（.disclose）の ＋／− はグリフでは
+   なく**罫で引く**」。ここでも借り物のグリフを捨て、1px の罫だけで
+   暦（枠＋見出しの罫）と時計（円＋折れる一本の罫）を引く。
+
+   ■ 押せること・在ることを壊さない
+   `display: none` / `opacity: 0` / `pointer-events: none` は使わない。
+   この指示子はネイティブのピッカーを開く**唯一のボタン**で、消すと
+   キーボード（Alt+↓）以外の開きかたが無くなる。触るのは**背景と形だけ**で、
+   寸法・余白・当たり判定には一切手を入れていない。しるしの実寸は
+   `mask-size` に em で持たせてあるので、指示子の箱（Chromium の版で変わりうる）
+   に寸法を預けずに済む。
+
+   ■ 退化して困らないこと
+   `::-webkit-calendar-picker-indicator` は Chromium にしかない。
+   Firefox / Safari では規則が丸ごと当たらず各ブラウザのネイティブの見えが残る
+   ＝**何も起きないのが正しい退化**（`view()` のリビールと同じ立て方）。
+
+   ■ 色はトークンで持つ
+   グリフを「背景色＋マスク」で描くので、色が空4状態に自動で追随する
+   （UA の既定グリフは color-scheme の明暗2値でしか変わらない）。
+   ここでの背景色は**しるしの墨**であって地ではないため、触れて色が動いても
+   「地を 8% 洗う M3 のステートレイヤー」には当たらない。 */
+.field input[type="date"]::-webkit-calendar-picker-indicator,
+.field input[type="time"]::-webkit-calendar-picker-indicator {
+  /* ショートハンドで書くのは、UA が置いた background-image / -size / -origin を
+     まとめて初期値へ戻すため（個別指定だと UA のグリフが下に残る） */
+  background: var(--on-surface-variant);
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: 1em 1em;
+  cursor: pointer;
+  transition: background-color 420ms var(--ease-out);
+}
+/* 暦 — 紙は角が立つので角丸を持たせない。見出しの罫が一本入るだけで
+   「文書」ではなく「暦の一枚」に読める。 */
+.field input[type="date"]::-webkit-calendar-picker-indicator {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1'%3E%3Cpath d='M2.5 2.5h11v11h-11z'/%3E%3Cpath d='M2.5 5.5h11'/%3E%3C/svg%3E");
+}
+/* 時計 — 針は二本の線ではなく**折れる一本の罫**で引く（.disclose-mark と同じ語彙）。
+   円の外径（2〜14）は暦の枠の外径と一致させてある＝二つのしるしが同じ升目に載る。 */
+.field input[type="time"]::-webkit-calendar-picker-indicator {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1'%3E%3Ccircle cx='8' cy='8' r='5.5'/%3E%3Cpath d='M8 4.6V8h3.4'/%3E%3C/svg%3E");
+}
+/* 欄の縁が金へ寄るのと同時にしるしも金へ寄る＝欄と、その中の符が
+   ひとつの出来事として動く（design.md「触れると静かに応える」）。 */
+.field input:focus::-webkit-calendar-picker-indicator {
+  background-color: var(--primary);
+}
+@media (hover: hover) and (pointer: fine) {
+  /* タッチ端末では hover がタップ後に貼り付いたまま残る */
+  .field input:hover::-webkit-calendar-picker-indicator {
+    background-color: var(--primary);
+  }
+}
+
 /* ── 開示 — 文字と符 ──
    ＋／− は文字（グリフ）ではなく**罫で引く**。開くと縦画だけが消える＝
    ひとつの所作になり、明朝の縦横と語彙が揃う。

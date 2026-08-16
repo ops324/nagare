@@ -103,7 +103,7 @@ UI: `app/layout.tsx`（フォント・テーマカラー）、`app/page.tsx`（�
 
 ## 5. 不変条件（検証済み基準値）— これらは壊してはならない
 
-改修後、以下が変わったら**バグの疑い**。すべて Vitest（`npm test`・261件）で固定済み。
+改修後、以下が変わったら**バグの疑い**。すべて Vitest（`npm test`・265件）で固定済み。
 
 | 項目 | 基準値（出典） |
 |---|---|
@@ -294,6 +294,12 @@ UI: `app/layout.tsx`（フォント・テーマカラー）、`app/page.tsx`（�
   - **反射（`shimmer`）は「広く弱く」**。細い帯は縁が立ってスキャン線に見え、強い帯は箔ではなく発光に見える。帯幅 16%→40%・濃さ 0.30→**0.13**。**祝祭（`.hitokoto-shimmer` 0.30）より必ず弱く保つ** — 主CTAは毎回触れる場所で祝祭は年に数度の合図なので、同じ強さだと祝祭の側が意味を失う。
   - **アクセシビリティ**: `.disclose` に `aria-expanded` / `aria-controls`、`.seg` に `role="radiogroup"` + `role="radio"` / `aria-checked` を付けた（どちらも状態がアクセシビリティツリーに出ていなかった）。
   - **テストで固定**（`__tests__/design-tokens.test.ts`）: ①地を 8% 洗う hover を全域で禁止 ②ボタン7クラスの `:hover` は `background` を書けない ③`:active` の `transform: scale()` を禁止 ④`shimmer` の許可面は `SHIMMER_SURFACES` の2つだけ（許可リスト＋腐敗防止の対で、`GLASS_SURFACES` と同じ運用）。あわせて `selectorOf()` が**一行規則で直前の別規則を拾い検査がすり抜けていた**のを修正（自分の行の `{` を先に見る）。
+- **日付・時刻のしるし**（PR #62・方針は [`design.md`](../design.md) の「ブラウザが描くものにも意匠を通す」が正本）: `<input type="date|time">` の右端の指示子（`::-webkit-calendar-picker-indicator`）は Chromium が Material 風のグレーのグリフで描くため、入口（`Onboarding` / `Aisho`）で**ここだけが既製の UI として残っていた**。PR #53 の先例（「開示の ＋／− はグリフではなく罫で引く」）をそのまま面へ広げ、1px の罫で暦（枠＋見出しの罫）と時計（円＋折れる一本の罫）を引く。二つのしるしは同じ升目（16 の版で外径 2〜14）に載る。
+  - **実装は「背景色＋マスク」の一手だけ**。`background` ショートハンドで UA の `background-image` / `-size` / `-origin` をまとめて初期値へ戻し、形は `mask-image` の SVG data-URI（**純アルファのマスクなので色を持たない**＝色はトークン側の1箇所で決まる）。これで**色が空4状態に追随する** — UA の既定グリフは `color-scheme` の明暗2値でしか変わらないので、ここが「意匠を通す」の実体になっている。既定は `--on-surface-variant`（眉ラベルと同じ声）、`:hover` / `:focus` で `--primary` へ寄る＝欄の縁が金へ寄るのと**同じ出来事**として動く。
+  - **寸法・余白・当たり判定には一切触れない**。指示子はネイティブのピッカーを開く**唯一のボタン**で、`display: none` / `opacity: 0` / `pointer-events: none`（web 上の作例の多く）で消すとキーボード（Alt+↓）以外の開きかたが無くなる。しるしの実寸は `mask-size` に **em** で持たせ、指示子の箱（Chromium の版で変わりうる）に大きさを預けない。**実測での担保**：頁全体ではなく**欄そのものを element screenshot で撮って** before/after を突き合わせると、差分は **120px・14×15 の枠内だけ**＝しるし以外は 1px も動いていない（`.field input` の地は半透明なので、背後を流れ線が通る位置に来た回だけ地ごと差が出る。組版が動いていないことは**枠の大きさ**で見る）。押せることも実測で確認した（指示子をクリック→Enter で `value` が入る挙動が before/after で一致）。
+  - **Chromium 専用だが `@supports` は要らない**。この擬似要素は Firefox / Safari に存在せず、規則が丸ごと当たらないので各ブラウザのネイティブの見えが残る＝**何も起きないのが正しい退化**（`view()` のリビールと同じ立て方）。
+  - **date と time は対で直す**。入口では二つの欄が隣り合うので、片方だけ意匠のしるしにすると Material のグリフと並んで直す前より悪くなる。`__tests__/design-tokens.test.ts` が①対になっていること②押せなくする宣言が無いこと③色がトークンであること④`-webkit-mask-*` を手書きしないこと（`backdrop-filter` と同じ Lightning CSS の順序問題）を固定する。**ビルド出力で確認済み** — Lightning CSS はこの未知の擬似要素を落とさず、`-webkit-mask-*` を標準プロパティの**前**に置く（＝標準側が生き残る正しい順序）。
+  - **既知の限界**：この規模の変更は基準画像の既定許容（`maxDiffPixelRatio: 0.002`）を**下回るので落ちない**（120px ÷ 166万px）。`playwright.config.ts` が「守れない：ごく小さな色の変更」と書いているのと同じ穴で、**テキスト検査側（`design-tokens.test.ts`）が担当**する。なお**許容を 0 に締めても代わりにはならない** — 流れ線の穂先（PR #55）が頁全体の撮影に実行ごとの揺れを持ち込むため、同じブランチを2回撮っても数百〜数千 px 動く。**欄だけを element screenshot で撮る**と揺れは 0px になり、そこで初めて数えられる。
 - **旧変数互換**: `--accent` `--gold-*` `--border-*` `--text-*` `--silver` 等は M3 トークンへの別名として維持（SVGコンポーネントが参照）。
 
 今日タブの構成順：ゲージ → ひとこと → 開運アクション → 今日の兆し → 月と潮 → バイオリズム → 天体の便り → 気をつけたいこと（節気カードは暦タブ先頭へ移動・生まれチップは生まれタブのみ）。
@@ -321,7 +327,7 @@ BirthProfile { date:'YYYY-MM-DD'(必須); time?:'HH:mm'; place?:{lat,lng,name}; 
 
 ## 9. 品質保証（テスト対応表）
 
-`npm test`（Vitest・261件）。**参照値テスト＝§5の不変条件を固定**。改修時は必ず緑を維持。
+`npm test`（Vitest・265件）。**参照値テスト＝§5の不変条件を固定**。改修時は必ず緑を維持。
 
 意匠については、**`npm run test:visual`（Playwright・基準画像30枚）** が別立てで入っている
 （`playwright.config.ts` / `playwright/visual.spec.ts`・PR-A で追加）。5タブ × 空2状態 × 幅2種＋
@@ -353,7 +359,7 @@ BirthProfile { date:'YYYY-MM-DD'(必須); time?:'HH:mm'; place?:{lat,lng,name}; 
 | astro.test | 太陽星座・月・**水星逆行の妥当性(年40〜90日)**・**逆行の留日(2026-07-24)** |
 | cycles-flow.test | 数え年・厄年・バイオ・profile・今日/大きな流れ・**厄年(元日)と九星(立春)の年基準の食い違い**（1/1〜立春窓・タブ間一致）・**性別未回答の厄年は保留**（男女で割れる実例＋未回答でもタブ間一致・年表と次の転機に出ない） |
 | **site-url.test**（`__tests__/`） | **外から見つけてもらう経路**＝`SITE_URL` が https 絶対URL・末尾スラッシュ無し・パス無し・**消えうる Vercel デプロイURLでない**／`sitemap()` の全エントリが `SITE_URL` 始まりの絶対URLで重複なし・常設2ルートを含む／`robots().sitemap` が絶対URL／`OG_IMAGE.url` が `SITE_URL` から解決できる。**占術ロジックには非依存** |
-| **design-tokens.test**（`__tests__/`） | **デザイントークンの構造**＝§12.6 の同期を機械的に固定。節気24組が `-l`/`-d` 両方を持ち重複・余剰が無い／五行5色が6変数そろう／`--primary` と `--accent-soft` が明暗の両ブロックで定義され、生成り地の `accent-soft` が `gold-500` 側である（AA 4.5:1 の担保）／曜日色が `--primary`・`--caution` を参照しない／`@property` の syntax が `<color>`・`<number>`／11px未満は許可リストの箇所のみ／スケールトークンが欠けていない／**reduced-motion が animation と transition の両方を（疑似要素まで）止めている**／デスクトップのブレークポイント3段と `--rail-w` の 0px・88px、`.skyzone` が既定 none で 1280 ブロックでのみ block に戻ること。**PR #50 追加**＝硝子面の許可リスト（`GLASS_SURFACES` 以外に `backdrop-filter` が現れない／リストの面が実際に硝子である）・`-webkit-backdrop-filter` を宣言として手書きしない（Lightning CSS が標準側を落とす欠陥の再発検出）・非対応ブラウザ向けの不透明退避に硝子面が漏れなく入っている・`animation-timeline` が `prefers-reduced-motion: no-preference` の内側にしか無い・`view()` が `@supports` で囲われている・リビール対象の面セレクタが必ず `:not(.rise)` を伴う。**`app/globals.css` をテキストとして読むだけで `lib/` には非依存** |
+| **design-tokens.test**（`__tests__/`） | **デザイントークンの構造**＝§12.6 の同期を機械的に固定。節気24組が `-l`/`-d` 両方を持ち重複・余剰が無い／五行5色が6変数そろう／`--primary` と `--accent-soft` が明暗の両ブロックで定義され、生成り地の `accent-soft` が `gold-500` 側である（AA 4.5:1 の担保）／曜日色が `--primary`・`--caution` を参照しない／`@property` の syntax が `<color>`・`<number>`／11px未満は許可リストの箇所のみ／スケールトークンが欠けていない／**reduced-motion が animation と transition の両方を（疑似要素まで）止めている**／デスクトップのブレークポイント3段と `--rail-w` の 0px・88px、`.skyzone` が既定 none で 1280 ブロックでのみ block に戻ること。**PR #50 追加**＝硝子面の許可リスト（`GLASS_SURFACES` 以外に `backdrop-filter` が現れない／リストの面が実際に硝子である）・`-webkit-backdrop-filter` を宣言として手書きしない（Lightning CSS が標準側を落とす欠陥の再発検出）・非対応ブラウザ向けの不透明退避に硝子面が漏れなく入っている・`animation-timeline` が `prefers-reduced-motion: no-preference` の内側にしか無い・`view()` が `@supports` で囲われている・リビール対象の面セレクタが必ず `:not(.rise)` を伴う。**PR #62 追加**＝ブラウザが描く部品にも意匠を通したときの作法を固定する（日付・時刻の指示子 `::-webkit-calendar-picker-indicator`）。**date と time が対で定義されている**（片方だけ既製のグリフを残さない）／**押せなくする宣言が無い**（`display: none`・`visibility: hidden`・`opacity: 0`・`pointer-events: none`・`appearance: none`。指示子はピッカーを開く唯一のボタン）／しるしの色がトークンで書かれている（リテラルだと `color-scheme` の明暗2値へ逆戻りする）／`-webkit-mask-*` を宣言として手書きしない（`-webkit-backdrop-filter` と同じ Lightning CSS の順序問題）。規則の切り出しはコメントを潰した `CSS_NO_COMMENT` を波括弧の対で走査する（禁止例を**コメントに書ける**ようにするため）。**`app/globals.css` をテキストとして読むだけで `lib/` には非依存** |
 
 その他ゲート: `tsc --noEmit`（型）、`eslint`（react-hooks の effect 内同期 setState 禁止等。意図的な localStorage マウントゲートは理由付き disable コメント＝`useProfile` 方式）、`next build`（静的プリレンダー）、pre-push フック＝`npm test` 自動実行、GitHub Actions CI（verify）、Claude Preview 実機確認。
 
@@ -420,7 +426,7 @@ BirthProfile { date:'YYYY-MM-DD'(必須); time?:'HH:mm'; place?:{lat,lng,name}; 
 1. **影響範囲を§4で確認**。基盤（time/koyomi/astro/profile/flow）ほど広く波及する。
 2. `git checkout -b feat/...` で**ブランチを切る**（main直接編集しない）。
 3. 変更したドメイン関数に**参照値テストを追加/更新**（§5の値を壊さない）。**§11「精査で分かった落とし穴」の7項目に照らすこと** — 特に ①テストの引数が本番の呼び出しと同じ形か ②幅のアサーションだけで守っていないか ③時刻・年・干支を返すなら参照値を1つ置いたか ④年境界を触るなら**時刻付きの生年月日**を入れたか。**新しいテストは、修正前のコードで実際に落ちることを確認してから出す**（落ちないなら守れていない）。
-4. `npm test`（261件）→ `tsc --noEmit` → `eslint .` → `npm run build` を**すべて緑**に。
+4. `npm test`（265件）→ `tsc --noEmit` → `eslint .` → `npm run build` を**すべて緑**に。
    > **件数が 235 から増えていたらテストが増えたのではなく、リポジトリの複製を拾っている**（PR-A で実測）。
    > `.claude/worktrees/` に作業用の git worktree が残ると、そこにも `lib/__tests__/` と `__tests__/` が
    > 丸ごと存在するため vitest が両方を収集し、**全テストが二重に走る**（見かけ 32 files / 465 tests）。
@@ -440,7 +446,7 @@ BirthProfile { date:'YYYY-MM-DD'(必須); time?:'HH:mm'; place?:{lat,lng,name}; 
    **スクロール駆動の機能を実測するときは rAF に揃える**：流れ線の描画・節気の24色巡回は rAF スロットリングされるため、`scrollTo` 直後に `setTimeout` だけで読むと更新前の値を拾う（一度これで「巡回が止まった」と誤診した）。`requestAnimationFrame` を2回挟んでから読むこと。
    > **プレビューのペインが隠れていると rAF ごと止まる**（PR #54）。この状態では `scrollTo({behavior:'smooth'})` が**1px も動かない**・スクロール駆動アニメーション（`view()` / `scroll()`）の `currentTime` が `null` のまま・視差の transform が更新されない。**実装の不具合と区別がつかない**ので、疑ったらまず `behavior:'instant'` が効くかを対照実験にする（効けば環境側）。タイムライン自体が生きているかは `el.getAnimations()[i].timeline.currentTime`（アニメーション側ではなく**タイムライン側**）で確かめられる。スクリーンショットを撮ると1フレーム進むので、撮ってから読むと計算済みの値が拾える。
    > **合成した `TouchEvent` は React の合成イベントに届かない**（PR #54）。`new TouchEvent(...)` を `dispatchEvent` すると素の DOM リスナーには流れるのに `onTouchStart` 等は呼ばれない。ジェスチャの判定ロジックを検証するなら、要素の `__reactProps$*` から直接ハンドラを取り出して呼ぶのが確実。
-6. **デザイントークンを変えたら同期を確認**（この項の大半は `__tests__/design-tokens.test.ts` が自動で守る。散文はCIで守れないため、規約を足したらテストにも足すこと）：空4状態の整合＝明るい地の共通ブロック（`[data-sky="day"], [data-sky="dawn"]`）と暁/宵の差分ブロックで `--primary`/`--accent-soft`/`--weekday-*` を揃える・`viewport.themeColor`（layout.tsx）・`--bg-hi/--bg-lo`（`@property` 登録済み＝構文は `<color>` 固定）。金の作法（操作色は金・caution に金を載せない・明るい地では金を暗い側のトーンへ振って AA 4.5:1 を確保）を崩さない。`--weekday-sat/sun` は暦の慣習用で操作色から独立（§7）。節気色（`--sekki-l/-d` 24組）は装飾アクセント専用＝本文文字には乗せない。金を別の色へ振り直す場合は**同系の金が重なる 2 グラフ**（`Biorhythm.tsx` の からだ/知性、`LifeTimeline.tsx` の帯とノード）で線が判別できるか必ず確認する。**硝子面を増やすときは `GLASS_SURFACES` と `@supports not (…)` の退避を同時に足す**（片方だけだとテストが落ちる。これは仕様であって不便ではない）。**半透明の面の濃さを変えたら `node playwright/measure-contrast.mjs` を回す**（先に `next start -p 3100`）。目視では絶対に判らない。計測器は必ず**変更前**で校正すること — そこで未達が出るなら測り方が誤っている（実際に2回誤った）。
+6. **デザイントークンを変えたら同期を確認**（この項の大半は `__tests__/design-tokens.test.ts` が自動で守る。散文はCIで守れないため、規約を足したらテストにも足すこと）：空4状態の整合＝明るい地の共通ブロック（`[data-sky="day"], [data-sky="dawn"]`）と暁/宵の差分ブロックで `--primary`/`--accent-soft`/`--weekday-*` を揃える・`viewport.themeColor`（layout.tsx）・`--bg-hi/--bg-lo`（`@property` 登録済み＝構文は `<color>` 固定）。金の作法（操作色は金・caution に金を載せない・明るい地では金を暗い側のトーンへ振って AA 4.5:1 を確保）を崩さない。`--weekday-sat/sun` は暦の慣習用で操作色から独立（§7）。節気色（`--sekki-l/-d` 24組）は装飾アクセント専用＝本文文字には乗せない。金を別の色へ振り直す場合は**同系の金が重なる 2 グラフ**（`Biorhythm.tsx` の からだ/知性、`LifeTimeline.tsx` の帯とノード）で線が判別できるか必ず確認する。**硝子面を増やすときは `GLASS_SURFACES` と `@supports not (…)` の退避を同時に足す**（片方だけだとテストが落ちる。これは仕様であって不便ではない）。**半透明の面の濃さを変えたら `node playwright/measure-contrast.mjs` を回す**（先に `next start -p 3100`）。目視では絶対に判らない。計測器は必ず**変更前**で校正すること — そこで未達が出るなら測り方が誤っている（実際に2回誤った）。**ブラウザが描く部品（`::-webkit-calendar-picker-indicator` 等）に手を入れるときは、見た目だけを替えて可動部は触らない** — 消す・縮める・`pointer-events` を切る、はいずれも「唯一の操作口」を塞ぐ（§7「日付・時刻のしるし」）。
    > **見た目の変更を「見えた」と判断する前に、何の上で見ているかを確かめる**（PR #50 の反省）。①**プレビューは本番と別オリジンなので localStorage のプロフィールが引き継がれない** — `/` は入口画面を返すため、ダッシュボードの改修は生年月日を入れるまで一切見えない ②昼の地（生成り）では硝子・ぼかし・彩度の変更は**原理的にほとんど見えない**（ぼかす対象にコントラストが無い）。夜で確認する ③**確認を依頼する側が before/after を撮って示す**。`playwright`＋`channel:'chrome'`（バイナリ追加DL不要）で main と当該ブランチをそれぞれ `next build && next start` し、`addInitScript` でプロフィールを流し込み、`reducedMotion:'reduce'`・`data-sky` 固定で撮ると同条件の比較ができる。
 7. 占術の方式・流派・文言を変えたら **`provenance` の version を更新**し、本書§5/§10も更新。
 8. PR作成→検証結果を本文に記載→**squashマージ→Vercel自動デプロイ**。

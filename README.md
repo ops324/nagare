@@ -16,14 +16,14 @@
 - **§5 不変条件（検証済み基準値）** — テストが固定している値。変わったらバグの合図
 - **§12 改修時チェックリスト** — 影響確認 → ブランチ → テスト追加 → 全緑 → 実機 → provenance版 → PR
 
-占術ロジックは**参照値テスト（261件）で不変条件を固定**しています。基盤（`lib/time.ts` `lib/koyomi.ts` `lib/astro.ts` `lib/profile.ts` `lib/flow.ts`）ほど広く波及するため、変更時は影響先を必ず再検証してください。実装を変えたら `docs/SPEC.md` も更新すること。
+占術ロジックは**参照値テスト（265件）で不変条件を固定**しています。基盤（`lib/time.ts` `lib/koyomi.ts` `lib/astro.ts` `lib/profile.ts` `lib/flow.ts`）ほど広く波及するため、変更時は影響先を必ず再検証してください。実装を変えたら `docs/SPEC.md` も更新すること。
 
 ## 開発
 
 ```bash
 npm install
 npm run dev          # 開発サーバ（http://localhost:3000）
-npm test             # 参照値テスト（Vitest・261件）
+npm test             # 参照値テスト（Vitest・265件）
 npx tsc --noEmit     # 型チェック
 npx eslint .         # Lint
 npm run build        # 本番ビルド（静的プリレンダー）
