@@ -257,13 +257,34 @@ describe('prefers-reduced-motion の担保', () => {
  * **許可した面の一覧そのもの**をここで固定する。増やすときはこの配列を編集する
  * ＝ PR の差分に必ず現れる、という運用にする。
  */
-const GLASS_SURFACES = ['.appbar', '.navbar-inner', '.appbar-toast', '.hitokoto'];
+/**
+ * 硝子を許した面。
+ *
+ * PR #50 では「硝子は読み手と本文のあいだに割り込む層のもの、紙は本文そのもの」として
+ * クローム3層＋ひとことの4面に限っていたが、**PR-E で本文の面（`.card` と
+ * `.lucky-action`）も硝子にした**。材料の法は design.md 側で書き換えてある。
+ *
+ * 面が増えたぶん「許可した面にしか無い」検査の締める力は落ちる。ただし対になっている
+ * 「許可した面はすべて実際に硝子」「非対応ブラウザ向けの不透明退避がある」の2本は
+ * 価値がそのまま残るので維持する（退避の漏れは可読性の事故に直結する）。
+ */
+const GLASS_SURFACES = [
+  '.appbar',
+  '.navbar-inner',
+  '.appbar-toast',
+  '.hitokoto',
+  '.card',
+  '.lucky-action',
+];
 
 describe('硝子（限定素材）', () => {
   it('backdrop-filter は許可した面にしか無い（全面ガラス化の防止）', () => {
     const offenders: string[] = [];
     LINES.forEach((line, i) => {
       if (!/^\s*backdrop-filter\s*:/.test(line)) return;
+      // `none` は硝子を**外す**宣言なので、広がりの検査の対象ではない
+      // （`.chip` のように `.card` を継いだ面が段として硝子を脱ぐために要る）。
+      if (/^\s*backdrop-filter\s*:\s*none\s*;?\s*$/.test(line)) return;
       const selector = selectorOf(i);
       if (!GLASS_SURFACES.some((s) => selector.includes(s))) {
         offenders.push(`${selector} → ${line.trim()}`);
@@ -311,6 +332,46 @@ describe('硝子（限定素材）', () => {
     }
     // 退避先は必ず不透明。透過を含むトークンへ逃がしたら意味がない
     expect(body).toMatch(/--glass-solid-hi|--lucky-wash/);
+  });
+
+  /**
+   * **退避は「存在」ではなく「勝つこと」が要る。**
+   *
+   * 退避の規則も硝子面の規則も詳細度は 0,1,0 で同点。同点なら後に書いたほうが勝つので、
+   * 退避がファイルの途中にあると、それより下で定義された硝子面には一切効かない。
+   * PR-E の初版が実際にこれで、`.lucky-action`（当時 2048 行）の退避が
+   * `@supports not`（2018 行）より後ろにあったため**死んでいた**。
+   * 非対応ブラウザで本文が流れ線と星の上を素通しで走る、という退避が防ぐはずの事故そのもの。
+   *
+   * 上の「退避がある」検査は本文に文字列が含まれるかしか見ないので、これを素通しした。
+   */
+  it('退避ブロックは最後の硝子面より後にある（同点なら後勝ちなので位置が仕様）', () => {
+    const at = CSS.indexOf('@supports not (');
+    const late: string[] = [];
+    LINES.forEach((line, i) => {
+      if (!/^\s*backdrop-filter\s*:/.test(line)) return;
+      if (/^\s*backdrop-filter\s*:\s*none\s*;?\s*$/.test(line)) return;
+      // その宣言がファイル先頭から何文字目か
+      const offset = LINES.slice(0, i).reduce((n, l) => n + l.length + 1, 0);
+      if (offset > at) late.push(`${selectorOf(i)}（${i + 1} 行目）`);
+    });
+    expect(
+      late,
+      `退避ブロックより後で硝子になっている面がある:\n${late.join('\n')}\n` +
+        '退避は同じ詳細度なので、後ろにある面には効かない。ブロックをファイル末尾へ移すこと',
+    ).toEqual([]);
+  });
+
+  /** 退避の中では `.card` を先に置く。`.hitokoto` と `.chip` は `class="card …"` なので、
+   *  `.card` が後ろにあると段の区別（面を持つ／持たない）を上書きしてしまう。 */
+  it('退避の中で .card は .hitokoto / .chip より前にある', () => {
+    const body = atRuleBody('@supports not (');
+    const card = body.indexOf('.card');
+    for (const s of ['.hitokoto', '.chip']) {
+      const i = body.indexOf(s);
+      expect(i, `${s} の退避が無い`).toBeGreaterThanOrEqual(0);
+      expect(card, `退避の中で .card が ${s} より後ろにある（段の区別を潰す）`).toBeLessThan(i);
+    }
   });
 
   it('硝子トークンが夜と昼の両方で定義されている（片方だけだと地の明暗で破綻する）', () => {
