@@ -23,7 +23,12 @@ function block(selector: string): string {
   return CSS.slice(open + 1, close);
 }
 
-const LINES = CSS.split('\n');
+/** コメントを空白で潰した CSS（**行番号は保つ**）。この文書はコメントが厚く、
+    「text-shadow は使わない」のような**注意書きそのものが宣言として拾われる**。
+    行を検査する仕組みはすべてこちらを見る。 */
+const CSS_NO_COMMENT = CSS.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
+
+const LINES = CSS_NO_COMMENT.split('\n');
 
 /** その行が属するセレクタ（直前の `{` を持つ行）を遡って探す。
     複数行の linear-gradient() を挟むと宣言はセレクタから 20 行近く離れるので、
@@ -37,6 +42,35 @@ function selectorOf(i: number): string {
     if (LINES[j].includes('{')) return LINES[j].replace('{', '').trim();
   }
   return '(不明)';
+}
+
+/** その行が属する**セレクタ群のすべて**（`,` で続く複数行を遡って集める）。
+    `selectorOf` は `{` を持つ**最後の一行**しか返さないので、群を跨ぐ規則では
+    末尾の一つしか検査されない ―― つまり許可外を先に並べて許可済みを末尾へ置くと
+    許可リストをすり抜けられた。許可リストの検査は必ずこちらを使い、
+    **群の一つ一つ**を突き合わせる。 */
+function selectorPartsOf(i: number): string[] {
+  let open = LINES[i].indexOf('{') >= 0 ? i : -1;
+  if (open < 0) {
+    for (let j = i - 1; j >= 0 && j > i - 40; j--) {
+      if (LINES[j].includes('{')) {
+        open = j;
+        break;
+      }
+    }
+  }
+  if (open < 0) return ['(不明)'];
+  const group = [LINES[open].slice(0, LINES[open].indexOf('{'))];
+  for (let j = open - 1; j >= 0 && j > open - 40; j--) {
+    const prev = LINES[j].trim();
+    if (!prev.endsWith(',')) break;
+    group.unshift(prev);
+  }
+  return group
+    .join(' ')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 /** `@media (...) {` 等の**アットルール本体**を波括弧の対応で切り出す（入れ子可） */
@@ -285,9 +319,12 @@ describe('硝子（限定素材）', () => {
       // `none` は硝子を**外す**宣言なので、広がりの検査の対象ではない
       // （`.chip` のように `.card` を継いだ面が段として硝子を脱ぐために要る）。
       if (/^\s*backdrop-filter\s*:\s*none\s*;?\s*$/.test(line)) return;
-      const selector = selectorOf(i);
-      if (!GLASS_SURFACES.some((s) => selector.includes(s))) {
-        offenders.push(`${selector} → ${line.trim()}`);
+      // セレクタ群は**すべての要素**を見る。末尾の一つしか返さないと、
+      // 許可外を先に並べて許可済みを末尾に置けば検査をすり抜けられる（PR #55）。
+      for (const part of selectorPartsOf(i)) {
+        if (!GLASS_SURFACES.some((s) => part.includes(s))) {
+          offenders.push(`${part} → ${line.trim()}`);
+        }
       }
     });
     expect(
@@ -300,7 +337,7 @@ describe('硝子（限定素材）', () => {
   it('許可した面はすべて実際に硝子になっている（一覧の腐敗防止）', () => {
     for (const s of GLASS_SURFACES) {
       const used = LINES.some(
-        (l, i) => /^\s*backdrop-filter\s*:/.test(l) && selectorOf(i).includes(s),
+        (l, i) => /^\s*backdrop-filter\s*:/.test(l) && selectorPartsOf(i).some((p) => p.includes(s)),
       );
       expect(used, `${s} が GLASS_SURFACES にあるのに backdrop-filter を持たない`).toBe(true);
     }
@@ -387,6 +424,84 @@ describe('硝子（限定素材）', () => {
 });
 
 /**
+ * 隈取り（字の輪郭の外側にだけ置く地）。面を持たない段——罫だけの層——は地が
+ * そのまま空になるので、星と流れ線が字の背後へ来ると本文が割れる。面を増やさずに
+ * 直す唯一の手だが、**text-shadow は放っておくと発光（ネオンの語彙）へ戻る**。
+ * 硝子と同じ立て方で、許可した字の一覧・offset 0・地の色だけ、を配列と正規表現で固定する。
+ */
+const HALO_SURFACES = [
+  '.section-head .eyebrow',
+  '.flowcard-sys',
+  '.flowcard-title',
+  '.flowcard-desc',
+  '.chip-label',
+  '.chip-value',
+  '.chip-sub',
+  '.soft-note',
+];
+
+/** 地として使ってよい色トークン（＝空4状態に追随する「紙の色」） */
+const GROUND_TOKENS = ['--surface', '--bg', '--bg-hi', '--bg-lo'];
+
+/** CSS 中の text-shadow 宣言。**一行規則（`.x { text-shadow: … }`）も拾う**ため、
+    行頭固定では探さない（行頭だけ見ると一行に畳んで検査を抜けられる）。 */
+const HALO_DECLS = LINES.flatMap((line, i) =>
+  [...line.matchAll(/text-shadow\s*:\s*([^;}]+)/g)].map((m) => ({
+    line: i,
+    value: m[1].trim(),
+    parts: selectorPartsOf(i),
+  })),
+).filter((d) => d.value !== 'none');
+
+describe('隈取り（罫だけの段の字）', () => {
+  it('text-shadow は許可した字にしか無い（発光への出戻り防止）', () => {
+    // 突き合わせは**完全一致**。部分一致だと `.chip-sub-x` のような別物が
+    // `.chip-sub` を含むというだけで許可済みに見えてしまう。
+    const offenders = HALO_DECLS.flatMap((d) =>
+      d.parts.filter((p) => !HALO_SURFACES.includes(p)).map((p) => `${p} → ${d.value}`),
+    );
+    expect(
+      offenders,
+      `text-shadow が許可外へ広がっている:\n${offenders.join('\n')}\n` +
+        '意図的に増やすなら HALO_SURFACES と design.md を同時に直すこと',
+    ).toEqual([]);
+  });
+
+  it('許可した字はすべて実際に隈取りを持つ（一覧の腐敗防止）', () => {
+    for (const s of HALO_SURFACES) {
+      const used = HALO_DECLS.some((d) => d.parts.includes(s));
+      expect(used, `${s} が HALO_SURFACES にあるのに text-shadow を持たない`).toBe(true);
+    }
+  });
+
+  it('隈取りは offset 0（落ち影＝浮遊は硝子の語彙で、紙は影を落とさない）', () => {
+    expect(HALO_DECLS.length, '隈取りの宣言が見つからない').toBeGreaterThan(0);
+    for (const d of HALO_DECLS) {
+      for (const layer of d.value.split(',')) {
+        const nums = layer.trim().match(/^(-?[\d.]+)\w*\s+(-?[\d.]+)\w*/);
+        expect(nums, `影の指定が読めない: ${layer.trim()}`).not.toBeNull();
+        expect(
+          `${parseFloat(nums![1])},${parseFloat(nums![2])}`,
+          `隈取りに offset がある（落ち影になっている）: ${layer.trim()}`,
+        ).toBe('0,0');
+      }
+    }
+  });
+
+  it('隈取りの色は地のトークンだけ（金・発光の色を字の外へ置かない）', () => {
+    for (const d of HALO_DECLS) {
+      const colors = [...d.value.matchAll(/var\((--[a-z0-9-]+)\)/g)].map((m) => m[1]);
+      expect(colors.length, `隈取りの色がトークンで書かれていない: ${d.value}`).toBe(
+        d.value.split(',').length,
+      );
+      for (const c of colors) {
+        expect(GROUND_TOKENS, `隈取りに地以外の色を使っている（${c}）: ${d.value}`).toContain(c);
+      }
+    }
+  });
+});
+
+/**
  * ボタンは「和紙と金箔」の中で最後まで Material 3 のままだった場所で、
  * 放っておくと元へ戻る（filled / outlined / text / segmented / icon の5型と、
  * hover で地を 8% 洗う**ステートレイヤー**）。
@@ -443,9 +558,10 @@ describe('反射（shimmer）は限定', () => {
     const offenders: string[] = [];
     LINES.forEach((line, i) => {
       if (!/animation:\s*shimmer\b/.test(line)) return;
-      const selector = selectorOf(i);
-      if (!SHIMMER_SURFACES.some((s) => selector.includes(s))) {
-        offenders.push(`${selector} → ${line.trim()}`);
+      for (const part of selectorPartsOf(i)) {
+        if (!SHIMMER_SURFACES.some((s) => part.includes(s))) {
+          offenders.push(`${part} → ${line.trim()}`);
+        }
       }
     });
     expect(
@@ -458,7 +574,7 @@ describe('反射（shimmer）は限定', () => {
   it('許可した面はすべて実際に反射を持つ（一覧の腐敗防止）', () => {
     for (const s of SHIMMER_SURFACES) {
       const used = LINES.some(
-        (l, i) => /animation:\s*shimmer\b/.test(l) && selectorOf(i).includes(s),
+        (l, i) => /animation:\s*shimmer\b/.test(l) && selectorPartsOf(i).some((p) => p.includes(s)),
       );
       expect(used, `${s} が SHIMMER_SURFACES にあるのに shimmer を持たない`).toBe(true);
     }

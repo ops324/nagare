@@ -23,23 +23,33 @@
  *
  * **計測器は必ず改修前で校正すること。** 不透明な面で未達が出るなら測り方が誤っている。
  *
- * ■ 再現性の限界（実測して確かめた）
- * - **地を持つ面（硝子のカード）は安定する。** 同じ値が何度でも出る
- * - **面を持たない段（`.chip`）は実行ごとに 5〜10 件で揺れる。** 1〜2px の星が
- *   グリフの下に来るかどうかという確率事象で、rAF を2回挟んで送りを固定しても残る。
- *   ここの件数を「増えた／減った」で判断してはいけない。**面の変更の可否は
- *   硝子面の行だけで判断する**（`.chip` は別途対処すべき既存の課題）
+ * ■ 校正でさらに分かった三つ（PR #55）
  *
- * ■ サーバーは必ず自分で建てたものに向けること
- * 別 worktree や別セッションが同じポートを掴んでいると、**別ビルドを測って
- * 気づかない**。`PORT=3199 node playwright/measure-contrast.mjs` のように
- * 空いているポートを明示するのが安全。
+ * ① **測る面が足りていなかった。** `.card, .lucky-action` だけを見ていたので、
+ *    面を持たない段——章題（`.section-head`）と兆し・天体の便り・次の転機
+ *    （`.flowcard`）——が**一件も測られていなかった**。地がそのまま空になる、
+ *    まさに最悪ケースの層が視界の外にあった。実際、最悪の未達（1.82:1）はそこにある。
  *
- * 使い方: PORT=3199 node playwright/measure-contrast.mjs   （先に next start -p 3199）
+ * ② **「2枚の差分＝グリフ」は、2枚のあいだに何も動かない場合にしか成り立たない。**
+ *    日本語の webfont は字ごとにサブセットが遅れて届き、タブを移った直後は
+ *    2枚のあいだで字形が差し替わる。差分にはグリフが**動いた跡**が出て、
+ *    そこの「地」として星が読まれる＝**存在しない未達**が出る。同じ入力で
+ *    14件／13件／12件と揺れていたのはこれ。対照フレーム（何も変えずにもう一枚）を
+ *    撮り、そこで動いたピクセルを落とすと 10件で安定する。
+ *
+ * ③ **`text-shadow: none` を撮ると、隈取りで買った可読性が測れない。**
+ *    影は文字の**真下**に描かれるので、それはまさに「グリフの背後の地」そのもの。
+ *    文字の塗りだけを透明にすれば影は残り、隈取りを地として正しく数えられる。
+ *    （影を消していたのは、1枚目の影が差分を汚すのを避けるためだった。
+ *    2枚とも影が出るなら差分には出ないので、消す必要はもう無い。）
+ *
+ * 使い方: node playwright/measure-contrast.mjs   （先に next start -p 3100）
  */
 import { chromium } from '@playwright/test';
 import { PNG } from './png.mjs';
 
+/** 兄弟 worktree や別セッションが同じポートを掴むと**別ビルドを測って気づかない**。
+ *  `PORT=3199 node playwright/measure-contrast.mjs` のように空きポートを明示できる。 */
 const BASE = `http://127.0.0.1:${process.env.PORT ?? 3100}`;
 const PROFILE = JSON.stringify({ date: '1990-05-14', time: '09:30', gender: 'female' });
 
@@ -69,14 +79,23 @@ const ratio = (a, b) => {
 /** WCAG 1.4.3：24px 以上、または 18.66px 以上かつ 700 以上は「大きい文字」で 3:1 */
 const needed = (size, weight) => (size >= 24 || (size >= 18.66 && weight >= 700) ? 3 : 4.5);
 
+/**
+ * 面を持つ層（.card / .lucky-action）だけでなく、**面を持たない段**も測る。
+ * 罫だけの層こそ地が空そのものになるので、ここが最悪ケースになる。
+ */
+const SURFACES = '.card, .lucky-action, .flowcard, .section-head';
+
 async function collect(page) {
-  return page.evaluate(() => {
+  return page.evaluate((sel) => {
     const out = [];
-    for (const surface of document.querySelectorAll('.card, .lucky-action')) {
+    const seen = new Set();
+    for (const surface of document.querySelectorAll(sel)) {
       const sr = surface.getBoundingClientRect();
       if (sr.bottom < 0 || sr.top > innerHeight) continue;
       const cls = surface.className.split(' ').slice(0, 2).join('.');
       for (const el of surface.querySelectorAll('*')) {
+        if (seen.has(el)) continue; // 面が入れ子でも同じ字を二度数えない
+        seen.add(el);
         const text = [...el.childNodes]
           .filter((n) => n.nodeType === 3)
           .map((n) => n.textContent.trim())
@@ -97,7 +116,7 @@ async function collect(page) {
       }
     }
     return out;
-  });
+  }, SURFACES);
 }
 
 async function run() {
@@ -122,25 +141,19 @@ async function run() {
 
     for (const [index, tab] of TABS) {
       if (index > 0) await page.locator('.navbar-item').nth(index).click();
-      // スクロール駆動（視差・流れ線のマスク）は rAF スロットリングされるので、
-      // 送りを先頭へ固定してから rAF を2回挟む（SPEC §12.5）。これが無いと
-      // 星の位置が数 px ぶれ、面を持たない `.chip` の最悪値が実行ごとに変わる。
-      await page.evaluate(
-        () =>
-          new Promise((r) => {
-            window.scrollTo(0, 0);
-            requestAnimationFrame(() => requestAnimationFrame(r));
-          }),
-      );
+      await page.waitForTimeout(500);
+      // タブを移ると新しい字のサブセットが要る。届き切る前に撮ると、2枚のあいだで
+      // 字形が差し替わって「動いた跡」が差分に出る（校正②）。
+      await page.evaluate(() => document.fonts.ready);
       await page.waitForTimeout(400);
 
       const items = await collect(page);
 
       const shot = PNG.decode(await page.screenshot());
-      // 2枚目：文字だけ消す（SVG の currentColor は残す）。
-      // 差分＝グリフの位置。文字以外は2枚で同一なので差分に出ない。
+      // 2枚目：文字の**塗りだけ**を消す（SVG の currentColor は残す）。
+      // 影は残す＝グリフの真下に描かれる隈取りを「地」として正しく数えるため（校正③）。
       await page.addStyleTag({
-        content: '*{-webkit-text-fill-color:transparent!important;text-shadow:none!important}',
+        content: '*{-webkit-text-fill-color:transparent!important}',
       });
       await page.waitForTimeout(120);
       const bg = PNG.decode(await page.screenshot());
@@ -149,6 +162,12 @@ async function run() {
           if (s.textContent.includes('-webkit-text-fill-color:transparent')) s.remove();
         }),
       );
+      // 対照フレーム：文字を戻して**もう一度 1枚目と同じ状態**を撮る。
+      // 対照は 1〜2枚目の**あと**に置くのが要で、あいだに挟むと
+      // 「対照より後（＝2枚目を撮るあいだ）に動いたもの」を見逃す。
+      // shot と ctrl は同じ姿のはずなので、違えばそれは時間で動いたもの（校正②）。
+      await page.waitForTimeout(140);
+      const ctrl = PNG.decode(await page.screenshot());
 
       for (const it of items) {
         const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(it.color);
@@ -170,6 +189,12 @@ async function run() {
               Math.abs(shot.data[i + 1] - bg.data[i + 1]) +
               Math.abs(shot.data[i + 2] - bg.data[i + 2]);
             if (moved < 24) continue;
+            // 文字と関係なく動いたピクセルは測らない（校正②）
+            const drift =
+              Math.abs(shot.data[i] - ctrl.data[i]) +
+              Math.abs(shot.data[i + 1] - ctrl.data[i + 1]) +
+              Math.abs(shot.data[i + 2] - ctrl.data[i + 2]);
+            if (drift >= 8) continue;
             const px = [bg.data[i], bg.data[i + 1], bg.data[i + 2]];
             const r = ratio(fgL, lum(...px));
             n++;
