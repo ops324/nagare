@@ -103,7 +103,7 @@ UI: `app/layout.tsx`（フォント・テーマカラー）、`app/page.tsx`（�
 
 ## 5. 不変条件（検証済み基準値）— これらは壊してはならない
 
-改修後、以下が変わったら**バグの疑い**。すべて Vitest（`npm test`・235件）で固定済み。
+改修後、以下が変わったら**バグの疑い**。すべて Vitest（`npm test`・241件）で固定済み。
 
 | 項目 | 基準値（出典） |
 |---|---|
@@ -312,7 +312,7 @@ BirthProfile { date:'YYYY-MM-DD'(必須); time?:'HH:mm'; place?:{lat,lng,name}; 
 
 ## 9. 品質保証（テスト対応表）
 
-`npm test`（Vitest・235件）。**参照値テスト＝§5の不変条件を固定**。改修時は必ず緑を維持。
+`npm test`（Vitest・241件）。**参照値テスト＝§5の不変条件を固定**。改修時は必ず緑を維持。
 
 意匠については、**`npm run test:visual`（Playwright・基準画像30枚）** が別立てで入っている
 （`playwright.config.ts` / `playwright/visual.spec.ts`・PR-A で追加）。5タブ × 空2状態 × 幅2種＋
@@ -411,7 +411,7 @@ BirthProfile { date:'YYYY-MM-DD'(必須); time?:'HH:mm'; place?:{lat,lng,name}; 
 1. **影響範囲を§4で確認**。基盤（time/koyomi/astro/profile/flow）ほど広く波及する。
 2. `git checkout -b feat/...` で**ブランチを切る**（main直接編集しない）。
 3. 変更したドメイン関数に**参照値テストを追加/更新**（§5の値を壊さない）。**§11「精査で分かった落とし穴」の7項目に照らすこと** — 特に ①テストの引数が本番の呼び出しと同じ形か ②幅のアサーションだけで守っていないか ③時刻・年・干支を返すなら参照値を1つ置いたか ④年境界を触るなら**時刻付きの生年月日**を入れたか。**新しいテストは、修正前のコードで実際に落ちることを確認してから出す**（落ちないなら守れていない）。
-4. `npm test`（235件）→ `tsc --noEmit` → `eslint .` → `npm run build` を**すべて緑**に。
+4. `npm test`（241件）→ `tsc --noEmit` → `eslint .` → `npm run build` を**すべて緑**に。
    > **件数が 235 から増えていたらテストが増えたのではなく、リポジトリの複製を拾っている**（PR-A で実測）。
    > `.claude/worktrees/` に作業用の git worktree が残ると、そこにも `lib/__tests__/` と `__tests__/` が
    > 丸ごと存在するため vitest が両方を収集し、**全テストが二重に走る**（見かけ 32 files / 465 tests）。
