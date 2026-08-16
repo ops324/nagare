@@ -612,10 +612,16 @@ body::after {
 .eyebrow-lucky { color: var(--lucky); }
 .eyebrow-sekki { color: var(--sekki); }
 
-/* 数字を明朝で大きく */
+/* 数字を明朝で大きく。
+   **`font-variant-numeric: tabular-nums` は書かない。** Shippori Mincho は
+   `tnum` を持たないので、指定しても等幅にならない（実測：60px で `11111` = 154.5px /
+   `20268` = 166.9px、指定の有無で変化なし）。以前ここと `.bio-leg b` `.cal-daynum` の
+   3箇所に書かれていたが、いずれも何も繋いでいない宣言だった（PR #54 が `.navbar-ind` の
+   `transition: background` を外したのと同じ）。
+   なお Noto Sans JP の数字は既定で等幅なので、揃えたい数字は本文書体側で組める。
+   明朝の比例数字は editorial として妥当で、暦の日セルは中央揃えのため崩れない（実機確認済み）。 */
 .numeral {
   font-family: var(--font-display);
-  font-variant-numeric: tabular-nums;
   letter-spacing: 0;
 }
 
@@ -1591,7 +1597,7 @@ body::after {
 .bio-legend { display: flex; justify-content: center; gap: 18px; margin-top: var(--sp-xs); font-size: 0.76rem; color: var(--text-dim); }
 .bio-leg { display: inline-flex; align-items: center; gap: var(--sp-xs); }
 .bio-leg i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
-.bio-leg b { font-family: var(--font-display); font-variant-numeric: tabular-nums; }
+.bio-leg b { font-family: var(--font-display); }
 
 /* ─────────────── フッター ─────────────── */
 .footer { text-align: center; position: relative; z-index: 1; }
@@ -1795,7 +1801,7 @@ body::after {
   color: var(--on-primary-container);
   font-weight: 700;
 }
-.cal-daynum { font-family: var(--font-display); font-size: 0.82rem; color: var(--text); font-variant-numeric: tabular-nums; }
+.cal-daynum { font-family: var(--font-display); font-size: 0.82rem; color: var(--text); }
 .cal-day[data-wd='0'] .cal-daynum { color: var(--weekday-sun); }
 .cal-day[data-wd='6'] .cal-daynum { color: var(--weekday-sat); }
 .cal-roku { font-size: 0.625rem; margin-top: 1px; color: var(--on-surface-variant); }
