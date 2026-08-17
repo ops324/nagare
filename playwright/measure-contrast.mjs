@@ -28,27 +28,35 @@
  * ① **測る面が足りていなかった。** `.card, .lucky-action` だけを見ていたので、
  *    面を持たない段——章題（`.section-head`）と兆し・天体の便り・次の転機
  *    （`.flowcard`）——が**一件も測られていなかった**。地がそのまま空になる、
- *    まさに最悪ケースの層が視界の外にあった。実際、最悪の未達（1.82:1）はそこにある。
+ *    まさに最悪ケースの層が視界の外にあった。実際、最悪の未達はそこにある。
  *
- * ② **「2枚の差分＝グリフ」は、2枚のあいだに何も動かない場合にしか成り立たない。**
- *    日本語の webfont は字ごとにサブセットが遅れて届き、タブを移った直後は
- *    2枚のあいだで字形が差し替わる。差分にはグリフが**動いた跡**が出て、
- *    そこの「地」として星が読まれる＝**存在しない未達**が出る。同じ入力で
- *    14件／13件／12件と揺れていたのはこれ。対照フレーム（何も変えずにもう一枚）を
- *    撮り、そこで動いたピクセルを落とすと 10件で安定する。
+ * ② **揺れは確率事象ではなく、計測器の穴だった。** 以前ここには「面を持たない段は
+ *    実行ごとに 5〜10 件で揺れる／件数で判断してはいけない」と書いてあったが、
+ *    原因は星ではなく**日本語 webfont のサブセットが遅れて届くこと**だった。
+ *    タブを移った直後は2枚のあいだで字形が差し替わり、差分にグリフの**動いた跡**が
+ *    出て、そこの「地」として星が読まれる＝**存在しない未達**になる。
+ *    対照フレーム（1〜2枚目の**あと**にもう一枚）を撮って、文字と無関係に動いた
+ *    ピクセルを落とすと**完全に安定する**（同じ入力で3回とも同一件数）。
+ *    対照を1〜2枚目の**あいだ**に挟むと「2枚目を撮るあいだに動いたもの」を
+ *    見逃すので、必ずあとに置くこと。
  *
  * ③ **`text-shadow: none` を撮ると、隈取りで買った可読性が測れない。**
  *    影は文字の**真下**に描かれるので、それはまさに「グリフの背後の地」そのもの。
  *    文字の塗りだけを透明にすれば影は残り、隈取りを地として正しく数えられる。
- *    （影を消していたのは、1枚目の影が差分を汚すのを避けるためだった。
+ *    （影を消していたのは1枚目の影が差分を汚すのを避けるためだが、
  *    2枚とも影が出るなら差分には出ないので、消す必要はもう無い。）
  *
- * 使い方: node playwright/measure-contrast.mjs   （先に next start -p 3100）
+ * ■ サーバーは必ず自分で建てたものに向けること
+ * 別 worktree や別セッションが同じポートを掴んでいると、**別ビルドを測って
+ * 気づかない**。`PORT=3199 node playwright/measure-contrast.mjs` のように
+ * 空いているポートを明示するのが安全。
+ *
+ * 使い方: PORT=3199 node playwright/measure-contrast.mjs   （先に next start -p 3199）
  */
 import { chromium } from '@playwright/test';
 import { PNG } from './png.mjs';
 
-const BASE = 'http://127.0.0.1:3100';
+const BASE = `http://127.0.0.1:${process.env.PORT ?? 3100}`;
 const PROFILE = JSON.stringify({ date: '1990-05-14', time: '09:30', gender: 'female' });
 
 const SKIES = {
@@ -139,10 +147,20 @@ async function run() {
 
     for (const [index, tab] of TABS) {
       if (index > 0) await page.locator('.navbar-item').nth(index).click();
-      await page.waitForTimeout(500);
+      // スクロール駆動（視差・流れ線のマスク）は rAF スロットリングされるので、
+      // 送りを先頭へ固定してから rAF を2回挟む（SPEC §12.5）。これが無いと
+      // 星の位置が数 px ぶれ、面を持たない `.chip` の最悪値が実行ごとに変わる。
+      await page.evaluate(
+        () =>
+          new Promise((r) => {
+            window.scrollTo(0, 0);
+            requestAnimationFrame(() => requestAnimationFrame(r));
+          }),
+      );
       // タブを移ると新しい字のサブセットが要る。届き切る前に撮ると、2枚のあいだで
       // 字形が差し替わって「動いた跡」が差分に出る（校正②）。
       await page.evaluate(() => document.fonts.ready);
+      await page.waitForTimeout(400);
       await page.waitForTimeout(400);
 
       const items = await collect(page);
@@ -161,8 +179,6 @@ async function run() {
         }),
       );
       // 対照フレーム：文字を戻して**もう一度 1枚目と同じ状態**を撮る。
-      // 対照は 1〜2枚目の**あと**に置くのが要で、あいだに挟むと
-      // 「対照より後（＝2枚目を撮るあいだ）に動いたもの」を見逃す。
       // shot と ctrl は同じ姿のはずなので、違えばそれは時間で動いたもの（校正②）。
       await page.waitForTimeout(140);
       const ctrl = PNG.decode(await page.screenshot());

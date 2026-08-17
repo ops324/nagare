@@ -22,6 +22,7 @@ import { SkyField } from './SkyField';
 import { FlowLine } from './FlowLine';
 import { FlowMeter } from './FlowMeter';
 import { MoonGlyph } from './MoonGlyph';
+import { ZodiacGlyph } from './ZodiacGlyph';
 import { FlowCard } from './FlowCard';
 import { LifeTimeline } from './LifeTimeline';
 import { Biorhythm } from './Biorhythm';
@@ -519,7 +520,7 @@ function BirthChips({
       <div className="card chip">
         <div className="chip-label">星座</div>
         <div className="chip-value">
-          {profile.sun.sign.symbol} {profile.sun.sign.name}
+          <ZodiacGlyph sign={profile.sun.sign.name} /> {profile.sun.sign.name}
         </div>
         <div className="chip-sub">{profile.sun.sign.element}のエレメント{profile.sun.cusp ? '・境目' : ''}</div>
       </div>
