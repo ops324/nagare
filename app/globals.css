@@ -581,6 +581,17 @@ body::after {
 :root[data-sky="dawn"] .flowline .fl-leaf {
   opacity: 0.3;
 }
+/* 照り（送りに遅れて追う明るい帯）— 箔は拡散した空の鏡なので、見る位置が変われば
+   光る場所も変わる。濃さと帯幅は主CTAの箔押しと同じ作法（広く弱く）で、値は
+   FlowLine.tsx の SHEEN_ALPHA / SHEEN_SPAN が正。ここは地の明暗ぶんだけを持つ。
+   生成りの地では線そのものが暗い金なので、明るい帯を同じ濃さで乗せると白茶ける。 */
+.flowline .fl-sheen {
+  opacity: 1;
+}
+:root[data-sky="day"] .flowline .fl-sheen,
+:root[data-sky="dawn"] .flowline .fl-sheen {
+  opacity: 0.55;
+}
 
 /* 明朝の見出し */
 .font-display {

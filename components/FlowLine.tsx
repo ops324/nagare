@@ -60,6 +60,22 @@ const LEAF_SHEET = 210;
 /** 暈のゆらぎ追従を線より強める指数＝墨の多いところで余計に滲む（比例より速く広がる） */
 const BLEED_POW = 2.6;
 
+/**
+ * 照り — 箔は拡散した空の鏡なので、**見る位置が変われば光る場所も変わる**。
+ * グラデ内の明るい帯（`--gold-100` @ 0.63）はページ空間に固定されていて、
+ * 金属なのに動いても光り方が変わらなかった。帯の中心を送りに**遅れて**追随させる。
+ *
+ * 数値は主CTAの箔押しで決めた作法をそのまま使う（design.md「反射は広く弱く」）。
+ * **帯幅は画面の 40%・濃さ 0.13。祝祭（.hitokoto-shimmer の 20% / 0.30）より
+ * 必ず広く弱く保つこと** —— 線は常に画面にあり、祝祭は年に数度の合図なので、
+ * ここが同じ強さだと祝祭の側が意味を失う。design-tokens.test.ts が両方を固定する。
+ */
+export const SHEEN_ALPHA = 0.13;
+/** 帯幅（画面高に対する割合）。細い帯は縁が立って**スキャン線**に見える */
+export const SHEEN_SPAN = 0.4;
+/** 追随の遅れ。1 に近いほど遅れる＝鏡が動きに置いていかれる感じになる */
+const SHEEN_LAG = 0.86;
+
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
@@ -257,11 +273,13 @@ export function FlowLine({ amp = 0.5, seed = 1 }: { amp?: number; seed?: number 
   const maskId = `${uid}m`;
   const revId = `${uid}r`;
   const leafId = `${uid}l`;
+  const sheenId = `${uid}s`;
   const wrapRef = useRef<HTMLDivElement>(null);
   const baseRef = useRef<SVGPathElement>(null);
   const maskRef = useRef<SVGRectElement>(null);
   const tipARef = useRef<SVGStopElement>(null);
   const tipBRef = useRef<SVGStopElement>(null);
+  const sheenRef = useRef<SVGStopElement[]>([]);
   const [size, setSize] = useState({ w: 0, h: 0, startY: 0 });
   /** 章と章のあいだの余白（案六）と、ワードマークの x（案七） */
   const [anatomy, setAnatomy] = useState<{ gaps: number[]; startX: number | null }>({
@@ -357,9 +375,19 @@ export function FlowLine({ amp = 0.5, seed = 1 }: { amp?: number; seed?: number 
     if (!wrap || !rect || !shapes) return;
     const full = size.h;
 
+    /** 照りの帯を置く。c はリボン座標での中心 */
+    const putSheen = (c: number) => {
+      const half = (window.innerHeight * SHEEN_SPAN) / 2;
+      const stops = sheenRef.current;
+      stops[0]?.setAttribute('offset', Math.max(0, Math.min(1, (c - half) / full)).toFixed(4));
+      stops[1]?.setAttribute('offset', Math.max(0, Math.min(1, c / full)).toFixed(4));
+      stops[2]?.setAttribute('offset', Math.max(0, Math.min(1, (c + half) / full)).toFixed(4));
+    };
+
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       rect.setAttribute('fill', '#fff');
       rect.setAttribute('height', String(full));
+      putSheen(full * 0.5); // 中央に固定＝現行と同じ「動かない明るい帯」
       return;
     }
     rect.setAttribute('fill', `url(#${revId})`);
@@ -373,6 +401,7 @@ export function FlowLine({ amp = 0.5, seed = 1 }: { amp?: number; seed?: number 
     let raw = 0;
     let ratio = 0;
     let measured = false;
+    let sheen = -1; // 照りの帯の中心（リボン座標・送りに遅れて追う）
 
     const tick = () => {
       raf = 0;
@@ -418,8 +447,15 @@ export function FlowLine({ amp = 0.5, seed = 1 }: { amp?: number; seed?: number 
         tipBRef.current?.setAttribute('stop-opacity', (0.55 + 0.3 * (1 - vel)).toFixed(3));
       }
 
-      // 止まるまで自走して速さを減衰させる。vel が 0 になればループは自然に終わる
-      if (vel > 0) raf = requestAnimationFrame(tick);
+      // 照り — 帯の中心は「いま見ている高さ」（画面の中央）を**遅れて**追う。
+      // 遅れがあることで、鏡が動きに置いていかれる＝金属が光を拾い直す感じになる。
+      const want = raw - window.innerHeight * 0.5;
+      sheen = sheen < 0 ? want : sheen + (want - sheen) * (1 - SHEEN_LAG);
+      putSheen(sheen);
+
+      // 止まるまで自走して速さを減衰させる。vel が 0 になればループは自然に終わる。
+      // 照りが目標へ追いつくまでも回す（送りが止まったあと 帯だけが遅れて到着する）
+      if (vel > 0 || Math.abs(want - sheen) > 1) raf = requestAnimationFrame(tick);
     };
 
     const onScroll = () => {
@@ -479,6 +515,29 @@ export function FlowLine({ amp = 0.5, seed = 1 }: { amp?: number; seed?: number 
                 />
               ))}
             </linearGradient>
+            {/* 照り — 送りに遅れて追随する明るい帯。offset は送りごとに書き換える */}
+            {/* userSpaceOnUse ＝ offset がリボンの座標そのものになる。
+                objectBoundingBox にすると輪郭の外接矩形が基準になり、
+                蛇行の幅ぶん縦の対応がずれる（帯の位置が計算と合わなくなる）。 */}
+            <linearGradient
+              id={sheenId}
+              x1="0"
+              y1="0"
+              x2="0"
+              y2={size.h}
+              gradientUnits="userSpaceOnUse"
+            >
+              {[0, SHEEN_ALPHA, 0].map((a, i) => (
+                <stop
+                  key={i}
+                  ref={(n) => {
+                    if (n) sheenRef.current[i] = n;
+                  }}
+                  offset={0.3 + i * 0.2}
+                  style={{ stopColor: 'var(--gold-100)', stopOpacity: a }}
+                />
+              ))}
+            </linearGradient>
             {/* 抜き — マスクの下端を切らずに溶かす。offset は送りごとに書き換える */}
             <linearGradient id={revId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0" stopColor="#fff" stopOpacity="1" />
@@ -508,6 +567,7 @@ export function FlowLine({ amp = 0.5, seed = 1 }: { amp?: number; seed?: number 
               <g mask={`url(#${maskId})`}>
                 <path className="fl-line" d={shapes.line} fill={`url(#${gradId})`} />
                 <path className="fl-leaf" d={shapes.line} fill={`url(#${leafId})`} />
+                <path className="fl-sheen" d={shapes.line} fill={`url(#${sheenId})`} />
               </g>
             </>
           )}

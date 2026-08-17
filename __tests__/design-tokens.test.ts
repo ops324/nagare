@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { SHEEN_ALPHA, SHEEN_SPAN } from '@/components/FlowLine';
 
 /**
  * デザイントークンの構造テスト。
@@ -520,6 +521,34 @@ describe('反射（shimmer）は限定', () => {
       );
       expect(used, `${s} が SHIMMER_SURFACES にあるのに shimmer を持たない`).toBe(true);
     }
+  });
+
+  /**
+   * 流れ線の照り（PR #56）は CSS の `animation: shimmer` ではなく、送りに追随する
+   * SVG グラデの帯なので上の一覧には載らない。**載らないものは守られない**ので、
+   * 「広く弱く」と「祝祭より必ず弱く」をここで数値として固定する。
+   */
+  it('流れ線の照りは主CTAと同じ作法（広く弱く）に収まっている', () => {
+    expect(SHEEN_ALPHA, '照りが濃すぎる — 箔ではなく発光に見える').toBeLessThanOrEqual(0.13);
+    expect(SHEEN_SPAN, '照りの帯が細い — 縁が立ってスキャン線に見える').toBeGreaterThanOrEqual(0.4);
+  });
+
+  it('流れ線の照りは祝祭より必ず弱く・広い（強さが並ぶと祝祭が意味を失う）', () => {
+    // 祝祭の実値は globals.css が正。散文の「16%」ではなく宣言から読む
+    const fete = /\.hitokoto-shimmer::after[\s\S]*?linear-gradient\(([^;]*?)\);/.exec(CSS);
+    expect(fete, '祝祭の反射が見つからない').not.toBeNull();
+    const alpha = /var\(--gold-100\)\s*(\d+)%/.exec(fete![1]);
+    const edges = [...fete![1].matchAll(/transparent\s+(\d+)%/g)].map((m) => +m[1]);
+    expect(alpha, '祝祭の濃さが読めない').not.toBeNull();
+    expect(edges.length, '祝祭の帯幅が読めない').toBe(2);
+    const feteAlpha = +alpha![1] / 100;
+    const feteSpan = (edges[1] - edges[0]) / 100;
+    expect(SHEEN_ALPHA, `照り ${SHEEN_ALPHA} が祝祭 ${feteAlpha} 以上になっている`).toBeLessThan(
+      feteAlpha,
+    );
+    expect(SHEEN_SPAN, `照りの帯 ${SHEEN_SPAN} が祝祭 ${feteSpan} より狭い`).toBeGreaterThan(
+      feteSpan,
+    );
   });
 });
 
